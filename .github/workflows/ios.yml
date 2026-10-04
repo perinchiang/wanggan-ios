@@ -1,0 +1,67 @@
+name: Build and test iOS
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          brew install xcodegen
+      - name: Core behavior tests
+        run: swift test
+      - name: Generate Xcode project
+        run: xcodegen generate
+      - name: Build device app without signing
+        run: |
+          set -o pipefail
+          xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/device CODE_SIGNING_ALLOWED=NO build > build-device.log 2>&1 || { tail -100 build-device.log; exit 1; }
+          mkdir -p build/package/Payload
+          cp -R build/device/Build/Products/Release-iphoneos/WangGan.app build/package/Payload/
+          cd build/package
+          zip -qry ../WangGan-unsigned.ipa Payload
+      - name: Select iPhone simulator
+        id: simulator
+        run: |
+          python3 scripts/select_simulator.py >> "$GITHUB_OUTPUT"
+      - name: Run native UI tests
+        run: |
+          xcrun simctl boot '${{ steps.simulator.outputs.id }}' || true
+          xcrun simctl bootstatus '${{ steps.simulator.outputs.id }}' -b
+          xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Debug -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.id }}' -derivedDataPath build/simulator -resultBundlePath build/UITests.xcresult CODE_SIGNING_ALLOWED=NO test > build-ui.log 2>&1 || { tail -100 build-ui.log; exit 1; }
+      - name: Export simulator screenshots
+        if: always()
+        run: |
+          mkdir -p build/screenshots
+          if [ -d build/UITests.xcresult ]; then
+            xcrun xcresulttool export attachments --path build/UITests.xcresult --output-path build/screenshots || true
+          fi
+      - name: Upload iPhone installation package
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: WangGan-iPhone-unsigned
+          path: build/WangGan-unsigned.ipa
+          retention-days: 14
+      - name: Upload evidence and logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification
+          path: |
+            build/screenshots
+            build/UITests.xcresult
+            build-device.log
+            build-ui.log
+          retention-days: 7

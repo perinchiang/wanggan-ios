@@ -1,0 +1,128 @@
+{
+  "chapter": "第一章 · 数据如何出发",
+  "lessons": [
+    {
+      "id": "gateway", "title": "网关填错会怎样？", "subtitle": "先分清：邻居，还是远方", "takeaway": "什么时候需要网关", "nextCuriosity": "电脑怎么知道，对方是不是邻居？", "diagram": "gateway",
+      "question": {
+        "prompt": "网关填错了，电脑会完全断网吗？",
+        "context": "电脑与 NAS 接同一交换机、同一 VLAN，手动 IP 和掩码正确，处于同一子网。只把电脑唯一的默认网关填成了不存在的地址。通过 IP 访问，其他设备与服务正常。",
+        "options": [
+          {"id": "all-fail", "text": "NAS 和互联网都访问不了", "feedback": "你把网关当成了所有通信的必经之路。先看看：目标就在本地时，需要它转交吗？"},
+          {"id": "local", "text": "NAS 能访问，互联网不行", "feedback": "判断正确。关键在于目的地是否在本地子网，而不是电脑是否改过设置。"},
+          {"id": "slow", "text": "都能访问，只是速度变慢", "feedback": "默认网关不是加速开关。去往远方的数据，需要一个真实可达的下一跳。"}
+        ], "correctID": "local", "hint": "先把本地通信和跨网段通信分开想。"
+      },
+      "explanation": [
+        "电脑会根据自己的 IP 和子网掩码，判断目标是否在本地子网。这里的 NAS 就是它的邻居。",
+        "访问本地 NAS，电脑把以太网帧直接交给 NAS，交换机负责转发。这个过程不需要路由器参与。",
+        "访问互联网服务器，在本题没有其他路由的条件下，电脑需要把帧交给默认网关。网关地址写错，这条路才走不通。"
+      ],
+      "matching": {
+        "prompt": "把访问目标，连到这一跳要交给的设备。",
+        "left": [{"id": "nas", "text": "同一子网的 NAS", "symbol": "externaldrive"}, {"id": "internet", "text": "互联网服务器", "symbol": "globe"}],
+        "right": [{"id": "router", "text": "默认网关", "symbol": "wifi.router"}, {"id": "host", "text": "NAS 本身", "symbol": "externaldrive"}],
+        "solution": {"nas": "host", "internet": "router"},
+        "explanation": "目的地不同，第一跳要交给的设备也可能不同。这里讨论的是电脑所在的以太网。"
+      },
+      "challenge": {
+        "prompt": "把路由器彻底关机，NAS 还能访问吗？",
+        "context": "电脑和 NAS 仍连接正常工作的独立交换机；同一 VLAN、同一子网，使用原来的手动 IP。通过 IP 访问 NAS，服务正常。",
+        "options": [{"id": "yes", "text": "能，本地通信不经过路由器", "feedback": "对。交换机还在工作，本地直达的路径仍然存在。"}, {"id": "no", "text": "不能，没有路由器就没有网络", "feedback": "路由器负责跨网段转发。请沿着电脑到 NAS 的线看一遍：有经过它吗？"}],
+        "correctID": "yes", "hint": "独立交换机仍然通电，IP 也不依赖自动分配。"
+      },
+      "sources": ["https://www.rfc-editor.org/rfc/rfc1122#section-3.3.1.1"]
+    },
+    {
+      "id": "subnet", "title": "谁才是我的邻居？", "subtitle": "地址相似，不一定就在隔壁", "takeaway": "IP 与掩码要一起看", "nextCuriosity": "知道了对方的 IP，为什么还要找 MAC？", "diagram": "subnet",
+      "question": {
+        "prompt": "这两个地址，是同一个子网吗？",
+        "context": "电脑 A：192.168.1.10，电脑 B：192.168.2.20。两者的掩码都是 255.255.255.0（/24）。先只判断 IP 子网关系。",
+        "options": [{"id": "same", "text": "是，前面都是 192.168", "feedback": "只看共同开头还不够。掩码才决定哪些位属于网络部分。"}, {"id": "different", "text": "不是，网络部分不同", "feedback": "对。/24 下前三个字节是网络部分，这里 1 和 2 不同。"}, {"id": "cable", "text": "只要接同一个交换机就是", "feedback": "接在哪里与 IP 属于哪个子网是两件事。判断 IP 子网必须看地址和掩码。"}],
+        "correctID": "different", "hint": "/24 表示前 24 位，也就是前三个字节属于网络部分。"
+      },
+      "explanation": ["子网掩码划定 IP 地址的网络部分。/24 等价于 255.255.255.0，前三个字节是网络部分。", "192.168.1.10/24 的网络地址是 192.168.1.0；192.168.2.20/24 的网络地址是 192.168.2.0。它们不相同。", "如果两者都改成 /16，即 255.255.0.0，网络部分就变成前两个字节。此时它们都属于 192.168.0.0/16。这里仅讨论地址判断，不保证物理连接或安全策略允许通信。"],
+      "matching": {
+        "prompt": "给两种掩码，找到对应的网络部分。",
+        "left": [{"id": "24", "text": "/24 掩码", "symbol": "number"}, {"id": "16", "text": "/16 掩码", "symbol": "number"}],
+        "right": [{"id": "two", "text": "前两个字节", "symbol": "square.split.2x1"}, {"id": "three", "text": "前三个字节", "symbol": "rectangle.split.3x1"}],
+        "solution": {"24": "three", "16": "two"}, "explanation": "一个字节是 8 位。掩码长度决定要比较的网络部分。"
+      },
+      "challenge": {
+        "prompt": "只改掩码，判断会变吗？",
+        "context": "仍是 192.168.1.10 和 192.168.2.20，现在两者的掩码都改为 /16。它们属于同一个 IP 子网吗？",
+        "options": [{"id": "yes", "text": "属于，都在 192.168.0.0/16", "feedback": "对。地址没变，但网络边界变了。"}, {"id": "no", "text": "不属于，第三个数仍然不同", "feedback": "/16 只取前两个字节作网络部分。第三个字节已经属于主机部分。"}],
+        "correctID": "yes", "hint": "这次只比较前 16 位。"
+      },
+      "sources": ["https://www.rfc-editor.org/rfc/rfc1122#section-3.3.1.1"]
+    },
+    {
+      "id": "arp", "title": "有 IP，还缺什么？", "subtitle": "找到这一跳的收件人", "takeaway": "ARP 找的是本地下一跳", "nextCuriosity": "数据经过路由器，信封会不会换？", "diagram": "arp",
+      "question": {
+        "prompt": "去往远方，要先问谁的 MAC？",
+        "context": "电脑用 IPv4，经以太网访问其他子网的服务器。路由已选中本地网关，ARP 缓存为空。为了发出第一跳的帧，电脑先查询哪个 IP 对应的 MAC？",
+        "options": [{"id": "server", "text": "远方服务器的 IP", "feedback": "服务器是最终目的地，但这次以太网交付先到本地网关。"}, {"id": "gateway", "text": "本地网关的 IP", "feedback": "对。先找到下一跳的 MAC，电脑才能把帧交给它。"}, {"id": "switch", "text": "交换机的管理 IP", "feedback": "普通二层交换转发不要求电脑先查询交换机管理地址的 MAC。"}],
+        "correctID": "gateway", "hint": "先想清楚：电脑发出的第一个帧，是谁来接收？"
+      },
+      "explanation": ["IP 指明网络层的目的地，而在以太网上发送帧，还需要接收者的 MAC 地址。", "IPv4 主机在本地链路上用 ARP 查询：谁拥有这个 IP？请告诉我你的 MAC。一般情况下，请求是本地广播，路由器不会把它转发到远方子网。", "目标在本地子网，就查询目标的 MAC；目标在远方，就按路由选出的下一跳，查询本地网关的 MAC。"],
+      "matching": {
+        "prompt": "把下一跳，连到应该查询的 IP。",
+        "left": [{"id": "local", "text": "直达本地 NAS", "symbol": "externaldrive"}, {"id": "remote", "text": "经网关访问远方", "symbol": "globe"}],
+        "right": [{"id": "gwip", "text": "网关的 IP", "symbol": "wifi.router"}, {"id": "nasip", "text": "NAS 的 IP", "symbol": "externaldrive"}],
+        "solution": {"local": "nasip", "remote": "gwip"}, "explanation": "ARP 查询跟随这一跳的交付对象，不是总去查询最终服务器。"
+      },
+      "challenge": {
+        "prompt": "缓存里已经有网关的有效 MAC，还要重新广播吗？",
+        "context": "路由和网关没有变化，电脑继续向远方服务器发送普通 IPv4 流量。这里只问是否每发送一个帧都必须重新发 ARP。",
+        "options": [{"id": "no", "text": "不必，可以先使用有效缓存", "feedback": "对。ARP 缓存避免了每发一帧都重新查询。"}, {"id": "yes", "text": "必须，每个帧都先问一次", "feedback": "刚才得到的映射可以缓存并复用，不需要逐帧广播。"}],
+        "correctID": "no", "hint": "缓存的作用就是暂时保存已经查到的对应关系。"
+      },
+      "sources": ["https://www.rfc-editor.org/rfc/rfc826", "https://www.rfc-editor.org/rfc/rfc1122#section-2.3.2"]
+    },
+    {
+      "id": "hop", "title": "经过一站，换了什么？", "subtitle": "这一跳，与最终目的地", "takeaway": "每一跳有自己的帧", "nextCuriosity": "输入一个网址，电脑怎么找到它？", "diagram": "hop",
+      "question": {
+        "prompt": "路由器转发时，会原封不动传下去吗？",
+        "context": "一个普通 IPv4 包从电脑经路由器到服务器，两侧链路均为以太网。没有 NAT、隧道或分片，下一跳的 MAC 已知。",
+        "options": [{"id": "unchanged", "text": "整份以太网帧完全不变", "feedback": "上一跳的 MAC 只描述上一段交付。下一段链路需要新的帧头。"}, {"id": "frame", "text": "重新封装下一跳的帧", "feedback": "对。路由器处理 IP 包，再为下一段以太网链路构造帧。"}, {"id": "destination", "text": "把目标 IP 改成自己的 IP", "feedback": "这里没有 NAT 等地址转换，目标 IP 仍然是最终服务器。"}],
+        "correctID": "frame", "hint": "上一跳把帧交给路由器，下一跳又要交给谁？"
+      },
+      "explanation": ["路由器收到发给自己的以太网帧，取出 IP 包，查看路由，决定从哪里继续转发。", "下一段以太网链路会使用新的帧头：源 MAC 是路由器出接口的 MAC，目标 MAC 是下一跳设备的 MAC。", "在本题条件下，源与目标 IP 保持不变，但 IP 包不是每个字节都不变：路由器会减少 TTL，并更新 IPv4 首部校验和。"],
+      "matching": {
+        "prompt": "把地址，连到它描述的对象。",
+        "left": [{"id": "ip", "text": "目标 IP", "symbol": "globe"}, {"id": "mac", "text": "这一跳的目标 MAC", "symbol": "point.topleft.down.curvedto.point.bottomright.up"}],
+        "right": [{"id": "next", "text": "当前链路下一跳", "symbol": "arrow.right"}, {"id": "final", "text": "最终服务器", "symbol": "server.rack"}],
+        "solution": {"ip": "final", "mac": "next"}, "explanation": "这个区分适用于本题明确排除了 NAT 和隧道的普通转发场景。"
+      },
+      "challenge": {
+        "prompt": "目标 IP 没变，说明 IP 包完全没变吗？",
+        "context": "仍然是前面那次普通 IPv4 路由转发。",
+        "options": [{"id": "yes", "text": "是，IP 层没有任何改变", "feedback": "地址没变不等于所有字段都没变。还记得防止无限转发的 TTL 吗？"}, {"id": "no", "text": "不是，TTL 等字段会改变", "feedback": "对。区分地址、帧和整个 IP 包，就不会把它们混为一谈。"}],
+        "correctID": "no", "hint": "每经过一次路由转发，TTL 会减少。"
+      },
+      "sources": ["https://www.rfc-editor.org/rfc/rfc1812#section-5.2.1", "https://www.rfc-editor.org/rfc/rfc791"]
+    },
+    {
+      "id": "dns", "title": "知道名字，怎么找到它？", "subtitle": "把名字解析为地址", "takeaway": "DNS 与网络连通是两件事", "nextCuriosity": "明天换个场景，再检验一次你的判断。", "diagram": "dns",
+      "question": {
+        "prompt": "公网 IP 能访问，名字却解析失败。先查什么？",
+        "context": "测试程序能通过某服务器的公网 IP 连接其服务；查询该服务器的域名时，DNS 工具明确报告解析超时。没有可用的缓存记录。",
+        "options": [{"id": "bandwidth", "text": "先升级宽带套餐", "feedback": "当前证据指向名字解析超时，带宽大小不是优先排查方向。"}, {"id": "dns", "text": "先检查 DNS 配置与可达性", "feedback": "对。这是根据现象选择下一步排查，不是直接断言 DNS 服务器一定坏了。"}, {"id": "cable", "text": "直接认定网线断了", "feedback": "已能连接公网 IP，说明至少这条连接可用。先检查报告超时的解析环节。"}],
+        "correctID": "dns", "hint": "名字解析失败，和所有网络流量都失败，是不同的证据。"
+      },
+      "explanation": ["人习惯记名字，应用建立 IP 连接需要地址。DNS 可以提供域名对应的 A 或 AAAA 等记录，分别用于 IPv4 或 IPv6 地址。", "解析成功不保证服务可访问；服务是否在线、路由、防火墙等仍然影响连接。解析失败也不表示所有 IP 通信都失败。", "已有未过期的缓存时，部分应用可能继续使用缓存地址；没有缓存的新名字，则仍需要成功解析。真实网站也可能使用多个域名。"],
+      "matching": {
+        "prompt": "把两个问题，连到对应的检查环节。",
+        "left": [{"id": "name", "text": "名字对应哪个 IP？", "symbol": "text.magnifyingglass"}, {"id": "service", "text": "这个 IP 的服务能连接吗？", "symbol": "network"}],
+        "right": [{"id": "connect", "text": "连接与服务检查", "symbol": "arrow.left.arrow.right"}, {"id": "resolve", "text": "DNS 解析检查", "symbol": "character.book.closed"}],
+        "solution": {"name": "resolve", "service": "connect"}, "explanation": "把问题拆成环节，排查才不会只剩下反复重启。"
+      },
+      "challenge": {
+        "prompt": "DNS 暂时不可用，所有已知网站都会立刻打不开吗？",
+        "context": "只判断是否必然全部失败；有些应用仍保存着未过期的 DNS 缓存，网络连接本身正常。",
+        "options": [{"id": "yes", "text": "一定，任何访问都要实时查询", "feedback": "忽略了缓存。并不是每次连接都必须重新向 DNS 服务器查询。"}, {"id": "no", "text": "不一定，部分访问可用缓存", "feedback": "对。缓存能帮助部分访问继续，但不能保证每个网站都正常。"}],
+        "correctID": "no", "hint": "应用是否已经知道目标地址？缓存是否仍有效？"
+      },
+      "sources": ["https://www.rfc-editor.org/rfc/rfc1034#section-5.3.3", "https://www.rfc-editor.org/rfc/rfc1035"]
+    }
+  ]
+}
