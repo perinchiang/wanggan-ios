@@ -62,7 +62,8 @@ final class LearningTests: XCTestCase {
         let ids = ["new-basics", "gateway", "subnet", "arp", "hop", "dns"]
         XCTAssertTrue(ledger.isUnlocked("new-basics", in: ids))
         XCTAssertTrue(ledger.isUnlocked("gateway", in: ids))
-        XCTAssertFalse(ledger.isUnlocked("subnet", in: ids))
+        XCTAssertTrue(ledger.isUnlocked("subnet", in: ids))
+        XCTAssertFalse(ledger.isUnlocked("arp", in: ids))
         XCTAssertEqual(ledger.recommendedLessonID(in: ids), "new-basics")
     }
 
