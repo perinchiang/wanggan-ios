@@ -207,8 +207,8 @@ struct LessonPlayer: View {
     }
 
     private var nextLesson: Lesson? {
-        guard let index = store.lessons.firstIndex(where: { $0.id == lesson.id }), index + 1 < store.lessons.count else { return nil }
-        return store.lessons[index + 1]
+        guard let next = store.currentLesson, store.ledger.lessons[next.id] == nil else { return nil }
+        return next
     }
 
     private func performAction() {

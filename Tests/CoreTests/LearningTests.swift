@@ -136,6 +136,88 @@ final class LearningTests: XCTestCase {
         XCTAssertEqual(restored.draft?.explanationIndex, 1)
     }
 
+    func testReviewDraftAndCompletionPreserveFartherMainCourse() throws {
+        let ids = try catalog().lessons.map(\.id)
+        var ledger = ProgressLedger()
+        ledger.complete(finished("gateway"), now: today, calendar: calendar)
+        ledger.complete(finished("subnet"), now: today, calendar: calendar)
+        var main = LessonSession(lessonID: "arp")
+        main.stage = .explanation
+        main.explanationIndex = 1
+        ledger.saveDraft(main, in: ids)
+        var review = LessonSession(lessonID: "gateway")
+        review.questionSceneStep = 2
+        ledger.saveDraft(review, in: ids)
+        let otherReview = LessonSession(lessonID: "subnet")
+        ledger.saveDraft(otherReview, in: ids)
+        XCTAssertEqual(ledger.recommendedLessonID(in: ids), "arp")
+        XCTAssertEqual(ledger.session(for: "arp"), main)
+        XCTAssertEqual(ledger.session(for: "gateway"), review)
+
+        var restored = try JSONDecoder().decode(ProgressLedger.self, from: JSONEncoder().encode(ledger))
+        review.stage = .complete
+        review.matchingSolved = true
+        review.challengeSolved = true
+        XCTAssertEqual(restored.complete(review, now: today, calendar: calendar), 0)
+        // The player's completion-state save must not erase the main draft either.
+        restored.saveDraft(review, in: ids)
+        XCTAssertEqual(restored.draft, main)
+        XCTAssertEqual(restored.reviewDrafts?["subnet"], otherReview)
+        XCTAssertNil(restored.reviewDrafts?["gateway"])
+        XCTAssertEqual(restored.recommendedLessonID(in: ids), "arp")
+        XCTAssertEqual(restored.totalXP, 60)
+
+        main.stage = .complete
+        main.matchingSolved = true
+        main.challengeSolved = true
+        XCTAssertEqual(restored.complete(main, now: today, calendar: calendar), 30)
+        XCTAssertNil(restored.draft)
+        XCTAssertEqual(restored.recommendedLessonID(in: ids), ids[3])
+    }
+
+    func testRecommendationKeepsFrontierWithoutDraftAndLastLessonAfterAllComplete() throws {
+        let ids = try catalog().lessons.map(\.id)
+        var ledger = ProgressLedger()
+        XCTAssertNil(ledger.recommendedLessonID(in: []))
+        ledger.complete(finished(ids[0]), now: today, calendar: calendar)
+        ledger.complete(finished(ids[1]), now: today, calendar: calendar)
+        ledger.saveDraft(LessonSession(lessonID: ids[0]), in: ids)
+        XCTAssertEqual(ledger.recommendedLessonID(in: ids), ids[2])
+        for id in ids.dropFirst(2) { ledger.complete(finished(id), now: today, calendar: calendar) }
+        ledger.saveDraft(LessonSession(lessonID: ids[0]), in: ids)
+        XCTAssertEqual(ledger.recommendedLessonID(in: ids), ids.last)
+    }
+
+    func testLegacyReviewDraftMigratesWithoutResettingXP() throws {
+        let ids = try catalog().lessons.map(\.id)
+        var ledger = ProgressLedger()
+        ledger.complete(finished(ids[0]), now: today, calendar: calendar)
+        ledger.complete(finished(ids[1]), now: today, calendar: calendar)
+        var review = LessonSession(lessonID: ids[0])
+        review.questionSceneStep = 2
+        ledger.draft = review
+        var legacyJSON = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(ledger)) as? [String: Any])
+        legacyJSON.removeValue(forKey: "reviewDrafts")
+        var restored = try JSONDecoder().decode(ProgressLedger.self, from: JSONSerialization.data(withJSONObject: legacyJSON))
+        restored.normalizeDrafts(in: ids)
+        XCTAssertNil(restored.draft)
+        XCTAssertEqual(restored.reviewDrafts?[ids[0]], review)
+        XCTAssertEqual(restored.recommendedLessonID(in: ids), ids[2])
+        XCTAssertEqual(restored.totalXP, 60)
+        XCTAssertEqual(restored.lessons, ledger.lessons)
+        XCTAssertEqual(restored.activityDays, ledger.activityDays)
+    }
+
+    func testReopeningEarlierUnfinishedLessonCannotReplaceFartherDraft() throws {
+        let ids = try catalog().lessons.map(\.id)
+        var ledger = ProgressLedger()
+        let farther = LessonSession(lessonID: ids[2])
+        ledger.saveDraft(farther, in: ids)
+        ledger.saveDraft(LessonSession(lessonID: ids[0]), in: ids)
+        XCTAssertEqual(ledger.draft, farther)
+        XCTAssertEqual(ledger.recommendedLessonID(in: ids), ids[2])
+    }
+
     func testConversationProgressPersistsAndLegacyDraftsStillDecode() throws {
         let lesson = try XCTUnwrap(catalog().lessons.first)
         var session = LessonSession(lessonID: lesson.id)

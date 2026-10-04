@@ -41,10 +41,7 @@ struct LearningRouteView: View {
     let openLesson: (Lesson) -> Void
     @State private var lockedTitle: String?
 
-    private var recommended: Lesson? {
-        if let draft = store.ledger.draft, let lesson = store.lessons.first(where: { $0.id == draft.lessonID }) { return lesson }
-        return store.currentLesson
-    }
+    private var recommended: Lesson? { store.currentLesson }
 
     var body: some View {
         NavigationStack {
@@ -86,7 +83,7 @@ struct LearningRouteView: View {
                     VStack(spacing: 12) {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(lesson.title).font(.headline)
+                                Text(lesson.title).font(.headline).accessibilityIdentifier("recommended-lesson-title")
                                 Text(store.ledger.draft?.lessonID == lesson.id ? "上次学到的地方，还在这里" : "约 3 分钟 · 4 段探索")
                                     .font(.caption).foregroundStyle(Theme.muted)
                             }

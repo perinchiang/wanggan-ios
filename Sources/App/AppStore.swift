@@ -34,8 +34,8 @@ final class LearningStore {
                 let saved = try JSONDecoder().decode(ProgressLedger.self, from: data)
                 guard saved.schemaVersion == 1 else { throw ContentError.invalid("未知进度版本") }
                 ledger = saved
-                if let draft = ledger.draft,
-                   !lessons.contains(where: { $0.id == draft.lessonID }) { ledger.draft = nil }
+                ledger.normalizeDrafts(in: lessons.map(\.id))
+                persist()
             } catch {
                 defaults.set(data, forKey: "wanggan.progress.recovery")
                 storageWarning = "旧进度暂时无法读取，原始数据已保留在本机备份。当前使用新进度。"
@@ -44,7 +44,10 @@ final class LearningStore {
     }
 
     var lessons: [Lesson] { catalog?.lessons ?? [] }
-    var currentLesson: Lesson? { lessons.first { ledger.lessons[$0.id] == nil } ?? lessons.first }
+    var currentLesson: Lesson? {
+        guard let id = ledger.recommendedLessonID(in: lessons.map(\.id)) else { return nil }
+        return lessons.first { $0.id == id }
+    }
     var completedCount: Int { lessons.filter { ledger.lessons[$0.id] != nil }.count }
     var dueLessons: [Lesson] { lessons.filter { ledger.isDue($0.id) } }
 
@@ -54,18 +57,16 @@ final class LearningStore {
     }
 
     func session(for lesson: Lesson) -> LessonSession {
-        if let draft = ledger.draft, draft.lessonID == lesson.id, draft.stage != .complete { return draft }
-        return LessonSession(lessonID: lesson.id)
+        ledger.session(for: lesson.id)
     }
 
     func saveDraft(_ session: LessonSession) {
-        ledger.draft = session.stage == .complete ? nil : session
+        ledger.saveDraft(session, in: lessons.map(\.id))
         persist()
     }
 
     func finish(_ session: LessonSession) -> Int {
         let result = ledger.complete(session)
-        ledger.draft = nil
         persist()
         return result
     }
