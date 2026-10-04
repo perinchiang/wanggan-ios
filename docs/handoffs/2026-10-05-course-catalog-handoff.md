@@ -28,19 +28,17 @@
 
 - `prerequisiteChapterIDs`、`progressionPolicy` 等 Draft 字段未引入（按需再加）。
 - 多章节拆分、插入新课未做——等阶段 G 分批补课时使用。
-- CI 验证尚未执行（等待 push）。
 
 ## Known issues / 已知问题
 
 - `LearningStore` 课程加载失败时可能清草稿、未知 schema 恢复路径等基线风险仍待后续处理。
-- 阶段 C 的 UI 变化仅静态推演，未在本机运行。
 
 ## Verification / 已做验证
 
 - `git diff --check` 通过；JSON 重构经 python 往返解析确认五课 ID 与内容未变。
-- 静态推演：现有 19 个 Core 测试与 3 个 UI 测试的依赖接口未破坏（`lessons` / `lesson-<id>` / 推荐标题标识符不变）。
-- 运行验证待 push main 触发 CI（Core 测试 + 真机构建 + UI 测试）。
+- 推送 main 触发 GitHub Actions 运行 37239205507 通过：Core 测试（含新增 3 个用例）、真机无签名构建 + IPA、原生 UI 测试全部成功。首轮曾因测试断言写反失败（subnet 在插入后应保持解锁），已修正断言并重跑通过。
+- PRODUCT.md 阶段 C 已标记完成（2026-10-05）。
 
 ## Next recommended task / 推荐下一步
 
-CI 通过后：标记 PRODUCT.md 阶段 C 完成；进入阶段 D 最小学习引擎（先适配一课为 Step，不复制专用页面）。
+进入阶段 D 最小学习引擎：先适配一课为 Step，复用现有原生组件，新内容不必复制专用页面。
