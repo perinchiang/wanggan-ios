@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct LessonPlayer: View {
+struct StageLessonPlayer: View {
     let lesson: Lesson
     let onNext: (Lesson?) -> Void
     @Environment(LearningStore.self) private var store
@@ -81,7 +81,8 @@ struct LessonPlayer: View {
         case .matching:
             TutorBubble(text: "换个方式，试着连一连。")
             Text(lesson.matching.prompt).font(.body).foregroundStyle(Theme.muted)
-            MatchingView(exercise: lesson.matching, session: $session)
+            MatchingView(exercise: lesson.matching, matches: $session.matches,
+                         matchingSubmitted: $session.matchingSubmitted, matchingSolved: $session.matchingSolved)
             if session.matchingSubmitted {
                 feedbackCard(title: session.matchingSolved ? "连起来了" : "再想一小步",
                              text: session.matchingSolved ? lesson.matching.explanation : "还有连线不符合刚才的机制。重新选择左、右两项就能修改；每项只能连接一次。",

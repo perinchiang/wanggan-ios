@@ -158,4 +158,65 @@ final class StepPlanTests: XCTestCase {
         XCTAssertEqual(stageSession.stage, .complete)
         XCTAssertEqual(stepSession.mistakes, stageSession.mistakes)
     }
+
+    func testStageToStepAdapterRoundTripsEveryDraftPosition() throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "gateway" })
+        var drafts: [LessonSession] = []
+        var fresh = LessonSession(lessonID: lesson.id)
+        drafts.append(fresh)
+        for _ in 0..<(lesson.question.scene.count - 1) { fresh.revealNextScene(for: lesson.question, challenge: false) }
+        drafts.append(fresh)
+        var answered = fresh
+        answered.selectedAnswer = lesson.question.correctID
+        answered.submitQuestion(lesson.question)
+        drafts.append(answered)
+        var explained = answered
+        explained.advance(lesson: lesson)
+        explained.advance(lesson: lesson)
+        drafts.append(explained)
+        var matched = explained
+        while matched.stage != .matching { matched.advance(lesson: lesson) }
+        for (left, right) in lesson.matching.solution { matched.connect(left, to: right) }
+        matched.submitMatching(lesson.matching)
+        drafts.append(matched)
+        var challenged = matched
+        challenged.advance(lesson: lesson)
+        challenged.revealNextScene(for: lesson.challenge, challenge: true)
+        drafts.append(challenged)
+        var wrong = challenged
+        wrong.challengeAnswer = lesson.challenge.options.first { $0.id != lesson.challenge.correctID }!.id
+        wrong.submitChallenge(lesson.challenge)
+        drafts.append(wrong)
+        var solved = challenged
+        solved.challengeAnswer = lesson.challenge.correctID
+        solved.submitChallenge(lesson.challenge)
+        solved.advance(lesson: lesson)
+        drafts.append(solved)
+
+        for draft in drafts {
+            let step = StepSession(lesson: lesson, from: draft)
+            let restored = step.stageSession(lesson: lesson)
+            XCTAssertEqual(step.id, draft.id)
+            XCTAssertEqual(restored.id, step.id)
+            assertEquivalent(draft, restored, lesson: lesson)
+        }
+    }
+
+    private func assertEquivalent(_ a: LessonSession, _ b: LessonSession, lesson: Lesson) {
+        XCTAssertEqual(a.stage, b.stage)
+        XCTAssertEqual(a.mistakes, b.mistakes)
+        XCTAssertEqual(a.selectedAnswer, b.selectedAnswer)
+        XCTAssertEqual(a.answerSubmitted, b.answerSubmitted)
+        XCTAssertEqual(a.matches, b.matches)
+        XCTAssertEqual(a.matchingSubmitted, b.matchingSubmitted)
+        XCTAssertEqual(a.matchingSolved, b.matchingSolved)
+        XCTAssertEqual(a.challengeAnswer, b.challengeAnswer)
+        XCTAssertEqual(a.challengeSubmitted, b.challengeSubmitted)
+        XCTAssertEqual(a.challengeSolved, b.challengeSolved)
+        XCTAssertEqual(a.explanationIndex, b.explanationIndex)
+        XCTAssertEqual(a.sceneStep(for: lesson.question, challenge: false),
+                       b.sceneStep(for: lesson.question, challenge: false))
+        XCTAssertEqual(a.sceneStep(for: lesson.challenge, challenge: true),
+                       b.sceneStep(for: lesson.challenge, challenge: true))
+    }
 }

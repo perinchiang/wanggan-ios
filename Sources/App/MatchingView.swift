@@ -9,7 +9,9 @@ private struct EndpointPreference: PreferenceKey {
 
 struct MatchingView: View {
     let exercise: MatchingExercise
-    @Binding var session: LessonSession
+    @Binding var matches: [String: String]
+    @Binding var matchingSubmitted: Bool
+    @Binding var matchingSolved: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selectedLeft: String?
 
@@ -31,7 +33,7 @@ struct MatchingView: View {
             .overlayPreferenceValue(EndpointPreference.self) { anchors in
                 GeometryReader { geometry in
                     ForEach(exercise.left) { item in
-                        if let rightID = session.matches[item.id],
+                        if let rightID = matches[item.id],
                            let leftAnchor = anchors["left-\(item.id)"],
                            let rightAnchor = anchors["right-\(rightID)"] {
                             let startRect = geometry[leftAnchor]
@@ -44,7 +46,7 @@ struct MatchingView: View {
                                               control1: CGPoint(x: start.x + 35, y: start.y),
                                               control2: CGPoint(x: end.x - 35, y: end.y))
                             }
-                            .stroke(session.matchingSolved ? Theme.lime : Theme.ink,
+                            .stroke(matchingSolved ? Theme.lime : Theme.ink,
                                     style: StrokeStyle(lineWidth: 3, lineCap: .round))
                         }
                     }
@@ -54,8 +56,8 @@ struct MatchingView: View {
                 Text(selectedLeft == nil ? "先点左边，再点右边" : "再点右边，为它选择对应项")
                     .font(.caption).foregroundStyle(Theme.muted)
                 Spacer()
-                if !session.matchingSolved {
-                    Button("清空") { session.matches = [:]; session.matchingSubmitted = false; selectedLeft = nil }
+                if !matchingSolved {
+                    Button("清空") { matches = [:]; matchingSubmitted = false; selectedLeft = nil }
                         .font(.subheadline).frame(minHeight: 44)
                         .accessibilityIdentifier("clear-matches")
                 }
@@ -65,7 +67,7 @@ struct MatchingView: View {
 
     private func endpoint(_ item: MatchItem, left: Bool) -> some View {
         let chosen = left ? selectedLeft == item.id : false
-        let connection = left ? session.matches[item.id] : session.matches.first(where: { $0.value == item.id })?.key
+        let connection = left ? matches[item.id] : matches.first(where: { $0.value == item.id })?.key
         let connectedName: String? = left
             ? exercise.right.first(where: { $0.id == connection })?.text
             : exercise.left.first(where: { $0.id == connection })?.text
@@ -73,7 +75,9 @@ struct MatchingView: View {
             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
                 if left { selectedLeft = item.id }
                 else if let selectedLeft {
-                    session.connect(selectedLeft, to: item.id)
+                    matches = matches.filter { $0.key == selectedLeft || $0.value != item.id }
+                    matches[selectedLeft] = item.id
+                    matchingSubmitted = false
                     self.selectedLeft = nil
                 }
             }
@@ -94,7 +98,7 @@ struct MatchingView: View {
             }
         }
         .buttonStyle(PressStyle())
-        .disabled(session.matchingSolved)
+        .disabled(matchingSolved)
         .anchorPreference(key: EndpointPreference.self, value: .bounds) { ["\(left ? "left" : "right")-\(item.id)": $0] }
         .accessibilityLabel(item.text)
         .accessibilityValue(connectedName.map { "已连接到\($0)" } ?? (chosen ? "已选中，接着选择右侧" : "未连接"))

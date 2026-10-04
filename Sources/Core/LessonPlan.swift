@@ -104,6 +104,7 @@ extension Lesson {
 }
 
 struct StepSession: Codable, Equatable {
+    let id: UUID
     let lessonID: String
     var stepIndex = 0
     var selectedAnswer: String?
@@ -116,7 +117,8 @@ struct StepSession: Codable, Equatable {
     var challengeSolved = false
     var mistakes = 0
 
-    init(lessonID: String) {
+    init(lessonID: String, id: UUID = UUID()) {
+        self.id = id
         self.lessonID = lessonID
     }
 }
@@ -224,5 +226,69 @@ struct LessonPlan {
         guard !session.challengeSolved else { return }
         session.challengeSubmitted = false
         session.challengeAnswer = nil
+    }
+}
+
+extension StepSession {
+    init(lesson: Lesson, from stage: LessonSession) {
+        let plan = LessonPlan(lesson: lesson)
+        self.init(lessonID: lesson.id, id: stage.id)
+        mistakes = stage.mistakes
+        selectedAnswer = stage.selectedAnswer
+        answerSubmitted = stage.answerSubmitted
+        matches = stage.matches
+        matchingSubmitted = stage.matchingSubmitted
+        matchingSolved = stage.matchingSolved
+        challengeAnswer = stage.challengeAnswer
+        challengeSubmitted = stage.challengeSubmitted
+        challengeSolved = stage.challengeSolved
+        switch stage.stage {
+        case .question:
+            stepIndex = min(stage.sceneStep(for: lesson.question, challenge: false), plan.questionSceneCount)
+        case .explanation:
+            stepIndex = plan.questionIndex + 2 + min(stage.explanationIndex, max(lesson.explanation.count - 1, 0))
+        case .matching:
+            stepIndex = plan.matchingIndex
+        case .challenge:
+            stepIndex = min(plan.matchingIndex + 1 + stage.sceneStep(for: lesson.challenge, challenge: true), plan.challengeIndex)
+        case .complete:
+            stepIndex = plan.summaryIndex
+        }
+    }
+
+    func stageSession(lesson: Lesson) -> LessonSession {
+        let plan = LessonPlan(lesson: lesson)
+        var result = LessonSession(lessonID: lesson.id, id: id)
+        result.mistakes = mistakes
+        result.selectedAnswer = selectedAnswer
+        result.answerSubmitted = answerSubmitted
+        result.matches = matches
+        result.matchingSubmitted = matchingSubmitted
+        result.matchingSolved = matchingSolved
+        result.challengeAnswer = challengeAnswer
+        result.challengeSubmitted = challengeSubmitted
+        result.challengeSolved = challengeSolved
+        if stepIndex < plan.questionIndex {
+            result.stage = .question
+            result.questionSceneStep = stepIndex
+        } else if stepIndex == plan.questionIndex {
+            result.stage = .question
+            result.questionSceneStep = answerSubmitted ? lesson.question.scene.count : stepIndex
+        } else if stepIndex < plan.matchingIndex {
+            result.stage = .explanation
+            result.explanationIndex = max(min(stepIndex - plan.questionIndex - 2, lesson.explanation.count - 1), 0)
+        } else if stepIndex == plan.matchingIndex {
+            result.stage = .matching
+        } else if stepIndex < plan.challengeIndex {
+            result.stage = .challenge
+            result.challengeSceneStep = min(stepIndex - plan.matchingIndex - 1, plan.challengeSceneCount)
+        } else if stepIndex == plan.challengeIndex {
+            result.stage = .challenge
+            result.challengeSceneStep = lesson.challenge.scene.count
+        } else {
+            result.stage = .complete
+            result.challengeSolved = true
+        }
+        return result
     }
 }

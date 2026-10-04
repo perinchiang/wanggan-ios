@@ -56,9 +56,11 @@ final class LearningUITests: XCTestCase {
         tap("primary-action")
         tap("primary-action")
         screenshot("03-explanation")
-        tap("primary-action")
-        tap("primary-action")
-        tap("primary-action")
+        for _ in 0..<8 {
+            if app.buttons["match-left-nas"].exists { break }
+            tap("primary-action")
+        }
+        XCTAssertTrue(app.buttons["match-left-nas"].exists, "Matching appears after explanation")
         tap("match-left-nas")
         tap("match-right-host")
         tap("match-left-internet")
@@ -122,9 +124,11 @@ final class LearningUITests: XCTestCase {
         tap("question-option-local")
         tap("primary-action")
         tap("primary-action")
-        tap("primary-action")
-        tap("primary-action")
-        tap("primary-action")
+        for _ in 0..<8 {
+            if app.buttons["match-left-nas"].exists { break }
+            tap("primary-action")
+        }
+        XCTAssertTrue(app.buttons["match-left-nas"].exists, "Matching appears after explanation")
         tap("match-left-nas")
         tap("match-right-host")
         tap("match-left-internet")

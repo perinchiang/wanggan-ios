@@ -23,8 +23,8 @@ struct LessonSession: Codable, Equatable, Identifiable {
     var mistakes = 0
     var earnedXP: Int?
 
-    init(lessonID: String) {
-        self.id = UUID()
+    init(lessonID: String, id: UUID = UUID()) {
+        self.id = id
         self.lessonID = lessonID
     }
 
