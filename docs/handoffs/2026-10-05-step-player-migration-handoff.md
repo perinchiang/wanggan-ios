@@ -26,19 +26,20 @@
 
 ## Not completed / 尚未完成
 
-- 其余四课（subnet / arp / hop / dns）仍在旧路径，待 gateway 等价验证通过后逐一迁移。
+- 其余四课（subnet / arp / hop / dns）仍在旧路径，待真机试用后逐一迁移。
 - StepSession 尚未直接持久化；旧 stage 状态机与迁移门的移除待全部课程迁移完成。
 
 ## Known issues / 已知问题
 
-- gateway 迁移后主课与复习共用新路径，UI 测试覆盖 gateway 主课 + 复习 + subnet 旧路径交错，其余三课无 UI 覆盖（旧路径回归风险低）。
-- 本轮改动量大（新播放器 + 分派 + 视图 API 重构），无本地工具链，完全依赖 CI 验证。
+- 其余三课（arp / hop / dns）无 UI 覆盖（旧路径回归风险低）。
 
 ## Verification / 已做验证
 
-- `git diff --check` 通过；静态推演 UI 测试全流程（主课 / 复习 / 续学 / 退出恢复）在新路径下的标识符与门控。
-- 运行验证待 push main 触发 CI（Core 测试 + 真机构建 + 原生 UI 测试）。
+- `git diff --check` 通过；静态推演 UI 测试全流程在新路径下的标识符与门控。
+- 推送 main 触发 GitHub Actions 运行 37243191142 通过：Core 测试（含适配器往返 8 个位置用例）、真机无签名构建 + IPA、原生 UI 测试（gateway 主课 / 复习 / 退出恢复 / 结算全流程走新播放器）全部成功。
+- 首轮失败是测试断言把非讲解阶段的 stale `explanationIndex` 也纳入比较，已改为仅在讲解阶段比较；适配器与播放器代码未改动。
+- PRODUCT.md 阶段 D 已标记完成（2026-10-05）。
 
 ## Next recommended task / 推荐下一步
 
-CI 通过后：真机试用 gateway 完整流程确认体验无差异，然后按同样方式迁移 subnet → arp → hop → dns，最后删除 StageLessonPlayer 与分派门，进入阶段 E 可视化试点。
+真机试用 gateway 完整流程确认体验无差异后，按同样方式迁移 subnet → arp → hop → dns，最后删除 StageLessonPlayer 与分派门，进入阶段 E 可视化试点。
