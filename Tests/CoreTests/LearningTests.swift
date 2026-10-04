@@ -35,6 +35,37 @@ final class LearningTests: XCTestCase {
         }
     }
 
+    func testCatalogChaptersCoverEveryLessonExactlyOnce() throws {
+        let catalog = try catalog()
+        try catalog.validate()
+        XCTAssertFalse(catalog.course.chapters.isEmpty)
+        XCTAssertEqual(catalog.orderedLessonIDs.count, catalog.lessons.count)
+        XCTAssertEqual(Set(catalog.orderedLessonIDs), Set(catalog.lessons.map(\.id)))
+        for chapter in catalog.course.chapters {
+            XCTAssertEqual(catalog.lessons(in: chapter.id).map(\.id), chapter.orderedLessonIDs)
+        }
+    }
+
+    func testOnlyFirstLessonUnlockedAtStartAndChainUnlocksInOrder() {
+        var ledger = ProgressLedger()
+        let ids = ["gateway", "subnet", "arp", "hop", "dns"]
+        XCTAssertTrue(ledger.isUnlocked("gateway", in: ids))
+        XCTAssertFalse(ledger.isUnlocked("subnet", in: ids))
+        ledger.complete(finished("gateway"), now: today, calendar: calendar)
+        XCTAssertTrue(ledger.isUnlocked("subnet", in: ids))
+        XCTAssertFalse(ledger.isUnlocked("arp", in: ids))
+    }
+
+    func testCompletedLessonStaysUnlockedAfterNewLessonInsertedBeforeIt() {
+        var ledger = ProgressLedger()
+        ledger.complete(finished(), now: today, calendar: calendar)
+        let ids = ["new-basics", "gateway", "subnet", "arp", "hop", "dns"]
+        XCTAssertTrue(ledger.isUnlocked("new-basics", in: ids))
+        XCTAssertTrue(ledger.isUnlocked("gateway", in: ids))
+        XCTAssertFalse(ledger.isUnlocked("subnet", in: ids))
+        XCTAssertEqual(ledger.recommendedLessonID(in: ids), "new-basics")
+    }
+
     func testCannotSkipUnansweredStages() throws {
         let lesson = try XCTUnwrap(catalog().lessons.first)
         var session = LessonSession(lessonID: lesson.id)

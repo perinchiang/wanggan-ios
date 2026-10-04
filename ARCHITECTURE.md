@@ -11,7 +11,7 @@
 
 | 位置 | 当前职责 |
 | --- | --- |
-| `Sources/Core/Lesson.swift` | 一个 chapter 字符串与 lessons 数组；Lesson 固定包含 question / explanation / matching / challenge；课程校验 |
+| `Sources/Core/Lesson.swift` | Course（id / revision / title）与 Chapter（id / title / orderedLessonIDs）目录模型；Lesson 固定包含 question / explanation / matching / challenge；课程与章节覆盖校验 |
 | `Sources/Core/LessonSession.swift` | question → explanation → matching → challenge → complete；课内状态、重试和累计错误数 |
 | `Sources/Core/ProgressLedger.swift` | 完成记录、XP / 等级、复习日期、活动日、结算会话、主线 draft 与 reviewDrafts |
 | `Sources/App/AppStore.swift` | 加载课程、UserDefaults 编解码、解锁与推荐、保存及重置 |
@@ -168,7 +168,6 @@ schemaVersion、课程内容版本、Lesson revision、Web 契约版本独立管
 
 - `LearningStore` 在课程加载失败时仍可能以空课程列表归一化并保存草稿，存在清除草稿风险。
 - 未知 schema 当前备份后使用新进度，缺少受保护的恢复 / 迁移路径。
-- 数组前驱解锁与索引推荐不适合直接重排课程。
 
 这些是后续小范围修复候选，不表示本轮文档变更已修复业务代码。
 
@@ -195,4 +194,4 @@ schemaVersion、课程内容版本、Lesson revision、Web 契约版本独立管
 
 现有五课必须继续存在，但新增内容后不再将课程总数固定为 5；不得改为断言 Draft 总数 42。未来缺失或循环先修引用应在内容校验中发现。
 
-当前 CI 在 main push 或手动触发时运行；采用 PR 协作后再补 `pull_request` 检查。Windows 上不能执行的 Swift / iOS 检查，应明确交由 macOS CI 或 Mac，报告未执行项，不能把静态检查称作模拟器或真机验证。文档变更不必为了形式重复完整 iOS 构建。
+当前 CI 在 main push（Sources / Tests / Resources 等代码与资源相关变更）或手动触发时运行；纯文档变更不触发构建，需要完整验证时用 workflow_dispatch。采用 PR 协作后再补 `pull_request` 检查。Windows 上不能执行的 Swift / iOS 检查，应明确交由 macOS CI 或 Mac，报告未执行项，不能把静态检查称作模拟器或真机验证。文档变更不必为了形式重复完整 iOS 构建。

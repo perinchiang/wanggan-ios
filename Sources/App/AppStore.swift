@@ -34,7 +34,7 @@ final class LearningStore {
                 let saved = try JSONDecoder().decode(ProgressLedger.self, from: data)
                 guard saved.schemaVersion == 1 else { throw ContentError.invalid("未知进度版本") }
                 ledger = saved
-                ledger.normalizeDrafts(in: lessons.map(\.id))
+                ledger.normalizeDrafts(in: orderedLessonIDs)
                 persist()
             } catch {
                 defaults.set(data, forKey: "wanggan.progress.recovery")
@@ -44,16 +44,19 @@ final class LearningStore {
     }
 
     var lessons: [Lesson] { catalog?.lessons ?? [] }
+    var chapters: [Chapter] { catalog?.course.chapters ?? [] }
+    var orderedLessonIDs: [String] { catalog?.orderedLessonIDs ?? [] }
     var currentLesson: Lesson? {
-        guard let id = ledger.recommendedLessonID(in: lessons.map(\.id)) else { return nil }
+        guard let id = ledger.recommendedLessonID(in: orderedLessonIDs) else { return nil }
         return lessons.first { $0.id == id }
     }
     var completedCount: Int { lessons.filter { ledger.lessons[$0.id] != nil }.count }
     var dueLessons: [Lesson] { lessons.filter { ledger.isDue($0.id) } }
 
+    func lessons(in chapter: Chapter) -> [Lesson] { catalog?.lessons(in: chapter.id) ?? [] }
+
     func isUnlocked(_ lesson: Lesson) -> Bool {
-        guard let index = lessons.firstIndex(where: { $0.id == lesson.id }) else { return false }
-        return index == 0 || ledger.lessons[lessons[index - 1].id] != nil
+        ledger.isUnlocked(lesson.id, in: orderedLessonIDs)
     }
 
     func session(for lesson: Lesson) -> LessonSession {
@@ -61,7 +64,7 @@ final class LearningStore {
     }
 
     func saveDraft(_ session: LessonSession) {
-        ledger.saveDraft(session, in: lessons.map(\.id))
+        ledger.saveDraft(session, in: orderedLessonIDs)
         persist()
     }
 

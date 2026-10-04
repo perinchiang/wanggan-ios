@@ -60,13 +60,43 @@ struct Lesson: Codable, Equatable, Identifiable {
     let sources: [String]
 }
 
+struct Chapter: Codable, Equatable, Identifiable {
+    let id: String
+    let title: String
+    let orderedLessonIDs: [String]
+}
+
+struct Course: Codable, Equatable, Identifiable {
+    let id: String
+    let revision: Int
+    let title: String
+    let chapters: [Chapter]
+}
+
 struct LessonCatalog: Codable {
-    let chapter: String
+    let course: Course
     let lessons: [Lesson]
+
+    var orderedLessonIDs: [String] { course.chapters.flatMap(\.orderedLessonIDs) }
+
+    func lessons(in chapterID: String) -> [Lesson] {
+        guard let chapter = course.chapters.first(where: { $0.id == chapterID }) else { return [] }
+        return chapter.orderedLessonIDs.compactMap { id in lessons.first { $0.id == id } }
+    }
 
     func validate() throws {
         guard !lessons.isEmpty, Set(lessons.map(\.id)).count == lessons.count else {
             throw ContentError.invalid("课程为空或标识重复")
+        }
+        guard course.revision >= 1,
+              !course.chapters.isEmpty,
+              Set(course.chapters.map(\.id)).count == course.chapters.count,
+              !course.chapters.contains(where: { $0.orderedLessonIDs.isEmpty }) else {
+            throw ContentError.invalid("课程目录为空或章节标识重复")
+        }
+        let chapterIDs = course.chapters.flatMap(\.orderedLessonIDs)
+        guard chapterIDs.count == lessons.count, Set(chapterIDs) == Set(lessons.map(\.id)) else {
+            throw ContentError.invalid("章节没有恰好覆盖每一课")
         }
         for lesson in lessons {
             for question in [lesson.question, lesson.challenge] {

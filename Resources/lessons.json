@@ -1,5 +1,22 @@
 {
-  "chapter": "第一章 · 数据如何出发",
+  "course": {
+    "id": "wanggan-network-intuition",
+    "revision": 1,
+    "title": "网感",
+    "chapters": [
+      {
+        "id": "first-look",
+        "title": "第一章 · 数据如何出发",
+        "orderedLessonIDs": [
+          "gateway",
+          "subnet",
+          "arp",
+          "hop",
+          "dns"
+        ]
+      }
+    ]
+  },
   "lessons": [
     {
       "id": "gateway",

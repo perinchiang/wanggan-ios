@@ -15,7 +15,7 @@
 
 ## Windows → iPhone
 
-1. 推送 main 后，GitHub Actions 使用 macOS 构建并执行核心与原生 UI 测试。
+1. 推送 main 后，GitHub Actions 使用 macOS 构建并执行核心与原生 UI 测试（纯文档变更不触发构建；可手动 workflow_dispatch）。
 2. 成功后下载 `WangGan-iPhone-unsigned` artifact，解压得到 `WangGan-unsigned.ipa`。
 3. 从 <https://sideloadly.io/> 安装 Windows 版 Sideloadly，并按官网要求准备 Apple 设备驱动。
 4. 首次用数据线连接 iPhone，解锁并信任电脑。将 IPA 放进 Sideloadly，使用自己的 Apple 账户签名安装。

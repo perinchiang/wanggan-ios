@@ -56,20 +56,24 @@ struct LearningRouteView: View {
                     }
                     VStack(spacing: 12) {
                         HStack {
-                            Text(store.catalog?.chapter ?? "第一章").font(.subheadline.weight(.semibold))
                             Spacer()
                             Text("\(store.completedCount) / \(store.lessons.count)").font(.subheadline.monospacedDigit())
                         }
                         ThinProgress(value: Double(store.completedCount) / Double(max(store.lessons.count, 1)))
                     }
-                    VStack(spacing: 0) {
-                        ForEach(store.lessons) { lesson in
-                            let done = store.ledger.lessons[lesson.id] != nil
-                            let unlocked = store.isUnlocked(lesson)
-                            let current = lesson.id == store.currentLesson?.id && !done
-                            RouteRow(lesson: lesson, done: done, current: current, unlocked: unlocked,
-                                     isLast: lesson.id == store.lessons.last?.id) {
-                                if unlocked { openLesson(lesson) } else { lockedTitle = lesson.title }
+                    ForEach(store.chapters) { chapter in
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(chapter.title).font(.subheadline.weight(.semibold))
+                            VStack(spacing: 0) {
+                                ForEach(store.lessons(in: chapter)) { lesson in
+                                    let done = store.ledger.lessons[lesson.id] != nil
+                                    let unlocked = store.isUnlocked(lesson)
+                                    let current = lesson.id == store.currentLesson?.id && !done
+                                    RouteRow(lesson: lesson, done: done, current: current, unlocked: unlocked,
+                                             isLast: lesson.id == store.orderedLessonIDs.last) {
+                                        if unlocked { openLesson(lesson) } else { lockedTitle = lesson.title }
+                                    }
+                                }
                             }
                         }
                     }

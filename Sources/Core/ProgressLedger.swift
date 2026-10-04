@@ -86,6 +86,12 @@ struct ProgressLedger: Codable, Equatable {
         return progress.nextReviewAt <= now
     }
 
+    func isUnlocked(_ id: String, in orderedIDs: [String]) -> Bool {
+        guard let index = orderedIDs.firstIndex(of: id) else { return false }
+        if lessons[id] != nil { return true }
+        return index == 0 || lessons[orderedIDs[index - 1]] != nil
+    }
+
     @discardableResult
     mutating func complete(_ session: LessonSession, now: Date = Date(), calendar: Calendar = .current) -> Int {
         guard session.stage == .complete, session.challengeSolved, session.matchingSolved else { return 0 }
