@@ -32,6 +32,14 @@ struct LessonPlayer: View {
                 .onChange(of: session.explanationIndex) { _, _ in
                     withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { proxy.scrollTo("explanation-bottom", anchor: .bottom) }
                 }
+                .onChange(of: conversationScrollTarget) { _, target in
+                    guard let target else { return }
+                    withAnimation(reduceMotion ? nil : .easeOut(duration: 0.28)) { proxy.scrollTo(target, anchor: .top) }
+                }
+                .task {
+                    await Task.yield()
+                    if let target = conversationScrollTarget { proxy.scrollTo(target, anchor: .top) }
+                }
             }
         }
         .background(Theme.paper)
@@ -65,9 +73,7 @@ struct LessonPlayer: View {
             TutorBubble(text: "沿着数据走一遍，就清楚了。")
             ConceptIllustration(lesson: lesson, animated: true)
             ForEach(Array(lesson.explanation.prefix(session.explanationIndex + 1)), id: \.self) { paragraph in
-                Text(paragraph).font(.body).lineSpacing(7)
-                    .padding(18).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Theme.surface, in: .rect(cornerRadius: 18))
+                ConversationBubble(text: paragraph)
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
             Button { showSources = true } label: { Label("看看知识来源", systemImage: "book.closed").font(.caption).frame(minHeight: 44) }
@@ -93,43 +99,63 @@ struct LessonPlayer: View {
     private func questionContent(_ question: Question, challenge: Bool) -> some View {
         let selected = challenge ? session.challengeAnswer : session.selectedAnswer
         let submitted = challenge ? session.challengeSubmitted : session.answerSubmitted
+        let ready = session.sceneIsComplete(for: question, challenge: challenge)
         return VStack(alignment: .leading, spacing: 18) {
-            TutorBubble(text: question.prompt)
-            if !challenge { ConceptIllustration(lesson: lesson) }
-            VStack(alignment: .leading, spacing: 8) {
-                Label("本题场景", systemImage: "info.circle").font(.caption.weight(.semibold))
-                Text(question.context).font(.caption).lineSpacing(4).foregroundStyle(Theme.muted)
-            }.padding(14).background(Theme.line.opacity(0.22), in: .rect(cornerRadius: 14))
-            ForEach(question.options) { option in
-                Button {
-                    if challenge { session.challengeAnswer = option.id }
-                    else { session.selectedAnswer = option.id }
-                    feedbackTick += 1
-                } label: {
-                    HStack(alignment: .center, spacing: 12) {
-                        Image(systemName: selected == option.id ? "checkmark.circle.fill" : "circle")
-                            .font(.title3).foregroundStyle(selected == option.id ? Theme.ink : Theme.muted)
-                        Text(option.text).font(.body.weight(.medium)).multilineTextAlignment(.leading)
-                        Spacer(minLength: 0)
-                    }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
-                        .background(selected == option.id ? Theme.lime.opacity(0.22) : Theme.surface, in: .rect(cornerRadius: 17))
-                        .overlay(RoundedRectangle(cornerRadius: 17).strokeBorder(selected == option.id ? Theme.ink : Theme.line, lineWidth: selected == option.id ? 1.5 : 1))
+            QuestionConversation(question: question, lesson: lesson,
+                                 step: session.sceneStep(for: question, challenge: challenge), challenge: challenge)
+            if ready {
+                ForEach(question.options) { option in
+                    Button {
+                        if challenge { session.challengeAnswer = option.id }
+                        else { session.selectedAnswer = option.id }
+                        feedbackTick += 1
+                    } label: {
+                        HStack(alignment: .center, spacing: 12) {
+                            Image(systemName: selected == option.id ? "checkmark.circle.fill" : "circle")
+                                .font(.title3).foregroundStyle(selected == option.id ? Theme.ink : Theme.muted)
+                            Text(option.text).font(.body.weight(.medium)).multilineTextAlignment(.leading)
+                            Spacer(minLength: 0)
+                        }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
+                            .background(selected == option.id ? Theme.lime.opacity(0.22) : Theme.surface, in: .rect(cornerRadius: 17))
+                            .overlay(RoundedRectangle(cornerRadius: 17).strokeBorder(selected == option.id ? Theme.ink : Theme.line, lineWidth: selected == option.id ? 1.5 : 1))
+                    }
+                    .buttonStyle(PressStyle()).disabled(submitted)
+                    .accessibilityAddTraits(selected == option.id ? .isSelected : [])
+                    .accessibilityIdentifier("\(challenge ? "challenge" : "question")-option-\(option.id)")
                 }
-                .buttonStyle(PressStyle()).disabled(submitted)
-                .accessibilityAddTraits(selected == option.id ? .isSelected : [])
-                .accessibilityIdentifier("\(challenge ? "challenge" : "question")-option-\(option.id)")
-            }
-            if submitted, let answer = question.options.first(where: { $0.id == selected }) {
-                feedbackCard(title: selected == question.correctID ? "判断正确" : "这里值得再想想", text: answer.feedback,
-                             correct: selected == question.correctID)
-                if challenge && !session.challengeSolved {
-                    Text("一点提示：\(question.hint)").font(.subheadline).foregroundStyle(Theme.muted).lineSpacing(4)
+                if submitted, let answer = question.options.first(where: { $0.id == selected }) {
+                    feedbackCard(title: selected == question.correctID ? "判断正确" : "这里值得再想想", text: answer.feedback,
+                                 correct: selected == question.correctID)
+                    if challenge && !session.challengeSolved {
+                        Text("一点提示：\(question.hint)").font(.subheadline).foregroundStyle(Theme.muted).lineSpacing(4)
+                    }
+                } else {
+                    Text(challenge ? "用刚才的机制，判断这个新场景。" : "先做出判断，答错也能学会。")
+                        .font(.footnote).foregroundStyle(Theme.muted).frame(maxWidth: .infinity)
                 }
             } else {
-                Text(challenge ? "用刚才的机制，判断这个新场景。" : "先做出判断，答错也能学会。")
-                    .font(.footnote).foregroundStyle(Theme.muted).frame(maxWidth: .infinity)
+                Text("\(min(session.sceneStep(for: question, challenge: challenge) + 1, question.scene.count)) / \(question.scene.count) 条消息")
+                    .font(.caption).foregroundStyle(Theme.muted)
+                    .frame(maxWidth: .infinity).accessibilityIdentifier("scene-progress")
             }
         }
+    }
+
+    private var activeQuestion: Question? {
+        switch session.stage {
+        case .question: return lesson.question
+        case .challenge: return lesson.challenge
+        default: return nil
+        }
+    }
+
+    private var conversationScrollTarget: String? {
+        guard let question = activeQuestion else { return nil }
+        let challenge = session.stage == .challenge
+        let prefix = challenge ? "challenge" : "question"
+        let step = session.sceneStep(for: question, challenge: challenge)
+        if step >= question.scene.count { return "\(prefix)-prompt" }
+        return "\(prefix)-scene-\(question.scene[step].id)"
     }
 
     private func feedbackCard(title: String, text: String, correct: Bool) -> some View {
@@ -156,6 +182,9 @@ struct LessonPlayer: View {
     }
 
     private var buttonTitle: String {
+        if let question = activeQuestion, !session.sceneIsComplete(for: question, challenge: session.stage == .challenge) {
+            return session.sceneStep(for: question, challenge: session.stage == .challenge) + 1 == question.scene.count ? "我来判断" : "继续"
+        }
         switch session.stage {
         case .question: return session.answerSubmitted ? "看看为什么" : "确认答案"
         case .explanation: return session.explanationIndex + 1 < lesson.explanation.count ? "继续看一小步" : "试着连一连"
@@ -166,6 +195,7 @@ struct LessonPlayer: View {
     }
 
     private var buttonEnabled: Bool {
+        if let question = activeQuestion, !session.sceneIsComplete(for: question, challenge: session.stage == .challenge) { return true }
         switch session.stage {
         case .question: return session.selectedAnswer != nil
         case .matching: return session.matches.count == lesson.matching.left.count && (!session.matchingSubmitted || session.matchingSolved)
@@ -181,6 +211,12 @@ struct LessonPlayer: View {
 
     private func performAction() {
         feedbackTick += 1
+        if let question = activeQuestion, !session.sceneIsComplete(for: question, challenge: session.stage == .challenge) {
+            withAnimation(reduceMotion ? nil : .spring(response: 0.36, dampingFraction: 0.85)) {
+                session.revealNextScene(for: question, challenge: session.stage == .challenge)
+            }
+            return
+        }
         withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) {
             switch session.stage {
             case .question:
@@ -194,7 +230,7 @@ struct LessonPlayer: View {
                 if session.challengeSolved {
                     session.advance(lesson: lesson)
                     session.earnedXP = store.finish(session)
-                } else if session.challengeSubmitted { session.retryChallenge() }
+                } else if session.challengeSubmitted { session.retryChallenge(question: lesson.challenge) }
                 else { session.submitChallenge(lesson.challenge) }
             case .complete:
                 if let nextLesson { onNext(nextLesson) } else { dismiss() }

@@ -77,7 +77,9 @@ struct ConceptIllustration: View {
     let lesson: Lesson
     var animated = false
     var body: some View {
-        if lesson.diagram == "gateway" || lesson.diagram == "arp" {
+        if lesson.diagram == "subnet", let devices = lesson.question.devices {
+            AddressComparison(devices: devices, identifier: "explanation-addresses")
+        } else if lesson.diagram == "gateway" || lesson.diagram == "arp" {
             NetworkDiagram(animated: animated, kind: lesson.diagram)
         } else {
             Surface {
@@ -86,9 +88,9 @@ struct ConceptIllustration: View {
                         Image(systemName: lesson.diagram == "dns" ? "text.magnifyingglass" : "network")
                             .font(.largeTitle).padding(14).background(Theme.lime, in: .rect(cornerRadius: 18))
                         VStack(alignment: .leading, spacing: 8) {
-                            Text(lesson.diagram == "subnet" ? "192.168.1.10 /24" : lesson.diagram == "hop" ? "IP 包 → 下一跳的帧" : "名字 → 地址")
+                            Text(lesson.diagram == "hop" ? "IP 包 → 下一跳的帧" : "名字 → 地址")
                                 .font(.headline.monospaced())
-                            Text(lesson.diagram == "subnet" ? "地址 + 掩码，一起判断" : lesson.diagram == "hop" ? "每一段链路，重新交付" : "解析成功，再尝试连接")
+                            Text(lesson.diagram == "hop" ? "每一段链路，重新交付" : "解析成功，再尝试连接")
                                 .font(.caption).foregroundStyle(Theme.muted)
                         }
                         Spacer(minLength: 0)

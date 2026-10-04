@@ -9,6 +9,9 @@ struct LessonSession: Codable, Equatable, Identifiable {
     let lessonID: String
     var stage: LessonStage = .question
     var selectedAnswer: String?
+    // Optional fields preserve decoding of drafts saved before conversation scenes existed.
+    var questionSceneStep: Int?
+    var challengeSceneStep: Int?
     var answerSubmitted = false
     var explanationIndex = 0
     var matches: [String: String] = [:]
@@ -23,6 +26,24 @@ struct LessonSession: Codable, Equatable, Identifiable {
     init(lessonID: String) {
         self.id = UUID()
         self.lessonID = lessonID
+    }
+
+    func sceneStep(for question: Question, challenge: Bool) -> Int {
+        // Existing drafts with an answer should resume at the answer, not replay the setup.
+        let hasAnswer = challenge ? challengeAnswer != nil || challengeSubmitted : selectedAnswer != nil || answerSubmitted
+        if hasAnswer { return question.scene.count }
+        let saved = challenge ? challengeSceneStep : questionSceneStep
+        return min(max(saved ?? 0, 0), question.scene.count)
+    }
+
+    func sceneIsComplete(for question: Question, challenge: Bool) -> Bool {
+        sceneStep(for: question, challenge: challenge) == question.scene.count
+    }
+
+    mutating func revealNextScene(for question: Question, challenge: Bool) {
+        let next = min(sceneStep(for: question, challenge: challenge) + 1, question.scene.count)
+        if challenge { challengeSceneStep = next }
+        else { questionSceneStep = next }
     }
 
     mutating func submitQuestion(_ question: Question) {
@@ -55,8 +76,9 @@ struct LessonSession: Codable, Equatable, Identifiable {
         if !challengeSolved { mistakes += 1 }
     }
 
-    mutating func retryChallenge() {
+    mutating func retryChallenge(question: Question) {
         guard !challengeSolved else { return }
+        challengeSceneStep = sceneStep(for: question, challenge: true)
         challengeSubmitted = false
         challengeAnswer = nil
     }

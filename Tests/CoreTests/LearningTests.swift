@@ -89,7 +89,7 @@ final class LearningTests: XCTestCase {
         session.submitChallenge(lesson.challenge)
         session.advance(lesson: lesson)
         XCTAssertEqual(session.stage, .challenge)
-        session.retryChallenge()
+        session.retryChallenge(question: lesson.challenge)
         XCTAssertNil(session.challengeAnswer)
         session.challengeAnswer = "yes"
         session.submitChallenge(lesson.challenge)
@@ -134,5 +134,31 @@ final class LearningTests: XCTestCase {
         let restored = try JSONDecoder().decode(ProgressLedger.self, from: saved)
         XCTAssertEqual(ledger, restored)
         XCTAssertEqual(restored.draft?.explanationIndex, 1)
+    }
+
+    func testConversationProgressPersistsAndLegacyDraftsStillDecode() throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first)
+        var session = LessonSession(lessonID: lesson.id)
+        XCTAssertEqual(session.sceneStep(for: lesson.question, challenge: false), 0)
+        XCTAssertFalse(session.sceneIsComplete(for: lesson.question, challenge: false))
+        session.revealNextScene(for: lesson.question, challenge: false)
+        let restored = try JSONDecoder().decode(LessonSession.self, from: JSONEncoder().encode(session))
+        XCTAssertEqual(restored.sceneStep(for: lesson.question, challenge: false), 1)
+        for _ in 0..<10 { session.revealNextScene(for: lesson.question, challenge: false) }
+        XCTAssertEqual(session.questionSceneStep, lesson.question.scene.count)
+        XCTAssertTrue(session.sceneIsComplete(for: lesson.question, challenge: false))
+        XCTAssertFalse(session.sceneIsComplete(for: lesson.challenge, challenge: true))
+
+        session.stage = .challenge
+        session.challengeAnswer = lesson.challenge.correctID
+        var oldDraft = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(session)) as? [String: Any])
+        oldDraft.removeValue(forKey: "questionSceneStep")
+        oldDraft.removeValue(forKey: "challengeSceneStep")
+        var legacy = try JSONDecoder().decode(LessonSession.self, from: JSONSerialization.data(withJSONObject: oldDraft))
+        XCTAssertEqual(legacy.stage, .challenge)
+        XCTAssertEqual(legacy.challengeAnswer, lesson.challenge.correctID)
+        XCTAssertTrue(legacy.sceneIsComplete(for: lesson.challenge, challenge: true))
+        legacy.retryChallenge(question: lesson.challenge)
+        XCTAssertTrue(legacy.sceneIsComplete(for: lesson.challenge, challenge: true))
     }
 }
