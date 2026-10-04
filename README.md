@@ -56,6 +56,16 @@ SwiftUI 在 Windows 上不能本地编译预览。以 Actions 运行记录确认
 - `Tests`：核心测试和原生 UI 测试。
 - `project.yml`：XcodeGen 工程定义。
 
+## 开发文档
+
+本 README 描述当前 MVP；下列文档分别标注已实现、计划中、Draft 与暂缓内容，不代表未来能力已经上线。
+
+- [PRODUCT.md](PRODUCT.md)：产品定位、功能边界与演进阶段。
+- [DESIGN.md](DESIGN.md)：视觉规范、网络原生动效语言、声音与触感、Dark Mode 方向。
+- [COURSE_GUIDE.md](COURSE_GUIDE.md)：教学与题目规范、可调整的课程内容地图（Draft）。
+- [ARCHITECTURE.md](ARCHITECTURE.md)：系统边界、最小 Web 可视化试点、学习记录、迁移与测试。
+- [AGENTS.md](AGENTS.md)：项目开发与 AI 协作约定。
+
 ## 内容约定
 
 题干给完整场景与前提，选项预测结果；每个错误选项针对一种误解。解释机制后，再只改变少量条件做迁移判断。引用 RFC 作为机制依据，场景与文字自行编写。经验不等同于专业能力认证。
