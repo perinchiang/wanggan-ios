@@ -13,6 +13,7 @@
 | --- | --- |
 | `Sources/Core/Lesson.swift` | Course（id / revision / title）与 Chapter（id / title / orderedLessonIDs）目录模型；Lesson 固定包含 question / explanation / matching / challenge；课程与章节覆盖校验 |
 | `Sources/Core/LessonSession.swift` | question → explanation → matching → challenge → complete；课内状态、重试和累计错误数 |
+| `Sources/Core/LessonPlan.swift` | Step 类型与 payload（conversation / question / diagram / text / matching / summary）、Lesson→steps 适配、LessonPlan 步进门控与 StepSession；当前播放器仍走 stage 状态机 |
 | `Sources/Core/ProgressLedger.swift` | 完成记录、XP / 等级、复习日期、活动日、结算会话、主线 draft 与 reviewDrafts |
 | `Sources/App/AppStore.swift` | 加载课程、UserDefaults 编解码、解锁与推荐、保存及重置 |
 | `Sources/App` 其余文件 | SwiftUI 导航、页面、原生题型和图示 |
@@ -66,7 +67,7 @@ ReviewItem: id, lessonID, knowledgePointIDs, scenarioFamilyID, steps
 
 这是模型职责草案，不是要求一次添加所有字段。KnowledgePoint 独立定义并由多课引用；稳定 ID 不使用显示名称或章节序号。内容版本、Lesson 修订、存储 schema 与 Web 协议版本各自解决不同兼容问题。
 
-Step 使用有类型的 payload，不把所有内容放入无约束字典。先用 Conversation、Text、NativeDiagram、Question、Matching、Summary 表达现有内容，再按试点需要加入 HTMLVisualization；这些是拟引入的 Step 类型，当前尚无通用 Step 模型。Sorting、PathChoice 等有真实课程需求后再增加。
+Step 使用有类型的 payload，不把所有内容放入无约束字典。`conversation`、`question`、`diagram`、`text`、`matching`、`summary` 已在 Core 落地（`LessonPlan` / `LessonStep`），`Lesson.steps` 适配器把旧 Lesson 映射为等价步骤；播放器尚未切换到 step 路径。Sorting、PathChoice 等有真实课程需求后再增加。HTMLVisualization 留待可视化试点接入。
 
 Challenge 是练习角色 / 组合，不必复制一套专用答案状态。会话最终按稳定 stepID 保存位置，而不是只依赖枚举序号；兼容适配器先把旧 Lesson 映射为等价步骤。不要把五课同时改写来验证新播放器。
 

@@ -1,0 +1,228 @@
+import Foundation
+
+enum StepKind: String, Codable {
+    case conversation
+    case question
+    case diagram
+    case text
+    case matching
+    case summary
+}
+
+enum StepPayload: Codable, Equatable {
+    case conversation(SceneMessage)
+    case question(Question)
+    case diagram(String)
+    case text(String)
+    case matching(MatchingExercise)
+    case summary(String)
+
+    var kind: StepKind {
+        switch self {
+        case .conversation: return .conversation
+        case .question: return .question
+        case .diagram: return .diagram
+        case .text: return .text
+        case .matching: return .matching
+        case .summary: return .summary
+        }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case kind, conversation, question, diagram, text, matching, summary
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        switch try container.decode(StepKind.self, forKey: .kind) {
+        case .conversation:
+            self = .conversation(try container.decode(SceneMessage.self, forKey: .conversation))
+        case .question:
+            self = .question(try container.decode(Question.self, forKey: .question))
+        case .diagram:
+            self = .diagram(try container.decode(String.self, forKey: .diagram))
+        case .text:
+            self = .text(try container.decode(String.self, forKey: .text))
+        case .matching:
+            self = .matching(try container.decode(MatchingExercise.self, forKey: .matching))
+        case .summary:
+            self = .summary(try container.decode(String.self, forKey: .summary))
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .conversation(let value):
+            try container.encode(StepKind.conversation, forKey: .kind)
+            try container.encode(value, forKey: .conversation)
+        case .question(let value):
+            try container.encode(StepKind.question, forKey: .kind)
+            try container.encode(value, forKey: .question)
+        case .diagram(let value):
+            try container.encode(StepKind.diagram, forKey: .kind)
+            try container.encode(value, forKey: .diagram)
+        case .text(let value):
+            try container.encode(StepKind.text, forKey: .kind)
+            try container.encode(value, forKey: .text)
+        case .matching(let value):
+            try container.encode(StepKind.matching, forKey: .kind)
+            try container.encode(value, forKey: .matching)
+        case .summary(let value):
+            try container.encode(StepKind.summary, forKey: .kind)
+            try container.encode(value, forKey: .summary)
+        }
+    }
+}
+
+struct LessonStep: Codable, Equatable, Identifiable {
+    let id: String
+    let payload: StepPayload
+
+    var kind: StepKind { payload.kind }
+}
+
+extension Lesson {
+    var steps: [LessonStep] {
+        var result: [LessonStep] = []
+        for message in question.scene {
+            result.append(LessonStep(id: "\(id).question.scene.\(message.id)", payload: .conversation(message)))
+        }
+        result.append(LessonStep(id: "\(id).question", payload: .question(question)))
+        result.append(LessonStep(id: "\(id).diagram", payload: .diagram(diagram)))
+        for (index, paragraph) in explanation.enumerated() {
+            result.append(LessonStep(id: "\(id).explanation.\(index)", payload: .text(paragraph)))
+        }
+        result.append(LessonStep(id: "\(id).matching", payload: .matching(matching)))
+        for message in challenge.scene {
+            result.append(LessonStep(id: "\(id).challenge.scene.\(message.id)", payload: .conversation(message)))
+        }
+        result.append(LessonStep(id: "\(id).challenge", payload: .question(challenge)))
+        result.append(LessonStep(id: "\(id).summary", payload: .summary(takeaway)))
+        return result
+    }
+}
+
+struct StepSession: Codable, Equatable {
+    let lessonID: String
+    var stepIndex = 0
+    var selectedAnswer: String?
+    var answerSubmitted = false
+    var matches: [String: String] = [:]
+    var matchingSubmitted = false
+    var matchingSolved = false
+    var challengeAnswer: String?
+    var challengeSubmitted = false
+    var challengeSolved = false
+    var mistakes = 0
+
+    init(lessonID: String) {
+        self.lessonID = lessonID
+    }
+}
+
+struct LessonPlan {
+    let lesson: Lesson
+    let steps: [LessonStep]
+    let questionSceneCount: Int
+    let questionIndex: Int
+    let matchingIndex: Int
+    let challengeSceneCount: Int
+    let challengeIndex: Int
+    let summaryIndex: Int
+
+    init(lesson: Lesson) {
+        let steps = lesson.steps
+        self.lesson = lesson
+        self.steps = steps
+        questionSceneCount = lesson.question.scene.count
+        questionIndex = steps.firstIndex { $0.id == "\(lesson.id).question" }!
+        matchingIndex = steps.firstIndex { $0.id == "\(lesson.id).matching" }!
+        challengeSceneCount = lesson.challenge.scene.count
+        challengeIndex = steps.firstIndex { $0.id == "\(lesson.id).challenge" }!
+        summaryIndex = steps.firstIndex { $0.id == "\(lesson.id).summary" }!
+    }
+
+    func step(at index: Int) -> LessonStep? {
+        guard steps.indices.contains(index) else { return nil }
+        return steps[index]
+    }
+
+    func question(at index: Int) -> Question? {
+        guard let step = step(at: index) else { return nil }
+        if case .question(let question) = step.payload { return question }
+        return nil
+    }
+
+    func matching(at index: Int) -> MatchingExercise? {
+        guard let step = step(at: index) else { return nil }
+        if case .matching(let exercise) = step.payload { return exercise }
+        return nil
+    }
+
+    func isComplete(_ session: StepSession) -> Bool {
+        session.challengeSolved && session.stepIndex >= summaryIndex
+    }
+
+    func canAdvance(_ session: StepSession) -> Bool {
+        guard let step = step(at: session.stepIndex) else { return false }
+        switch step.kind {
+        case .conversation, .diagram, .text, .summary:
+            return true
+        case .question:
+            if session.stepIndex == questionIndex { return session.answerSubmitted }
+            return session.challengeSolved
+        case .matching:
+            return session.matchingSolved
+        }
+    }
+
+    func advance(_ session: inout StepSession) {
+        guard canAdvance(session), session.stepIndex < summaryIndex else { return }
+        if session.stepIndex == challengeIndex {
+            session.stepIndex = summaryIndex
+        } else {
+            session.stepIndex += 1
+        }
+    }
+
+    func submitAnswer(_ optionID: String, in session: inout StepSession) {
+        guard session.stepIndex == questionIndex, let question = question(at: questionIndex),
+              !session.answerSubmitted,
+              question.options.contains(where: { $0.id == optionID }) else { return }
+        session.selectedAnswer = optionID
+        session.answerSubmitted = true
+        if optionID != question.correctID { session.mistakes += 1 }
+    }
+
+    func connect(_ left: String, to right: String, in session: inout StepSession) {
+        guard let exercise = matching(at: matchingIndex), !session.matchingSolved else { return }
+        session.matches = session.matches.filter { $0.key == left || $0.value != right }
+        session.matches[left] = right
+        session.matchingSubmitted = false
+    }
+
+    func submitMatching(in session: inout StepSession) {
+        guard let exercise = matching(at: matchingIndex), !session.matchingSubmitted,
+              session.matches.count == exercise.left.count else { return }
+        session.matchingSubmitted = true
+        session.matchingSolved = exercise.isCorrect(session.matches)
+        if !session.matchingSolved { session.mistakes += 1 }
+    }
+
+    func submitChallenge(_ optionID: String, in session: inout StepSession) {
+        guard session.stepIndex == challengeIndex, let question = question(at: challengeIndex),
+              !session.challengeSubmitted,
+              question.options.contains(where: { $0.id == optionID }) else { return }
+        session.challengeAnswer = optionID
+        session.challengeSubmitted = true
+        session.challengeSolved = optionID == question.correctID
+        if !session.challengeSolved { session.mistakes += 1 }
+    }
+
+    func retryChallenge(in session: inout StepSession) {
+        guard !session.challengeSolved else { return }
+        session.challengeSubmitted = false
+        session.challengeAnswer = nil
+    }
+}
