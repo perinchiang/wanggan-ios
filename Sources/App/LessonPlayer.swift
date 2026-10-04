@@ -28,17 +28,17 @@ struct LessonPlayer: View {
                         stageContent
                     }.padding(.horizontal, 22).padding(.bottom, 22)
                 }
-                .onChange(of: session.stage) { _, _ in proxy.scrollTo("lesson-top", anchor: .top) }
                 .onChange(of: session.explanationIndex) { _, _ in
                     withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { proxy.scrollTo("explanation-bottom", anchor: .bottom) }
                 }
-                .onChange(of: conversationScrollTarget) { _, target in
-                    guard let target else { return }
-                    withAnimation(reduceMotion ? nil : .easeOut(duration: 0.28)) { proxy.scrollTo(target, anchor: .top) }
-                }
-                .task {
-                    await Task.yield()
-                    if let target = conversationScrollTarget { proxy.scrollTo(target, anchor: .top) }
+                .task(id: scrollRequest) {
+                    // Wait for the inserted bubble to finish laying out before finding its anchor.
+                    // A newer message cancels this task, so quick taps cannot scroll to a stale one.
+                    do { try await Task.sleep(for: .milliseconds(reduceMotion ? 80 : 400)) }
+                    catch { return }
+                    withAnimation(reduceMotion ? nil : .easeOut(duration: 0.24)) {
+                        proxy.scrollTo(conversationScrollTarget ?? "lesson-top", anchor: .top)
+                    }
                 }
             }
         }
@@ -157,6 +157,8 @@ struct LessonPlayer: View {
         if step >= question.scene.count { return "\(prefix)-prompt" }
         return "\(prefix)-scene-\(question.scene[step].id)"
     }
+
+    private var scrollRequest: String { conversationScrollTarget ?? "stage-\(session.stage.rawValue)" }
 
     private func feedbackCard(title: String, text: String, correct: Bool) -> some View {
         VStack(alignment: .leading, spacing: 9) {

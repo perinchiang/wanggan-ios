@@ -15,7 +15,9 @@ final class LearningUITests: XCTestCase {
         let button = app.buttons[id]
         XCTAssertTrue(button.waitForExistence(timeout: 10), "Missing \(id)")
         for _ in 0..<5 {
-            if button.isHittable { break }
+            let isChoice = id.contains("-option-")
+            let aboveFooter = !isChoice || button.frame.midY < app.buttons["primary-action"].frame.minY
+            if button.isHittable && aboveFooter { break }
             app.swipeUp()
         }
         XCTAssertTrue(button.isHittable, "Not hittable: \(id)")
@@ -89,8 +91,11 @@ final class LearningUITests: XCTestCase {
         XCTAssertTrue(secondAddress.isHittable)
         XCTAssertTrue(firstAddress.label.contains("192.168.1.10"))
         XCTAssertTrue(secondAddress.label.contains("192.168.2.20"))
+        XCTAssertTrue(app.buttons["question-option-different"].isHittable)
+        XCTAssertLessThan(app.buttons["question-option-different"].frame.midY, app.buttons["primary-action"].frame.minY)
         screenshot("08-subnet-comparison")
         tap("question-option-different")
+        XCTAssertTrue(app.buttons["primary-action"].isEnabled)
         tap("primary-action")
         tap("primary-action")
         tap("exit-lesson")
