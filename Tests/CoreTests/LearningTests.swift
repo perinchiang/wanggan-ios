@@ -123,6 +123,48 @@ final class LearningTests: XCTestCase {
         XCTAssertEqual(ledger.totalXP, 35)
     }
 
+    func testSameDayZeroRewardErrorStillUpdatesReviewSchedule() throws {
+        var ledger = ProgressLedger()
+        ledger.complete(finished(), now: today, calendar: calendar)
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
+        XCTAssertEqual(ledger.complete(finished(), now: tomorrow, calendar: calendar), 5)
+        var progress = try XCTUnwrap(ledger.lessons["gateway"])
+        XCTAssertEqual(progress.reviewLevel, 1)
+
+        XCTAssertEqual(ledger.complete(finished(mistakes: 2), now: tomorrow, calendar: calendar), 0)
+        progress = try XCTUnwrap(ledger.lessons["gateway"])
+        XCTAssertEqual(progress.reviewLevel, 0)
+        XCTAssertEqual(progress.lastMistakes, 2)
+        XCTAssertEqual(progress.nextReviewAt, calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: tomorrow)))
+        XCTAssertEqual(ledger.totalXP, 35)
+    }
+
+    func testSameDayRepeatedCorrectPracticeCannotAdvanceLadder() throws {
+        var ledger = ProgressLedger()
+        ledger.complete(finished(), now: today, calendar: calendar)
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
+        XCTAssertEqual(ledger.complete(finished(), now: tomorrow, calendar: calendar), 5)
+        XCTAssertEqual(ledger.complete(finished(), now: tomorrow, calendar: calendar), 0)
+        let progress = try XCTUnwrap(ledger.lessons["gateway"])
+        XCTAssertEqual(progress.reviewLevel, 1)
+        XCTAssertEqual(ledger.totalXP, 35)
+    }
+
+    func testErrorThenSameDayCorrectKeepsShortestInterval() throws {
+        var ledger = ProgressLedger()
+        ledger.complete(finished(), now: today, calendar: calendar)
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
+        XCTAssertEqual(ledger.complete(finished(mistakes: 1), now: tomorrow, calendar: calendar), 5)
+        var progress = try XCTUnwrap(ledger.lessons["gateway"])
+        XCTAssertEqual(progress.reviewLevel, 0)
+        let resetDue = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: tomorrow))!
+
+        XCTAssertEqual(ledger.complete(finished(), now: tomorrow, calendar: calendar), 0)
+        progress = try XCTUnwrap(ledger.lessons["gateway"])
+        XCTAssertEqual(progress.reviewLevel, 0)
+        XCTAssertEqual(progress.nextReviewAt, resetDue)
+    }
+
     func testPersistenceRoundTripIncludesDraftAndRewards() throws {
         var ledger = ProgressLedger()
         ledger.complete(finished(), now: today, calendar: calendar)

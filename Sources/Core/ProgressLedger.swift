@@ -94,15 +94,19 @@ struct ProgressLedger: Codable, Equatable {
         let day = calendar.startOfDay(for: now)
         let reward: Int
         if var previous = lessons[session.lessonID] {
-            reward = calendar.isDate(previous.lastPracticedAt, inSameDayAs: now) ? 0 : 5
-            if reward > 0 {
-                previous.reviewLevel = session.mistakes == 0 ? min(previous.reviewLevel + 1, 3) : 0
-                previous.lastPracticedAt = now
-                previous.lastMistakes = session.mistakes
+            let firstPracticeToday = !calendar.isDate(previous.lastPracticedAt, inSameDayAs: now)
+            reward = firstPracticeToday ? 5 : 0
+            previous.lastPracticedAt = now
+            previous.lastMistakes = session.mistakes
+            if session.mistakes > 0 {
+                previous.reviewLevel = 0
+                previous.nextReviewAt = calendar.date(byAdding: .day, value: 1, to: day) ?? now
+            } else if firstPracticeToday {
+                previous.reviewLevel = min(previous.reviewLevel + 1, 3)
                 let interval = [1, 3, 7, 14][previous.reviewLevel]
                 previous.nextReviewAt = calendar.date(byAdding: .day, value: interval, to: day) ?? now
-                lessons[session.lessonID] = previous
             }
+            lessons[session.lessonID] = previous
         } else {
             reward = 30
             lessons[session.lessonID] = LessonProgress(
