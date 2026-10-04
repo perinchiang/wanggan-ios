@@ -14,17 +14,18 @@ struct NetworkDiagram: View {
             let hub = CGPoint(x: w * 0.5, y: h * 0.7)
             let nas = CGPoint(x: w * 0.87, y: h * 0.7)
             let router = CGPoint(x: w * 0.5, y: h * 0.2)
+            let destination = kind == "arp" ? router : nas
             ZStack {
                 Path { path in
                     path.move(to: computer); path.addLine(to: nas)
                     path.move(to: hub); path.addLine(to: router)
                 }.stroke(Theme.line, style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: [5, 5]))
                 if animated {
-                    Path { path in path.move(to: computer); path.addLine(to: nas) }
+                    Path { path in path.move(to: computer); path.addLine(to: hub); path.addLine(to: destination) }
                         .trim(from: 0, to: traveling ? 1 : 0)
                         .stroke(Theme.lime, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                    Circle().fill(Theme.ink).frame(width: 9, height: 9)
-                        .position(x: traveling ? nas.x : computer.x, y: hub.y)
+                    TravelingPacket(progress: traveling ? 1 : 0, start: computer, middle: hub, end: destination)
+                        .fill(Theme.ink)
                 }
                 device("laptopcomputer", "电脑", at: computer)
                 device("switch.2", "交换机", at: hub)
@@ -34,12 +35,12 @@ struct NetworkDiagram: View {
         }
         .frame(height: 180)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("示意图：电脑和 NAS 连接同一交换机，路由器是交换机旁的一条分支。本地通信可以通过交换机直接到达 NAS。")
+        .accessibilityLabel(kind == "arp" ? "示意图：访问远方时，第一跳从电脑经过交换机交给本地网关。" : "示意图：电脑和 NAS 连接同一交换机，路由器是交换机旁的一条分支。本地通信可以通过交换机直接到达 NAS。")
         .task(id: animated) {
             guard animated else { return }
             if reduceMotion { traveling = true }
             else {
-                withAnimation(.easeInOut(duration: 1.7).repeatForever(autoreverses: false)) { traveling = true }
+                withAnimation(.easeInOut(duration: 1.7).repeatCount(2, autoreverses: false)) { traveling = true }
             }
         }
     }
@@ -53,12 +54,31 @@ struct NetworkDiagram: View {
     }
 }
 
+private struct TravelingPacket: Shape {
+    var progress: Double
+    let start: CGPoint
+    let middle: CGPoint
+    let end: CGPoint
+    var animatableData: Double {
+        get { progress }
+        set { progress = newValue }
+    }
+    func path(in rect: CGRect) -> Path {
+        let firstHalf = progress < 0.5
+        let from = firstHalf ? start : middle
+        let to = firstHalf ? middle : end
+        let fraction = CGFloat(firstHalf ? progress * 2 : (progress - 0.5) * 2)
+        let point = CGPoint(x: from.x + (to.x - from.x) * fraction, y: from.y + (to.y - from.y) * fraction)
+        return Path(ellipseIn: CGRect(x: point.x - 5, y: point.y - 5, width: 10, height: 10))
+    }
+}
+
 struct ConceptIllustration: View {
     let lesson: Lesson
     var animated = false
     var body: some View {
         if lesson.diagram == "gateway" || lesson.diagram == "arp" {
-            NetworkDiagram(animated: animated)
+            NetworkDiagram(animated: animated, kind: lesson.diagram)
         } else {
             Surface {
                 VStack(spacing: 14) {

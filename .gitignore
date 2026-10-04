@@ -11,4 +11,6 @@ artifacts/
 .env
 *.p12
 *.mobileprovision
-
+__pycache__/
+*.pyc
+Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png

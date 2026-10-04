@@ -103,7 +103,7 @@ struct PacketMascot: View {
         .accessibilityHidden(true)
         .onAppear {
             guard celebrating, !reduceMotion else { return }
-            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) { lifted = true }
+            withAnimation(.easeInOut(duration: 0.9).repeatCount(3, autoreverses: true)) { lifted = true }
         }
     }
     private var eye: some View {

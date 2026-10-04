@@ -29,6 +29,7 @@
 
 ```sh
 brew install xcodegen
+swift scripts/generate_icon.swift
 xcodegen generate
 open WangGan.xcodeproj
 ```
