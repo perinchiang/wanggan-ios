@@ -5,6 +5,7 @@ final class LearningUITests: XCTestCase {
 
     override func setUpWithError() throws {
         continueAfterFailure = false
+        executionTimeAllowance = 240
         app = XCUIApplication()
         app.launchArguments = ["--uitesting", "--reset-progress"]
         app.launch()
@@ -28,7 +29,7 @@ final class LearningUITests: XCTestCase {
         add(attachment)
     }
 
-    func testFullLessonPersistenceAndNoDuplicateReward() {
+    func testFullLessonPersistenceAndResume() {
         screenshot("01-learning-route")
         tap("lesson-gateway")
         tap("question-option-local")

@@ -19,7 +19,6 @@ targets:
     sources:
       - Sources/Core
       - Sources/App
-    resources:
       - Resources
     settings:
       base:

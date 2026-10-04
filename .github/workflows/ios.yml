@@ -29,6 +29,8 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/device CODE_SIGNING_ALLOWED=NO build > build-device.log 2>&1 || { tail -100 build-device.log; exit 1; }
+          test -f build/device/Build/Products/Release-iphoneos/WangGan.app/lessons.json
+          test -f build/device/Build/Products/Release-iphoneos/WangGan.app/Assets.car
           mkdir -p build/package/Payload
           cp -R build/device/Build/Products/Release-iphoneos/WangGan.app build/package/Payload/
           cd build/package
@@ -41,7 +43,7 @@ jobs:
         run: |
           xcrun simctl boot '${{ steps.simulator.outputs.id }}' || true
           xcrun simctl bootstatus '${{ steps.simulator.outputs.id }}' -b
-          xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Debug -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.id }}' -derivedDataPath build/simulator -resultBundlePath build/UITests.xcresult CODE_SIGNING_ALLOWED=NO test > build-ui.log 2>&1 || { tail -100 build-ui.log; exit 1; }
+          xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Debug -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.id }}' -parallel-testing-enabled NO -derivedDataPath build/simulator -resultBundlePath build/UITests.xcresult CODE_SIGNING_ALLOWED=NO test > build-ui.log 2>&1 || { tail -100 build-ui.log; exit 1; }
       - name: Export simulator screenshots
         if: always()
         run: |
@@ -63,7 +65,6 @@ jobs:
           name: verification
           path: |
             build/screenshots
-            build/UITests.xcresult
             build-device.log
             build-ui.log
           retention-days: 7
