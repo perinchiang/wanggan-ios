@@ -39,12 +39,13 @@ final class StepPlanTests: XCTestCase {
         XCTAssertTrue(plan.canAdvance(session))
         plan.advance(&session)
         for _ in 0..<lesson.explanation.count { plan.advance(&session) }
+        plan.advance(&session)
         XCTAssertEqual(session.stepIndex, plan.matchingIndex)
 
         for (left, right) in lesson.matching.solution { plan.connect(left, to: right, in: &session) }
         plan.submitMatching(in: &session)
         plan.advance(&session)
-        for _ in 1..<plan.challengeSceneCount { plan.advance(&session) }
+        for _ in 0..<plan.challengeSceneCount { plan.advance(&session) }
         XCTAssertEqual(session.stepIndex, plan.challengeIndex)
 
         plan.submitChallenge(lesson.challenge.correctID, in: &session)
@@ -62,10 +63,11 @@ final class StepPlanTests: XCTestCase {
         plan.submitAnswer(lesson.question.correctID, in: &session)
         plan.advance(&session)
         for _ in 0..<lesson.explanation.count { plan.advance(&session) }
+        plan.advance(&session)
         for (left, right) in lesson.matching.solution { plan.connect(left, to: right, in: &session) }
         plan.submitMatching(in: &session)
         plan.advance(&session)
-        for _ in 1..<plan.challengeSceneCount { plan.advance(&session) }
+        for _ in 0..<plan.challengeSceneCount { plan.advance(&session) }
 
         let wrongID = try XCTUnwrap(lesson.challenge.options.first { $0.id != lesson.challenge.correctID }?.id)
         plan.submitChallenge(wrongID, in: &session)
@@ -115,10 +117,12 @@ final class StepPlanTests: XCTestCase {
         XCTAssertEqual(stepSession.mistakes, stageSession.mistakes)
 
         plan.advance(&stepSession)
+        stageSession.advance(lesson: lesson)
         for _ in 0..<lesson.explanation.count {
             plan.advance(&stepSession)
             stageSession.advance(lesson: lesson)
         }
+        plan.advance(&stepSession)
         XCTAssertEqual(stepSession.stepIndex, plan.matchingIndex)
         XCTAssertEqual(stageSession.stage, .matching)
 
@@ -134,7 +138,7 @@ final class StepPlanTests: XCTestCase {
         plan.advance(&stepSession)
         stageSession.advance(lesson: lesson)
         XCTAssertEqual(stageSession.stage, .challenge)
-        for _ in 1..<plan.challengeSceneCount { plan.advance(&stepSession) }
+        for _ in 0..<plan.challengeSceneCount { plan.advance(&stepSession) }
         XCTAssertEqual(stepSession.stepIndex, plan.challengeIndex)
 
         let wrongChallenge = try XCTUnwrap(lesson.challenge.options.first { $0.id != lesson.challenge.correctID }?.id)
