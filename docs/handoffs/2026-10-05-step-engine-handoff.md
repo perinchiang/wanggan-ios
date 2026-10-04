@@ -33,8 +33,8 @@
 ## Verification / 已做验证
 
 - `git diff --check` 通过；静态推演新旧状态机 step 索引与 stage 转换逐段对齐。
-- 运行验证待 push main 触发 CI（`swift test` 将包含 5 个新用例）。
+- 推送 main 触发 GitHub Actions 运行 37241174964 通过：Core 测试（含 5 个新 StepPlan 用例）、真机无签名构建 + IPA、原生 UI 测试全部成功。首轮失败原因是测试脚本漏算 diagram 步骤的推进次数（step 模型比 stage 模型多一个图示步骤），已修正脚本并重跑通过；引擎代码本身无改动。
 
 ## Next recommended task / 推荐下一步
 
-CI 通过后：阶段 D 第二步——`LessonPlayer` 迁移到 LessonPlan / StepSession 路径（先 gateway 一课等价切换，保留全部 accessibility 标识符与 UI 测试），再按需接入草稿保存与结算。
+阶段 D 第二步——`LessonPlayer` 迁移到 LessonPlan / StepSession 路径（先 gateway 一课等价切换，保留全部 accessibility 标识符与 UI 测试），再按需接入草稿保存与结算。
