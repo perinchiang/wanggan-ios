@@ -49,7 +49,7 @@ struct LearningRouteView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 26) {
+                VStack(alignment: .leading, spacing: 20) {
                     HStack { Text("网感").font(.largeTitle.weight(.black)); Spacer(); XPBadge(xp: store.ledger.totalXP) }
                     VStack(alignment: .leading, spacing: 10) {
                         Text("今天，想通一个问题。")
@@ -76,29 +76,32 @@ struct LearningRouteView: View {
                             }
                         }
                     }
-                    if let lesson = recommended {
-                        Surface {
-                            VStack(alignment: .leading, spacing: 16) {
-                                HStack(alignment: .top) {
-                                    VStack(alignment: .leading, spacing: 7) {
-                                        Text(lesson.title).font(.title3.bold())
-                                        Text(store.ledger.draft?.lessonID == lesson.id ? "上次学到的地方，还在这里" : "约 3 分钟 · 4 段探索")
-                                            .font(.subheadline).foregroundStyle(Theme.muted)
-                                    }
-                                    Spacer(minLength: 4)
-                                    PacketMascot(size: 47)
-                                }
-                                PrimaryButton(title: store.ledger.draft?.lessonID == lesson.id ? "继续探索" : "开始探索", identifier: "start-lesson") {
-                                    openLesson(lesson)
-                                }
-                            }
-                        }
-                    }
                     Text("不背答案，练习看懂网络。")
                         .font(.footnote).foregroundStyle(Theme.muted).frame(maxWidth: .infinity)
-                }.padding(.horizontal, 22).padding(.top, 16).padding(.bottom, 26)
+                }.padding(.horizontal, 22).padding(.top, 16).padding(.bottom, 14)
             }
             .background(Theme.paper)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if let lesson = recommended {
+                    VStack(spacing: 12) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(lesson.title).font(.headline)
+                                Text(store.ledger.draft?.lessonID == lesson.id ? "上次学到的地方，还在这里" : "约 3 分钟 · 4 段探索")
+                                    .font(.caption).foregroundStyle(Theme.muted)
+                            }
+                            Spacer(minLength: 4)
+                            PacketMascot(size: 36)
+                        }
+                        PrimaryButton(title: store.ledger.draft?.lessonID == lesson.id ? "继续探索" : "开始探索", identifier: "start-lesson") {
+                            openLesson(lesson)
+                        }
+                    }
+                    .padding(.horizontal, 22).padding(.top, 14).padding(.bottom, 12)
+                    .background(Theme.paper)
+                    .overlay(alignment: .top) { Rectangle().fill(Theme.line.opacity(0.6)).frame(height: 1) }
+                }
+            }
             .toolbar(.hidden, for: .navigationBar)
             .toolbarBackground(Theme.paper, for: .tabBar)
             .toolbarBackground(.visible, for: .tabBar)
@@ -128,13 +131,13 @@ struct RouteRow: View {
                     }
                     if !isLast {
                         LineSegment().stroke(Theme.line, style: StrokeStyle(lineWidth: 2, dash: [3, 4]))
-                            .frame(width: 2).frame(minHeight: 28)
+                            .frame(width: 2).frame(minHeight: 20)
                     }
                 }.frame(width: 43)
                 VStack(alignment: .leading, spacing: 6) {
                     Text(lesson.title).font(.headline).foregroundStyle(unlocked ? Theme.ink : Theme.muted)
                     Text(lesson.subtitle).font(.caption).foregroundStyle(Theme.muted)
-                }.padding(.top, 5).padding(.bottom, 22)
+                }.padding(.top, 5).padding(.bottom, 14)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 10).padding(.top, 8)

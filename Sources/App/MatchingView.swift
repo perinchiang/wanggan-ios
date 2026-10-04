@@ -16,7 +16,7 @@ struct MatchingView: View {
     var body: some View {
         VStack(spacing: 18) {
             HStack {
-                Text("访问目标").frame(maxWidth: .infinity)
+                Text("给定条件").frame(maxWidth: .infinity)
                 Spacer().frame(width: 54)
                 Text("对应关系").frame(maxWidth: .infinity)
             }.font(.caption).foregroundStyle(Theme.muted)

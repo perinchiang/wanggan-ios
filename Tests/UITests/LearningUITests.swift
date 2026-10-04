@@ -23,6 +23,8 @@ final class LearningUITests: XCTestCase {
     }
 
     private func screenshot(_ name: String) {
+        // Give short native transitions time to finish before exporting evidence.
+        Thread.sleep(forTimeInterval: 1)
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = name
         attachment.lifetime = .keepAlways
@@ -30,8 +32,10 @@ final class LearningUITests: XCTestCase {
     }
 
     func testFullLessonPersistenceAndResume() {
+        XCTAssertTrue(app.buttons["start-lesson"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["start-lesson"].isHittable, "Start should be visible without scrolling")
         screenshot("01-learning-route")
-        tap("lesson-gateway")
+        tap("start-lesson")
         tap("question-option-local")
         screenshot("02-selected-answer")
         tap("primary-action")
@@ -54,8 +58,8 @@ final class LearningUITests: XCTestCase {
         tap("challenge-option-yes")
         tap("primary-action")
         tap("primary-action")
-        screenshot("05-completion")
         XCTAssertTrue(app.staticTexts["+30 XP"].waitForExistence(timeout: 5))
+        screenshot("05-completion")
         tap("finish-session")
 
         app.terminate()

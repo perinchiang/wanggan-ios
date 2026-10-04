@@ -56,7 +56,7 @@ struct ProfileView: View {
                     }
                     Button("重置学习进度", role: .destructive) { confirmReset = true }
                         .font(.subheadline).frame(minHeight: 44)
-                    Text("网感 0.1 · 原生 SwiftUI 体验版")
+                    Text("网感 0.1.1 · 原生 SwiftUI 体验版")
                         .font(.caption).foregroundStyle(Theme.muted).frame(maxWidth: .infinity)
                 }.padding(22)
             }.background(Theme.paper).navigationTitle("我的").navigationBarTitleDisplayMode(.inline)
