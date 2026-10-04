@@ -22,18 +22,19 @@
 
 ## Not completed / 尚未完成
 
-- 本机无 Swift / iOS 工具链，`swift test` 与 UI 测试未运行，需 macOS CI 验证。
-- PRODUCT.md 阶段 B 完成状态未标记（等 CI 通过后再更新）。
+- 无；CI 已通过，PRODUCT.md 阶段 B 已标记完成。
 
 ## Known issues / 已知问题
 
-- 静态推演确认现有 13 个 Core 测试与 3 个 UI 测试应无回归，但这不是运行证据。
+- GitHub Actions 提示 actions/checkout@v4 与 upload-artifact@v4 仍运行在 Node 20（2025-09 已弃用），后续可升级 major 版本；当前不影响构建。
 - 其余基线风险仍在：`LearningStore` 课程加载失败时可能清草稿；未知 schema 缺少受保护恢复路径；数组前驱解锁不适合课程重排。
 
 ## Verification / 已做验证
 
 - `git diff --check` 通过；逐用例推演现有测试与新增测试的行为（静态，未运行）。
+- 推送 main 后 GitHub Actions 运行 37237735926 通过：`swift test`（16 个 Core 测试含 3 个新用例）、真机无签名构建 + IPA、原生 UI 测试全部成功，验证产物已上传。
+- PRODUCT.md 阶段 B 已标记完成（2026-10-05）。
 
 ## Next recommended task / 推荐下一步
 
-push main 触发 GitHub Actions：确认 Core 测试、UI 测试与 IPA 导出通过后，把 PRODUCT.md 阶段 B 标记为完成，再进入阶段 C 课程目录。
+进入阶段 C 课程目录（Course / Chapter 包装与稳定引用，不撤销原有成果）。
