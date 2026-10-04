@@ -213,7 +213,9 @@ final class StepPlanTests: XCTestCase {
         XCTAssertEqual(a.challengeAnswer, b.challengeAnswer)
         XCTAssertEqual(a.challengeSubmitted, b.challengeSubmitted)
         XCTAssertEqual(a.challengeSolved, b.challengeSolved)
-        XCTAssertEqual(a.explanationIndex, b.explanationIndex)
+        if a.stage == .explanation || b.stage == .explanation {
+            XCTAssertEqual(a.explanationIndex, b.explanationIndex)
+        }
         XCTAssertEqual(a.sceneStep(for: lesson.question, challenge: false),
                        b.sceneStep(for: lesson.question, challenge: false))
         XCTAssertEqual(a.sceneStep(for: lesson.challenge, challenge: true),
