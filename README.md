@@ -15,8 +15,8 @@
 
 ## Windows → iPhone
 
-1. 推送 main 后，GitHub Actions 使用 macOS 构建并执行核心与原生 UI 测试（纯文档变更不触发构建；可手动 workflow_dispatch）。
-2. 成功后下载 `WangGan-iPhone-unsigned` artifact，解压得到 `WangGan-unsigned.ipa`。
+1. 阶段性验收或需要交付新安装包时，手动触发 GitHub Actions 的 `Build and test iOS` 工作流；它会在 macOS 上运行核心测试、原生 UI 测试并构建 iPhone App。普通提交不会自动触发。
+2. 运行成功后下载 `WangGan-iPhone-unsigned` artifact，解压得到 `WangGan-unsigned.ipa`。
 3. 从 <https://sideloadly.io/> 安装 Windows 版 Sideloadly，并按官网要求准备 Apple 设备驱动。
 4. 首次用数据线连接 iPhone，解锁并信任电脑。将 IPA 放进 Sideloadly，使用自己的 Apple 账户签名安装。
 5. 根据手机提示信任开发者；iOS 16+ 开启“设置 → 隐私与安全性 → 开发者模式”。
@@ -46,7 +46,7 @@ swift test
 
 核心测试覆盖课程完整性、错题重试、连线一对一关系、阶段门控、奖励幂等、复习日期和进度序列化。GitHub Actions 另外运行 iOS UI 测试，验证实际小节完成、进度持久化与退出续学，并导出模拟器截图。
 
-SwiftUI 在 Windows 上不能本地编译预览。以 Actions 运行记录确认构建状态，不把静态检查当成真机测试。
+SwiftUI 在 Windows 上不能本地编译预览。Actions 结果只证明对应 commit 的构建和测试状态；之后的未验证提交须另行标注，不把静态检查当成真机测试。
 
 ## 结构
 

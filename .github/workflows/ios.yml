@@ -1,15 +1,5 @@
 name: Build and test iOS
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'Sources/**'
-      - 'Tests/**'
-      - 'Resources/**'
-      - 'Package.swift'
-      - 'project.yml'
-      - 'scripts/**'
-      - '.github/workflows/ios.yml'
   workflow_dispatch:
 permissions:
   contents: read

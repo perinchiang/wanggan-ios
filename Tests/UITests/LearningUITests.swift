@@ -156,7 +156,7 @@ final class LearningUITests: XCTestCase {
         XCTAssertFalse(app.buttons["primary-action"].isEnabled)
         tap("question-option-all-fail")
         tap("primary-action")
-        let feedback = app.descendants(matching: .any)["answer-feedback"]
+        let feedback = app.staticTexts["你把网关当成了所有通信的必经之路。先看看：目标就在本地时，需要它转交吗？"]
         XCTAssertTrue(feedback.waitForExistence(timeout: 5))
         let footer = app.buttons["primary-action"]
         let deadline = Date().addingTimeInterval(5)

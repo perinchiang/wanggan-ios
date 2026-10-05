@@ -198,4 +198,4 @@ schemaVersion、课程内容版本、Lesson revision、Web 契约版本独立管
 
 现有五课必须继续存在，但新增内容后不再将课程总数固定为 5；不得改为断言 Draft 总数 42。未来缺失或循环先修引用应在内容校验中发现。
 
-当前 CI 在 main push（Sources / Tests / Resources 等代码与资源相关变更）或手动触发时运行；纯文档变更不触发构建，需要完整验证时用 workflow_dispatch。采用 PR 协作后再补 `pull_request` 检查。Windows 上不能执行的 Swift / iOS 检查，应明确交由 macOS CI 或 Mac，报告未执行项，不能把静态检查称作模拟器或真机验证。文档变更不必为了形式重复完整 iOS 构建。
+当前 iOS 工作流仅通过 workflow_dispatch 手动触发，以节省 GitHub Actions 额度；日常提交先积累，在阶段性验收、较大版本交付或风险需要时运行完整构建、测试与 IPA 导出。采用 PR 协作后再评估是否增加轻量检查。Windows 上不能执行的 Swift / iOS 检查，应明确交由 macOS CI 或 Mac，报告未执行项，不能把静态检查称作模拟器或真机验证。文档变更不必为了形式重复完整 iOS 构建。
