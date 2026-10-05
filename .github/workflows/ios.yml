@@ -52,16 +52,27 @@ jobs:
         run: |
           xcrun simctl boot '${{ steps.simulator.outputs.id }}' || true
           xcrun simctl bootstatus '${{ steps.simulator.outputs.id }}' -b
+          python3 scripts/run_command_with_timeout.py --log build-simulator.log --idle-timeout 180 --wall-timeout 600 -- xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Debug -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.id }}' -derivedDataPath build/simulator CODE_SIGNING_ALLOWED=NO build-for-testing
+          mkdir -p build/screenshots
+          xcrun simctl install '${{ steps.simulator.outputs.id }}' build/simulator/Build/Products/Debug-iphonesimulator/WangGan.app
+          xcrun simctl launch '${{ steps.simulator.outputs.id }}' com.perinchiang.wanggan --uitesting --reset-progress --seed-before-subnet | tee launch-simulator.log
+          sleep 15
+          xcrun simctl io '${{ steps.simulator.outputs.id }}' screenshot build/screenshots/before-ui-tests.png
+          xcrun simctl spawn '${{ steps.simulator.outputs.id }}' launchctl list | grep -i wanggan >> launch-simulator.log || true
+          xcrun simctl spawn '${{ steps.simulator.outputs.id }}' log show --last 2m --style compact --predicate 'process == "WangGan"' >> launch-simulator.log || true
+          xcrun simctl terminate '${{ steps.simulator.outputs.id }}' com.perinchiang.wanggan || true
           scope_args=()
           if [ '${{ inputs.ui_scope }}' = 'ipv4' ]; then
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testSubnetResumesAndCompletesOnStepPlayer')
           fi
-          python3 scripts/run_command_with_timeout.py --log build-ui.log --idle-timeout 180 --wall-timeout 1200 -- xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Debug -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.id }}' -parallel-testing-enabled NO -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 -derivedDataPath build/simulator -resultBundlePath build/UITests.xcresult "${scope_args[@]}" CODE_SIGNING_ALLOWED=NO test
+          python3 scripts/run_command_with_timeout.py --log build-ui.log --idle-timeout 180 --wall-timeout 1200 -- xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Debug -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.id }}' -parallel-testing-enabled NO -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 -derivedDataPath build/simulator -resultBundlePath build/UITests.xcresult "${scope_args[@]}" CODE_SIGNING_ALLOWED=NO test-without-building
       - name: Export simulator screenshots
         if: always()
         run: |
           mkdir -p build/screenshots
           xcrun simctl io '${{ steps.simulator.outputs.id }}' screenshot build/screenshots/final-simulator.png || true
+          xcrun simctl spawn '${{ steps.simulator.outputs.id }}' log show --last 10m --style compact --predicate 'process == "WangGan"' > build/screenshots/app-runtime.log || true
+          find "$HOME/Library/Logs/DiagnosticReports" -maxdepth 1 -name 'WangGan*' -exec cp {} build/screenshots/ \; || true
           if [ -d build/UITests.xcresult ]; then
             xcrun xcresulttool export attachments --path build/UITests.xcresult --output-path build/screenshots || true
           fi
@@ -81,4 +92,6 @@ jobs:
             build/screenshots
             build-device.log
             build-ui.log
+            build-simulator.log
+            launch-simulator.log
           retention-days: 7
