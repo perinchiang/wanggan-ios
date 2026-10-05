@@ -41,6 +41,20 @@ final class LearningStore {
                 storageWarning = "旧进度暂时无法读取，原始数据已保留在本机备份。当前使用新进度。"
             }
         }
+
+        if testing,
+           let argument = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--seed-before-") }),
+           let index = orderedLessonIDs.firstIndex(of: String(argument.dropFirst("--seed-before-".count))) {
+            // UI tests can open a later lesson without replaying every prerequisite.
+            for lessonID in orderedLessonIDs.prefix(index) {
+                var session = LessonSession(lessonID: lessonID)
+                session.stage = .complete
+                session.matchingSolved = true
+                session.challengeSolved = true
+                ledger.complete(session)
+            }
+            persist()
+        }
     }
 
     var lessons: [Lesson] { catalog?.lessons ?? [] }

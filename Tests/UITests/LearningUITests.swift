@@ -3,6 +3,14 @@ import XCTest
 final class LearningUITests: XCTestCase {
     private var app: XCUIApplication!
 
+    private struct LessonFlow {
+        let id: String
+        let question: String
+        let challenge: String
+        let matches: [(String, String)]
+        let expectedXP: Int
+    }
+
     override func setUpWithError() throws {
         continueAfterFailure = false
         executionTimeAllowance = 300
@@ -169,6 +177,66 @@ final class LearningUITests: XCTestCase {
         screenshot("10-wrong-answer-feedback")
         tap("primary-action")
         XCTAssertTrue(app.staticTexts["沿着数据走一遍，就清楚了。"].exists)
+    }
+
+    func testSubnetResumesAndCompletesOnStepPlayer() {
+        verifyFlow(LessonFlow(id: "subnet", question: "different", challenge: "yes",
+                              matches: [("24", "three"), ("16", "two")], expectedXP: 60))
+    }
+
+    func testARPResumesAndCompletesOnStepPlayer() {
+        verifyFlow(LessonFlow(id: "arp", question: "gateway", challenge: "no",
+                              matches: [("local", "nasip"), ("remote", "gwip")], expectedXP: 90))
+    }
+
+    func testHopResumesAndCompletesOnStepPlayer() {
+        verifyFlow(LessonFlow(id: "hop", question: "frame", challenge: "no",
+                              matches: [("ip", "final"), ("mac", "next")], expectedXP: 120))
+    }
+
+    func testDNSResumesAndCompletesOnStepPlayer() {
+        verifyFlow(LessonFlow(id: "dns", question: "dns", challenge: "no",
+                              matches: [("name", "resolve"), ("service", "connect")], expectedXP: 150))
+    }
+
+    private func verifyFlow(_ flow: LessonFlow) {
+        app.terminate()
+        app.launchArguments = ["--uitesting", "--reset-progress", "--seed-before-\(flow.id)"]
+        app.launch()
+        tap("lesson-\(flow.id)")
+        revealScene(option: "question-option-\(flow.question)")
+        tap("question-option-\(flow.question)")
+        tap("primary-action")
+        tap("exit-lesson")
+        app.buttons["保存进度并退出"].tap()
+
+        app.terminate()
+        app.launchArguments = ["--uitesting"]
+        app.launch()
+        tap("start-lesson")
+        XCTAssertTrue(app.buttons["question-option-\(flow.question)"].exists)
+        XCTAssertEqual(app.buttons["primary-action"].label, "看看为什么")
+        tap("primary-action")
+
+        for _ in 0..<8 {
+            if app.buttons["match-left-\(flow.matches[0].0)"].exists { break }
+            tap("primary-action")
+        }
+        XCTAssertTrue(app.buttons["match-left-\(flow.matches[0].0)"].exists)
+        for (left, right) in flow.matches {
+            tap("match-left-\(left)")
+            tap("match-right-\(right)")
+        }
+        tap("primary-action")
+        tap("primary-action")
+        revealScene(option: "challenge-option-\(flow.challenge)")
+        tap("challenge-option-\(flow.challenge)")
+        tap("primary-action")
+        tap("primary-action")
+        XCTAssertTrue(app.staticTexts["+30 XP"].waitForExistence(timeout: 5))
+        screenshot("11-\(flow.id)-completion")
+        tap("finish-session")
+        XCTAssertEqual(app.staticTexts["xp-badge"].label, "\(flow.expectedXP) 经验值")
     }
 
     func testSceneRevealsOneMessageAtATimeAndResumesAfterRelaunch() {
