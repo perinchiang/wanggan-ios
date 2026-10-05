@@ -177,13 +177,13 @@ schemaVersion、课程内容版本、Lesson revision、Web 契约版本独立管
 
 整体阶段由 PRODUCT 维护。工程上每次只迁一个可验证边界：先保护现有规则与存储，再包裹课程目录，然后适配一课为 Step，最后接入一个 Web 组件。其他课继续原路径，待等价行为通过再迁移。
 
-当前迁移门：`gateway` 此前通过 CI 并完成用户试用，反馈滚动修正尚待验证；`subnet`、`arp`、`hop`、`dns` 已逐课切换到 StepLessonPlayer，但本批改动尚未运行 Core、原生 UI 测试或真机验收。每课仅切换播放路径，内容与 ID 不变。集中验证通过后删除 StageLessonPlayer 与分派逻辑。期间两个播放器共享 QuestionConversation、MatchingView、CompletionView 等原生组件。
+当前迁移门：五课均已切换到 StepLessonPlayer，0.1.4（build 5）的 Core、iPhone 构建与 7 项原生 UI 测试已通过，包含答错反馈可见性及五课代表性完成流程；本版本仍待用户真机验收。每课仅切换播放路径，内容与 ID 不变。真机验收后删除 StageLessonPlayer 与分派逻辑。期间两个播放器共享 QuestionConversation、MatchingView、CompletionView 等原生组件。
 
 不要把播放器、存储、课程内容和整个视觉系统放在一次重写里。兼容适配器有明确用途和移除条件；不是长期维护两套独立课程来源。课程拆分为多个文件与引入目录模型也不必发生在同一次变更。
 
 ## 测试策略与验证范围
 
-当前基线有 13 个 Core 测试和 3 个原生 UI 测试，主要覆盖首课闭环、部分第二课、场景恢复与主线 / 复习隔离；不代表五课、所有字号或新架构已经全覆盖。
+当前 Core 测试包含五课的 Step 通关、错误重试、新旧状态机及草稿转换对照；7 项原生 UI 测试覆盖五课代表性完成流程、续学、主线 / 复习隔离与 gateway 答错反馈。通过模拟器不代表所有字号、设备或真机体验均已验收。
 
 | 变更 | 必要检查 |
 | --- | --- |
