@@ -58,7 +58,128 @@ final class LearningUITests: XCTestCase {
         XCTAssertTrue(app.buttons[option].exists, "Choices appear after the conversation")
     }
 
-    func testSubnetMaskObservationRetryBacktrackingResumeAndCompletion() {
+    private func completeFoundationLesson(
+        expectedTitle: String,
+        answer: String,
+        matches: [(String, String)],
+        challenge: String,
+        expectedXP: Int,
+        expectedNextTitle: String,
+        evidencePrefix: String
+    ) {
+        XCTAssertTrue(app.staticTexts["recommended-lesson-title"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, expectedTitle)
+        tap("start-lesson")
+
+        revealScene(option: "question-option-\(answer)")
+        tap("question-option-\(answer)")
+        tap("primary-action")
+        tap("primary-action")
+
+        XCTAssertEqual(app.staticTexts["foundation-stage"].label, "观察 1 / 4")
+        screenshot("\(evidencePrefix)-01-start")
+        for stage in 2...4 {
+            tap("primary-action")
+            XCTAssertEqual(app.staticTexts["foundation-stage"].label, "观察 \(stage) / 4")
+        }
+        screenshot("\(evidencePrefix)-02-final-stage")
+        tap("primary-action")
+
+        for (left, right) in matches {
+            tap("match-left-\(left)")
+            tap("match-right-\(right)")
+        }
+        tap("primary-action")
+        tap("primary-action")
+
+        revealScene(option: "challenge-option-\(challenge)")
+        tap("challenge-option-\(challenge)")
+        tap("primary-action")
+        tap("primary-action")
+
+        XCTAssertTrue(app.staticTexts["+30 XP"].waitForExistence(timeout: 5))
+        screenshot("\(evidencePrefix)-03-complete")
+        tap("finish-session")
+        XCTAssertEqual(app.staticTexts["xp-badge"].label, "\(expectedXP) 经验值")
+        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, expectedNextTitle)
+    }
+
+    func testIPv4FoundationAddressRoleFlow() {
+        app.launch()
+        completeFoundationLesson(
+            expectedTitle: "IP 地址是拿来做什么的？",
+            answer: "target",
+            matches: [("friend", "23"), ("xiaolin", "31")],
+            challenge: "current",
+            expectedXP: 30,
+            expectedNextTitle: "IPv4 为什么通常写成四段？",
+            evidencePrefix: "N01-role"
+        )
+    }
+
+    func testIPv4FoundationFormatBacktrackingResumeAndCompletion() {
+        app.launchArguments += ["--seed-before-ipv4-address-format"]
+        app.launch()
+        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "IPv4 为什么通常写成四段？")
+        tap("start-lesson")
+        revealScene(option: "question-option-four")
+        tap("question-option-four")
+        tap("primary-action")
+        tap("primary-action")
+
+        XCTAssertEqual(app.staticTexts["foundation-stage"].label, "观察 1 / 4")
+        tap("primary-action")
+        tap("primary-action")
+        XCTAssertEqual(app.staticTexts["foundation-stage"].label, "观察 3 / 4")
+        tap("foundation-previous")
+        XCTAssertEqual(app.staticTexts["foundation-stage"].label, "观察 2 / 4")
+        screenshot("N02-format-backtrack")
+
+        tap("exit-lesson")
+        app.buttons["保存进度并退出"].tap()
+        app.terminate()
+        app.launchArguments = ["--uitesting"]
+        app.launch()
+        tap("start-lesson")
+        XCTAssertEqual(app.staticTexts["foundation-stage"].label, "观察 2 / 4")
+
+        tap("primary-action")
+        tap("primary-action")
+        XCTAssertEqual(app.staticTexts["foundation-stage"].label, "观察 4 / 4")
+        tap("primary-action")
+        for (left, right) in [("octet", "segment"), ("address", "four-octets"), ("dot", "separator")] {
+            tap("match-left-\(left)")
+            tap("match-right-\(right)")
+        }
+        tap("primary-action")
+        tap("primary-action")
+        revealScene(option: "challenge-option-valid")
+        tap("challenge-option-valid")
+        tap("primary-action")
+        tap("primary-action")
+        XCTAssertTrue(app.staticTexts["+30 XP"].waitForExistence(timeout: 5))
+        screenshot("N02-format-complete")
+        tap("finish-session")
+        XCTAssertEqual(app.staticTexts["xp-badge"].label, "60 经验值")
+        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "每一段为什么只能是 0～255？")
+    }
+
+    func testIPv4FoundationOctetBinaryFlow() {
+        app.launchArguments += ["--seed-before-ipv4-octet-binary"]
+        app.launch()
+        completeFoundationLesson(
+            expectedTitle: "每一段为什么只能是 0～255？",
+            answer: "ninth",
+            matches: [("zero", "d0"), ("ten", "d10"), ("max", "d255")],
+            challenge: "192",
+            expectedXP: 90,
+            expectedNextTitle: "网关填错会怎样？",
+            evidencePrefix: "N03-binary"
+        )
+    }
+
+    func testSubnetMaskObservationRetryBacktrackingResumeAndCompletion() throws {
+        throw XCTSkip("旧 subnet-mask Pilot 已归档，不再出现在学习路线")
         app.launchArguments += ["--seed-before-subnet-mask"]
         app.launch()
         tap("start-lesson")
@@ -140,7 +261,8 @@ final class LearningUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "网关填错会怎样？")
     }
 
-    func testSubnetMaskAtLargestTextSizeWithStaticPresentation() {
+    func testSubnetMaskAtLargestTextSizeWithStaticPresentation() throws {
+        throw XCTSkip("旧 subnet-mask Pilot 已归档，不再出现在学习路线")
         app.launchArguments += ["--seed-before-subnet-mask", "--test-mask-accessibility"]
         app.launch()
         tap("start-lesson")
@@ -162,7 +284,8 @@ final class LearningUITests: XCTestCase {
         screenshot("M05-mask-largest-text-result")
     }
 
-    func testIPv4IntroductionObservationBacktrackingResumeAndCompletion() {
+    func testIPv4IntroductionObservationBacktrackingResumeAndCompletion() throws {
+        throw XCTSkip("旧 ipv4-address Pilot 已归档，由新的三节基础课取代")
         app.launchArguments = ["--uitesting", "--reset-progress"]
         app.launch()
         XCTAssertTrue(app.staticTexts["recommended-lesson-title"].waitForExistence(timeout: 10))

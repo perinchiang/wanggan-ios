@@ -1,13 +1,17 @@
 {
   "course": {
     "id": "wanggan-network-intuition",
-    "revision": 3,
+    "revision": 4,
     "title": "网感",
     "chapters": [
       {
         "id": "address-basics",
-        "title": "基础 · 认识地址",
-        "orderedLessonIDs": ["ipv4-address", "subnet-mask"]
+        "title": "基础 · 看懂 IPv4 地址",
+        "orderedLessonIDs": [
+          "ipv4-address-role",
+          "ipv4-address-format",
+          "ipv4-octet-binary"
+        ]
       },
       {
         "id": "first-look",
@@ -20,67 +24,478 @@
           "dns"
         ]
       }
+    ],
+    "archivedLessonIDs": [
+      "ipv4-address",
+      "subnet-mask"
     ]
   },
   "reviewItems": [
     {
-      "id": "gateway.local-printer", "revision": 1, "lessonID": "gateway",
-      "knowledgePointID": "ipv4.local-vs-gateway", "objective": "分清本地通信与网关转交",
+      "id": "gateway.local-printer",
+      "revision": 1,
+      "lessonID": "gateway",
+      "knowledgePointID": "ipv4.local-vs-gateway",
+      "objective": "分清本地通信与网关转交",
       "scenarioFamilyID": "local-printer",
       "scene": "电脑和打印机接在一台独立交换机上，属于同一个 IP 子网，没有网络隔离。地址、掩码和打印服务正常，通过 IP 连接打印机。只有电脑的默认网关填错了。",
       "prompt": "电脑还能把文件发给打印机吗？",
       "options": [
-        {"id": "local", "text": "能，本地通信仍可进行", "feedback": "目标就在本地，不需要默认网关转交。"},
-        {"id": "all-fail", "text": "不能，所有数据都必须经过网关", "feedback": "你把网关当成了所有通信的必经之路。同一子网内，电脑可以直接把数据交给打印机。"},
-        {"id": "slow", "text": "能，但网关会让打印变慢", "feedback": "这条本地路径不经过默认网关，填错它不会自动让打印变慢。"}
+        {
+          "id": "local",
+          "text": "能，本地通信仍可进行",
+          "feedback": "目标就在本地，不需要默认网关转交。"
+        },
+        {
+          "id": "all-fail",
+          "text": "不能，所有数据都必须经过网关",
+          "feedback": "你把网关当成了所有通信的必经之路。同一子网内，电脑可以直接把数据交给打印机。"
+        },
+        {
+          "id": "slow",
+          "text": "能，但网关会让打印变慢",
+          "feedback": "这条本地路径不经过默认网关，填错它不会自动让打印变慢。"
+        }
       ],
-      "correctID": "local", "hint": "先判断目标在本地还是远方，再决定是否需要网关。",
+      "correctID": "local",
+      "hint": "先判断目标在本地还是远方，再决定是否需要网关。",
       "explanation": "同一子网且没有隔离时，电脑在本地找到打印机并直接交付；默认网关用于转交去往其他网络的数据。"
     },
     {
-      "id": "gateway.local-projector", "revision": 1, "lessonID": "gateway",
-      "knowledgePointID": "ipv4.local-vs-gateway", "objective": "分清本地通信与网关转交",
+      "id": "gateway.local-projector",
+      "revision": 1,
+      "lessonID": "gateway",
+      "knowledgePointID": "ipv4.local-vs-gateway",
+      "objective": "分清本地通信与网关转交",
       "scenarioFamilyID": "local-projector",
       "scene": "电脑与投影仪接在独立交换机上，属于同一个 IP 子网，地址与掩码正确，没有网络隔离。投影服务正常，电脑按 IP 连接。路由器关机了，交换机和两台设备仍通电。",
       "prompt": "这次本地投影还能连接吗？",
       "options": [
-        {"id": "local", "text": "能，本地路径仍正常", "feedback": "本地投影不用路由器转交。"},
-        {"id": "all-fail", "text": "不能，路由器关机就是全部断网", "feedback": "你把路由器关机当成了所有路径都消失。这里的本地路径仍由独立交换机连着。"},
-        {"id": "internet", "text": "只有能上互联网，投影才能连接", "feedback": "这里按 IP 连接本地服务，没有要求通过互联网。"}
+        {
+          "id": "local",
+          "text": "能，本地路径仍正常",
+          "feedback": "本地投影不用路由器转交。"
+        },
+        {
+          "id": "all-fail",
+          "text": "不能，路由器关机就是全部断网",
+          "feedback": "你把路由器关机当成了所有路径都消失。这里的本地路径仍由独立交换机连着。"
+        },
+        {
+          "id": "internet",
+          "text": "只有能上互联网，投影才能连接",
+          "feedback": "这里按 IP 连接本地服务，没有要求通过互联网。"
+        }
       ],
-      "correctID": "local", "hint": "画一下电脑到投影仪的路径：必须经过路由器吗？",
+      "correctID": "local",
+      "hint": "画一下电脑到投影仪的路径：必须经过路由器吗？",
       "explanation": "这条本地路径只经过仍工作的独立交换机。若路由器同时承担 Wi-Fi 或交换角色，关机的影响就需要重新判断。"
     },
     {
-      "id": "dns.uncached-name", "revision": 1, "lessonID": "dns",
-      "knowledgePointID": "dns.resolution-vs-connectivity", "objective": "分清名字解析与地址连通",
+      "id": "dns.uncached-name",
+      "revision": 1,
+      "lessonID": "dns",
+      "knowledgePointID": "dns.resolution-vs-connectivity",
+      "objective": "分清名字解析与地址连通",
       "scenarioFamilyID": "uncached-name",
       "scene": "电脑的 IP、路由和网络连接正常。DNS 查询失败，没有可用缓存或本地名称映射。NAS 服务正常，支持直接按 IP 访问；一个新网站必须先查到域名对应的地址。",
       "prompt": "现在最合理的判断是什么？",
       "options": [
-        {"id": "ip", "text": "NAS 可按 IP 访问，新网站的域名访问受阻", "feedback": "DNS 失败阻碍找地址，不等于已知地址的路径失效。"},
-        {"id": "all-fail", "text": "DNS 失败，NAS 和网站一定都不能访问", "feedback": "你把查名字失败当成了所有地址都不可达。按已知 IP 访问 NAS，不需要这次 DNS 查询。"},
-        {"id": "all-work", "text": "网络正常，两个都一定能访问", "feedback": "新网站还缺少域名对应的地址；题目排除了缓存与本地名称映射。"}
+        {
+          "id": "ip",
+          "text": "NAS 可按 IP 访问，新网站的域名访问受阻",
+          "feedback": "DNS 失败阻碍找地址，不等于已知地址的路径失效。"
+        },
+        {
+          "id": "all-fail",
+          "text": "DNS 失败，NAS 和网站一定都不能访问",
+          "feedback": "你把查名字失败当成了所有地址都不可达。按已知 IP 访问 NAS，不需要这次 DNS 查询。"
+        },
+        {
+          "id": "all-work",
+          "text": "网络正常，两个都一定能访问",
+          "feedback": "新网站还缺少域名对应的地址；题目排除了缓存与本地名称映射。"
+        }
       ],
-      "correctID": "ip", "hint": "访问已知 IP 与查一个新域名，哪一个还需要 DNS？",
+      "correctID": "ip",
+      "hint": "访问已知 IP 与查一个新域名，哪一个还需要 DNS？",
       "explanation": "DNS 把名字对应到地址。查名字失败，不能因此断定已知 IP 的路径也坏了；新域名没有缓存或本地映射，才会卡在找地址这一步。"
     },
     {
-      "id": "dns.cached-name", "revision": 1, "lessonID": "dns",
-      "knowledgePointID": "dns.resolution-vs-connectivity", "objective": "分清名字解析与地址连通",
+      "id": "dns.cached-name",
+      "revision": 1,
+      "lessonID": "dns",
+      "knowledgePointID": "dns.resolution-vs-connectivity",
+      "objective": "分清名字解析与地址连通",
       "scenarioFamilyID": "cached-name",
       "scene": "DNS 服务器暂时不可用，但电脑已有某网站仍有效的地址缓存。缓存地址没有变化，路由、网络和网站服务正常，浏览器会使用该缓存。",
       "prompt": "这个已缓存的网站此刻还能打开吗？",
       "options": [
-        {"id": "cached", "text": "能，已有缓存可提供地址", "feedback": "这次不必重新向 DNS 服务器查地址。"},
-        {"id": "all-fail", "text": "不能，每次访问都必须重新查询 DNS", "feedback": "你忽略了有效缓存：名字已经能对应到地址，不必每次重新查询服务器。"},
-        {"id": "forever", "text": "能，所以以后永远不需要 DNS", "feedback": "缓存有有效期，也可能遇到新域名；现在可访问不能推出以后都不用 DNS。"}
+        {
+          "id": "cached",
+          "text": "能，已有缓存可提供地址",
+          "feedback": "这次不必重新向 DNS 服务器查地址。"
+        },
+        {
+          "id": "all-fail",
+          "text": "不能，每次访问都必须重新查询 DNS",
+          "feedback": "你忽略了有效缓存：名字已经能对应到地址，不必每次重新查询服务器。"
+        },
+        {
+          "id": "forever",
+          "text": "能，所以以后永远不需要 DNS",
+          "feedback": "缓存有有效期，也可能遇到新域名；现在可访问不能推出以后都不用 DNS。"
+        }
       ],
-      "correctID": "cached", "hint": "这一次，电脑是否已经有可用的地址？",
+      "correctID": "cached",
+      "hint": "这一次，电脑是否已经有可用的地址？",
       "explanation": "有效缓存可暂时替代新的 DNS 查询。这里地址和路径都正常，所以仍可访问；缓存过期或遇到新名字时，仍可能需要 DNS。"
     }
   ],
   "lessons": [
+    {
+      "id": "ipv4-address-role",
+      "title": "IP 地址是拿来做什么的？",
+      "subtitle": "先知道这串数字解决什么问题",
+      "takeaway": "IP 地址让网络通信有明确的目标。",
+      "nextCuriosity": "IPv4 为什么总写成四段数字？",
+      "diagram": "ipv4-foundation-role",
+      "ipv4Foundation": {
+        "kind": "addressRole",
+        "ip": "192.168.1.23",
+        "peerIP": "192.168.1.20"
+      },
+      "question": {
+        "scene": [
+          {
+            "id": "lan-game",
+            "text": "你和朋友准备在局域网里联机。游戏让你填写朋友电脑的地址，朋友发来：192.168.1.23。"
+          }
+        ],
+        "prompt": "这串数字在这里最主要是在告诉网络什么？",
+        "options": [
+          {
+            "id": "target",
+            "text": "要联系的是哪台电脑",
+            "feedback": "对。这里最重要的是先把通信目标说清楚。"
+          },
+          {
+            "id": "speed",
+            "text": "这台电脑的网络速度",
+            "feedback": "IP 地址不表示网速。它首先承担的是网络层地址角色。"
+          },
+          {
+            "id": "room",
+            "text": "这局游戏的房间编号",
+            "feedback": "游戏可以有自己的房间编号，但这里朋友发来的是电脑当前使用的 IP 地址。"
+          }
+        ],
+        "correctID": "target",
+        "hint": "先看这串数字标在谁旁边，又被填进了什么位置。"
+      },
+      "explanation": [],
+      "matching": {
+        "prompt": "现在换两台电脑。要联系谁，就选它旁边的地址。",
+        "left": [
+          {
+            "id": "friend",
+            "text": "联系朋友的电脑",
+            "symbol": "desktopcomputer"
+          },
+          {
+            "id": "xiaolin",
+            "text": "联系小林的电脑",
+            "symbol": "laptopcomputer"
+          }
+        ],
+        "right": [
+          {
+            "id": "23",
+            "text": "192.168.1.23",
+            "symbol": "number"
+          },
+          {
+            "id": "31",
+            "text": "192.168.1.31",
+            "symbol": "number"
+          }
+        ],
+        "solution": {
+          "friend": "23",
+          "xiaolin": "31"
+        },
+        "explanation": "地址的价值就在这里：不同目标可以用不同的网络地址区分。"
+      },
+      "challenge": {
+        "scene": [
+          {
+            "id": "new-network",
+            "text": "后来朋友把电脑带到另一个网络，系统里看到的 IP 地址变了。电脑还是同一台。"
+          }
+        ],
+        "prompt": "哪种理解更准确？",
+        "options": [
+          {
+            "id": "current",
+            "text": "IP 是当前网络里的地址，可能随网络变化",
+            "feedback": "对。IP 地址不是设备永久不变的身份证。"
+          },
+          {
+            "id": "identity",
+            "text": "IP 是电脑永久身份证，理论上不该变化",
+            "feedback": "同一台电脑换到别的网络后，IP 地址完全可能改变。"
+          },
+          {
+            "id": "model",
+            "text": "IP 主要用来表示电脑型号",
+            "feedback": "设备型号和 IP 地址没有这种对应关系。"
+          }
+        ],
+        "correctID": "current",
+        "hint": "题目里电脑没换，但网络环境换了。"
+      },
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc791#section-3.1"
+      ]
+    },
+    {
+      "id": "ipv4-address-format",
+      "title": "IPv4 为什么通常写成四段？",
+      "subtitle": "看懂点分十进制的结构",
+      "takeaway": "IPv4 常把 32 位按 8 位分成四组，再写成四段十进制。",
+      "nextCuriosity": "每一段为什么最大只能写到 255？",
+      "diagram": "ipv4-foundation-format",
+      "ipv4Foundation": {
+        "kind": "addressFormat",
+        "ip": "192.168.1.23",
+        "samples": [
+          "192.168.1.23",
+          "10.20.30.40",
+          "172.16.0.8"
+        ]
+      },
+      "question": {
+        "scene": [
+          {
+            "id": "examples",
+            "text": "你已经见过 192.168.1.23。再看两个 IPv4 地址：10.20.30.40、172.16.0.8。"
+          }
+        ],
+        "prompt": "它们共同的写法是什么？",
+        "options": [
+          {
+            "id": "four",
+            "text": "四段十进制数字，用三个点分开",
+            "feedback": "对。下一步把其中一个地址拆开，看这四段从哪里来。"
+          },
+          {
+            "id": "devices",
+            "text": "四段分别代表沿途四台设备",
+            "feedback": "地址不是经过设备的清单。路径变长，并不会让 IPv4 地址多出几段。"
+          },
+          {
+            "id": "free",
+            "text": "点号只是排版，想怎么分都可以",
+            "feedback": "这些点号有固定的分组作用，不能随意移动。"
+          }
+        ],
+        "correctID": "four",
+        "hint": "先只观察三个例子的外形，不需要猜更深的含义。"
+      },
+      "explanation": [],
+      "matching": {
+        "prompt": "把刚看到的结构对应起来。",
+        "left": [
+          {
+            "id": "octet",
+            "text": "一个八位组",
+            "symbol": "square"
+          },
+          {
+            "id": "address",
+            "text": "整个 IPv4 地址",
+            "symbol": "network"
+          },
+          {
+            "id": "dot",
+            "text": "点号",
+            "symbol": "circle.fill"
+          }
+        ],
+        "right": [
+          {
+            "id": "segment",
+            "text": "写成一段十进制数",
+            "symbol": "number"
+          },
+          {
+            "id": "four-octets",
+            "text": "由四个八位组组成",
+            "symbol": "square.grid.2x2"
+          },
+          {
+            "id": "separator",
+            "text": "分隔相邻八位组",
+            "symbol": "line.3.horizontal"
+          }
+        ],
+        "solution": {
+          "octet": "segment",
+          "address": "four-octets",
+          "dot": "separator"
+        },
+        "explanation": "常见 IPv4 文本形式就是四个八位组的十进制写法，中间用点号分隔。"
+      },
+      "challenge": {
+        "scene": [
+          {
+            "id": "format-only",
+            "text": "你要把一条 IPv4 地址抄进设置页。下面三种写法里，只有一种保留了刚才看到的四段结构。"
+          }
+        ],
+        "prompt": "下面哪一个符合刚学到的四段结构？",
+        "options": [
+          {
+            "id": "valid",
+            "text": "10.20.30.40",
+            "feedback": "对。它清楚地分成四段。"
+          },
+          {
+            "id": "three",
+            "text": "10.20.3040",
+            "feedback": "这里只有三段，第三个点对应的分组边界消失了。"
+          },
+          {
+            "id": "five",
+            "text": "10.20.30.40.50",
+            "feedback": "这里变成了五段，不是常见 IPv4 的四段结构。"
+          }
+        ],
+        "correctID": "valid",
+        "hint": "数一数数字段和点号。"
+      },
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc791#section-3.1",
+        "https://www.rfc-editor.org/rfc/rfc3986#section-3.2.2"
+      ]
+    },
+    {
+      "id": "ipv4-octet-binary",
+      "title": "每一段为什么只能是 0～255？",
+      "subtitle": "8 个二进制位能表示多大的数",
+      "takeaway": "一个八位组只有 8 位，因此范围是 0～255。",
+      "nextCuriosity": "知道位数之后，IP 后面的 /24 又是在数什么？",
+      "diagram": "ipv4-foundation-binary",
+      "ipv4Foundation": {
+        "kind": "octetBinary",
+        "ip": "10.20.30.40",
+        "focusOctet": 10
+      },
+      "question": {
+        "scene": [
+          {
+            "id": "limit",
+            "text": "IPv4 的每一段对应一个八位组，也就是 8 个二进制位。有人却写出了 10.20.30.256。"
+          }
+        ],
+        "prompt": "为什么 256 放不进一个八位组？",
+        "options": [
+          {
+            "id": "ninth",
+            "text": "它需要第 9 个二进制位",
+            "feedback": "对。8 位全为 1 已经是 255，再加 1 就需要第 9 位。"
+          },
+          {
+            "id": "digits",
+            "text": "因为十进制不能写三位数",
+            "feedback": "192、255 也都是三位数。限制来自二进制位数，不是十进制字符数量。"
+          },
+          {
+            "id": "six",
+            "text": "因为 IPv4 不允许出现数字 6",
+            "feedback": "数字 6 本身当然可以出现，例如 16、64、126。真正的边界是一个八位组能表示的数值范围。"
+          }
+        ],
+        "correctID": "ninth",
+        "hint": "先想 8 个位置全部放 1 时已经是多少。"
+      },
+      "explanation": [],
+      "matching": {
+        "prompt": "把三个 8 位二进制数和十进制结果对应起来。",
+        "left": [
+          {
+            "id": "zero",
+            "text": "00000000",
+            "symbol": "0.square"
+          },
+          {
+            "id": "ten",
+            "text": "00001010",
+            "symbol": "10.square"
+          },
+          {
+            "id": "max",
+            "text": "11111111",
+            "symbol": "number.square"
+          }
+        ],
+        "right": [
+          {
+            "id": "d0",
+            "text": "0",
+            "symbol": "0.circle"
+          },
+          {
+            "id": "d10",
+            "text": "10",
+            "symbol": "10.circle"
+          },
+          {
+            "id": "d255",
+            "text": "255",
+            "symbol": "number.circle"
+          }
+        ],
+        "solution": {
+          "zero": "d0",
+          "ten": "d10",
+          "max": "d255"
+        },
+        "explanation": "同样 8 个位置，不同的 0 / 1 组合会得到不同十进制值；最小 0，最大 255。"
+      },
+      "challenge": {
+        "scene": [
+          {
+            "id": "convert",
+            "text": "现在给你一个八位组：11000000。位值从左到右仍然是 128、64、32、16、8、4、2、1。"
+          }
+        ],
+        "prompt": "11000000 对应的十进制是多少？",
+        "options": [
+          {
+            "id": "192",
+            "text": "192",
+            "feedback": "对。前两位是 1，所以是 128 + 64 = 192。"
+          },
+          {
+            "id": "128",
+            "text": "128",
+            "feedback": "你只算了第一位。第二位也是 1，还要加上 64。"
+          },
+          {
+            "id": "96",
+            "text": "96",
+            "feedback": "这里要按位值相加：最左两位分别是 128 和 64。"
+          }
+        ],
+        "correctID": "192",
+        "hint": "只看为 1 的位置，把对应位值加起来。"
+      },
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc791#section-3.1",
+        "https://www.rfc-editor.org/rfc/rfc3986#section-3.2.2"
+      ]
+    },
     {
       "id": "gateway",
       "title": "网关填错会怎样？",
@@ -210,8 +625,16 @@
       "diagram": "subnet",
       "ipv4Visual": {
         "examples": [
-          { "ip": "192.168.1.10", "prefix": 24, "mode": "explain" },
-          { "ip": "10.20.30.40", "prefix": 16, "mode": "practice" }
+          {
+            "ip": "192.168.1.10",
+            "prefix": 24,
+            "mode": "explain"
+          },
+          {
+            "ip": "10.20.30.40",
+            "prefix": 16,
+            "mode": "practice"
+          }
         ]
       },
       "question": {
@@ -297,8 +720,8 @@
           }
         ],
         "solution": {
-          "24": "three",
-          "16": "two"
+          "16": "two",
+          "24": "three"
         },
         "explanation": "一个字节是 8 位。掩码长度决定要比较的网络部分。"
       },

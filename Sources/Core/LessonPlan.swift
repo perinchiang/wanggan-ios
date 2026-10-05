@@ -121,6 +121,7 @@ struct StepSession: Codable, Equatable {
     var ipv4VisualSubmitted: Bool?
     var ipv4VisualSolved: Bool?
     var ipv4VisualFinished: Bool?
+    var ipv4FoundationProgress: IPv4FoundationProgress?
     var ipv4IntroductionProgress: IPv4IntroductionProgress?
     var subnetMaskProgress: SubnetMaskProgress?
 
@@ -177,6 +178,7 @@ struct LessonPlan {
         guard let step = step(at: session.stepIndex) else { return false }
         switch step.kind {
         case .diagram:
+            if lesson.ipv4Foundation != nil { return session.ipv4FoundationProgress?.finished == true }
             if lesson.subnetMaskIntroduction != nil { return session.subnetMaskProgress?.finished == true }
             return lesson.ipv4Introduction == nil || session.ipv4IntroductionProgress?.finished == true
         case .conversation, .text, .summary:
@@ -249,6 +251,7 @@ extension StepSession {
         ipv4VisualSubmitted = stage.ipv4VisualSubmitted
         ipv4VisualSolved = stage.ipv4VisualSolved
         ipv4VisualFinished = stage.ipv4VisualFinished
+        ipv4FoundationProgress = stage.ipv4FoundationProgress
         ipv4IntroductionProgress = stage.ipv4IntroductionProgress
         subnetMaskProgress = stage.subnetMaskProgress
         selectedAnswer = stage.selectedAnswer
@@ -263,7 +266,7 @@ extension StepSession {
         case .question:
             stepIndex = min(stage.sceneStep(for: lesson.question, challenge: false), plan.questionSceneCount)
         case .explanation:
-            if lesson.ipv4Introduction != nil || lesson.subnetMaskIntroduction != nil {
+            if lesson.ipv4Foundation != nil || lesson.ipv4Introduction != nil || lesson.subnetMaskIntroduction != nil {
                 stepIndex = plan.questionIndex + 1
             } else if lesson.ipv4Visual != nil, stage.ipv4VisualPhase != nil, stage.ipv4VisualFinished != true {
                 stepIndex = plan.questionIndex + 1
@@ -288,6 +291,7 @@ extension StepSession {
         result.ipv4VisualSubmitted = ipv4VisualSubmitted
         result.ipv4VisualSolved = ipv4VisualSolved
         result.ipv4VisualFinished = ipv4VisualFinished
+        result.ipv4FoundationProgress = ipv4FoundationProgress
         result.ipv4IntroductionProgress = ipv4IntroductionProgress
         result.subnetMaskProgress = subnetMaskProgress
         result.selectedAnswer = selectedAnswer

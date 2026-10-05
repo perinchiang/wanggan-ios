@@ -5,7 +5,7 @@ struct ReviewView: View {
     let openLesson: (Lesson) -> Void
     let openShortReview: (Lesson) -> Void
     private var completed: [Lesson] {
-        store.lessons.filter { store.ledger.lessons[$0.id] != nil }.sorted {
+        store.activeLessons.filter { store.ledger.lessons[$0.id] != nil }.sorted {
             let left = store.ledger.lessons[$0.id]!
             let right = store.ledger.lessons[$1.id]!
             if (left.lastMistakes > 0) != (right.lastMistakes > 0) { return left.lastMistakes > 0 }

@@ -89,11 +89,11 @@ final class IPv4IntroductionTests: XCTestCase {
         XCTAssertEqual(ledger.complete(completed), 30)
         ledger.complete(completed)
         XCTAssertEqual(ledger.totalXP, 30)
-        XCTAssertTrue(ledger.isUnlocked("subnet-mask", in: content.orderedLessonIDs))
+        XCTAssertEqual(ledger.recommendedLessonID(in: content.orderedLessonIDs), "ipv4-address-role")
     }
 
     func testInsertedLessonKeepsOldMainAndIndependentEarlierDraftAfterRelaunch() throws {
-        let ids = try catalog().orderedLessonIDs
+        let ids = try catalog().allLessonIDs
         var ledger = ProgressLedger()
         ledger.complete(finished("gateway"))
         let oldProgress = ledger.lessons
@@ -111,7 +111,7 @@ final class IPv4IntroductionTests: XCTestCase {
         ledger.saveDraft(earlier, in: ids)
         var restored = try JSONDecoder().decode(ProgressLedger.self, from: JSONEncoder().encode(ledger))
         restored.normalizeDrafts(in: ids)
-        XCTAssertEqual(restored.recommendedLessonID(in: ids), "subnet")
+        XCTAssertEqual(restored.recommendedLessonID(in: try catalog().orderedLessonIDs), "ipv4-address-role")
         XCTAssertEqual(restored.session(for: "subnet"), main)
         XCTAssertEqual(restored.session(for: "ipv4-address"), earlier)
         XCTAssertEqual(restored.lessons, oldProgress)
@@ -121,13 +121,13 @@ final class IPv4IntroductionTests: XCTestCase {
         earlier.challengeSolved = true
         restored.complete(earlier)
         XCTAssertEqual(restored.session(for: "subnet"), main)
-        XCTAssertEqual(restored.recommendedLessonID(in: ids), "subnet")
+        XCTAssertEqual(restored.recommendedLessonID(in: try catalog().orderedLessonIDs), "ipv4-address-role")
         XCTAssertEqual(restored.totalXP, 60)
         XCTAssertNil(restored.earlierDrafts?["ipv4-address"])
     }
 
     func testSwitchingFromInsertedLessonToOldUnlockedLessonKeepsBothDrafts() throws {
-        let ids = try catalog().orderedLessonIDs
+        let ids = try catalog().allLessonIDs
         var ledger = ProgressLedger()
         ledger.complete(finished("gateway"))
         var earlier = LessonSession(lessonID: "ipv4-address")
@@ -142,12 +142,12 @@ final class IPv4IntroductionTests: XCTestCase {
     func testRealLegacyFormatRetainsUnlockedMainDraftWithoutNewFields() throws {
         let json = #"{"schemaVersion":1,"totalXP":0,"lessons":{},"activityDays":[],"settledSessions":[],"draft":{"id":"00000000-0000-0000-0000-000000000001","lessonID":"gateway","stage":0,"explanationIndex":0,"answerSubmitted":false,"matches":{},"matchingSubmitted":false,"matchingSolved":false,"challengeSubmitted":false,"challengeSolved":false,"mistakes":0}}"#
         var ledger = try JSONDecoder().decode(ProgressLedger.self, from: Data(json.utf8))
-        let ids = try catalog().orderedLessonIDs
+        let ids = try catalog().allLessonIDs
         ledger.normalizeDrafts(in: ids)
-        XCTAssertEqual(ledger.recommendedLessonID(in: ids), "gateway")
-        XCTAssertTrue(ledger.isUnlocked("gateway", in: ids))
+        XCTAssertEqual(ledger.recommendedLessonID(in: try catalog().orderedLessonIDs), "gateway")
+        XCTAssertTrue(ledger.isUnlocked("gateway", in: try catalog().orderedLessonIDs))
         XCTAssertNil(ledger.earlierDrafts)
         XCTAssertNil(ledger.draft?.ipv4IntroductionProgress)
-        XCTAssertEqual(ProgressLedger().recommendedLessonID(in: ids), "ipv4-address")
+        XCTAssertEqual(ProgressLedger().recommendedLessonID(in: try catalog().orderedLessonIDs), "ipv4-address-role")
     }
 }

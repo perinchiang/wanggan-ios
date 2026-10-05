@@ -70,9 +70,9 @@ struct LearningRouteView: View {
                     VStack(spacing: 12) {
                         HStack {
                             Spacer()
-                            Text("\(store.completedCount) / \(store.lessons.count)").font(.subheadline.monospacedDigit())
+                            Text("\(store.completedCount) / \(store.activeLessons.count)").font(.subheadline.monospacedDigit())
                         }
-                        ThinProgress(value: Double(store.completedCount) / Double(max(store.lessons.count, 1)))
+                        ThinProgress(value: Double(store.completedCount) / Double(max(store.activeLessons.count, 1)))
                     }
                     ForEach(store.chapters) { chapter in
                         VStack(alignment: .leading, spacing: 10) {

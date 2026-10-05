@@ -105,7 +105,12 @@ struct StepLessonPlayer: View {
     }
 
     @ViewBuilder private var explanationPhase: some View {
-        if let mask = lesson.subnetMaskIntroduction {
+        if let foundation = lesson.ipv4Foundation {
+            IPv4FoundationPanel(configuration: foundation, progress: Binding(
+                get: { session.ipv4FoundationProgress ?? IPv4FoundationProgress() },
+                set: { session.ipv4FoundationProgress = $0 }
+            ))
+        } else if let mask = lesson.subnetMaskIntroduction {
             SubnetMaskIntroductionPanel(configuration: mask, usesStaticPresentation: usesStaticPresentation, progress: Binding(
                 get: { session.subnetMaskProgress ?? SubnetMaskProgress() },
                 set: { session.subnetMaskProgress = $0 }
@@ -320,6 +325,9 @@ struct StepLessonPlayer: View {
     }
 
     private var scrollRequest: String {
+        if lesson.ipv4Foundation != nil, plan.step(at: session.stepIndex)?.kind == .diagram {
+            return "foundation-\(session.ipv4FoundationProgress?.stage ?? 0)"
+        }
         if lesson.subnetMaskIntroduction != nil, plan.step(at: session.stepIndex)?.kind == .diagram {
             let progress = session.subnetMaskProgress ?? SubnetMaskProgress()
             return "mask-\(progress.stage)-\(progress.boundarySubmitted)"
@@ -365,6 +373,11 @@ struct StepLessonPlayer: View {
             }
             return session.answerSubmitted ? "看看为什么" : "确认答案"
         case .diagram:
+            if lesson.ipv4Foundation != nil {
+                let progress = session.ipv4FoundationProgress ?? IPv4FoundationProgress()
+                if progress.stage >= (lesson.ipv4Foundation?.stageCount ?? 4) - 1 { return "试着用一用" }
+                return "下一步"
+            }
             if lesson.subnetMaskIntroduction != nil {
                 let progress = session.subnetMaskProgress ?? SubnetMaskProgress()
                 switch progress.stage {
@@ -402,6 +415,9 @@ struct StepLessonPlayer: View {
         case .conversation, .text, .summary:
             return true
         case .diagram:
+            if lesson.ipv4Foundation != nil {
+                return session.ipv4FoundationProgress?.canAdvance ?? true
+            }
             if lesson.subnetMaskIntroduction != nil {
                 let progress = session.subnetMaskProgress ?? SubnetMaskProgress()
                 return progress.canAdvance || progress.stage == 3 &&
@@ -459,6 +475,14 @@ struct StepLessonPlayer: View {
                 }
             }
         case .diagram:
+            if let foundation = lesson.ipv4Foundation {
+                var progress = session.ipv4FoundationProgress ?? IPv4FoundationProgress()
+                let isLastStage = progress.stage >= foundation.stageCount - 1
+                progress.advance(stageCount: foundation.stageCount)
+                session.ipv4FoundationProgress = progress
+                if isLastStage { plan.advance(&session) }
+                return
+            }
             if let configuration = lesson.subnetMaskIntroduction {
                 var progress = session.subnetMaskProgress ?? SubnetMaskProgress()
                 if progress.stage == 3 && !progress.boundarySolved {

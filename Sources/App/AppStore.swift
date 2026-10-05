@@ -35,7 +35,7 @@ final class LearningStore {
                 guard saved.schemaVersion == 1 else { throw ContentError.invalid("未知进度版本") }
                 ledger = saved
                 if catalog != nil {
-                    ledger.normalizeDrafts(in: orderedLessonIDs)
+                    ledger.normalizeDrafts(in: allLessonIDs)
                     persist()
                 }
             } catch {
@@ -62,15 +62,19 @@ final class LearningStore {
     }
 
     var lessons: [Lesson] { catalog?.lessons ?? [] }
+    var activeLessons: [Lesson] {
+        orderedLessonIDs.compactMap { id in lessons.first { $0.id == id } }
+    }
     var reviewItems: [ReviewItem] { catalog?.reviewItems ?? [] }
     var chapters: [Chapter] { catalog?.course.chapters ?? [] }
     var orderedLessonIDs: [String] { catalog?.orderedLessonIDs ?? [] }
+    var allLessonIDs: [String] { catalog?.allLessonIDs ?? [] }
     var currentLesson: Lesson? {
         guard let id = ledger.recommendedLessonID(in: orderedLessonIDs) else { return nil }
         return lessons.first { $0.id == id }
     }
-    var completedCount: Int { lessons.filter { ledger.lessons[$0.id] != nil }.count }
-    var dueLessons: [Lesson] { lessons.filter { ledger.isDue($0.id) } }
+    var completedCount: Int { activeLessons.filter { ledger.lessons[$0.id] != nil }.count }
+    var dueLessons: [Lesson] { activeLessons.filter { ledger.isDue($0.id) } }
 
     func lessons(in chapter: Chapter) -> [Lesson] { catalog?.lessons(in: chapter.id) ?? [] }
 
@@ -83,7 +87,7 @@ final class LearningStore {
     }
 
     func saveDraft(_ session: LessonSession) {
-        ledger.saveDraft(session, in: orderedLessonIDs)
+        ledger.saveDraft(session, in: allLessonIDs)
         persist()
     }
 

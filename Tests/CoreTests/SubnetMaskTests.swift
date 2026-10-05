@@ -159,7 +159,7 @@ final class SubnetMaskTests: XCTestCase {
     }
 
     func testAddingMaskLessonProtectsOlderMainReviewAndCompletedHistory() throws {
-        let ids = try catalog().orderedLessonIDs
+        let ids = try catalog().allLessonIDs
         let json = #"{"schemaVersion":1,"totalXP":30,"lessons":{"gateway":{"completedAt":812721600,"lastPracticedAt":812721600,"nextReviewAt":812764800,"reviewLevel":0,"lastMistakes":0}},"activityDays":[812678400],"settledSessions":[],"draft":{"id":"00000000-0000-0000-0000-000000000001","lessonID":"subnet","stage":1,"explanationIndex":0,"answerSubmitted":true,"matches":{},"matchingSubmitted":false,"matchingSolved":false,"challengeSubmitted":false,"challengeSolved":false,"mistakes":1}}"#
         var ledger = try JSONDecoder().decode(ProgressLedger.self, from: Data(json.utf8))
         let main = try XCTUnwrap(ledger.draft)
@@ -178,10 +178,10 @@ final class SubnetMaskTests: XCTestCase {
         XCTAssertEqual(restored.session(for: "subnet"), main)
         XCTAssertEqual(restored.session(for: "gateway"), review)
         XCTAssertEqual(restored.session(for: "subnet-mask"), earlier)
-        XCTAssertEqual(restored.recommendedLessonID(in: ids), "subnet")
+        XCTAssertEqual(restored.recommendedLessonID(in: try catalog().orderedLessonIDs), "subnet")
         XCTAssertEqual(restored.lessons, history)
         XCTAssertEqual(restored.totalXP, 30)
-        XCTAssertTrue(restored.isUnlocked("gateway", in: ids))
+        XCTAssertTrue(restored.isUnlocked("gateway", in: try catalog().orderedLessonIDs))
     }
 
     func testCatalogRejectsConflictingOrUnsupportedPilotPayload() throws {

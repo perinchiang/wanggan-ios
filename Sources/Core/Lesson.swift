@@ -53,6 +53,7 @@ struct Lesson: Codable, Equatable, Identifiable {
     let takeaway: String
     let nextCuriosity: String
     let diagram: String
+    let ipv4Foundation: IPv4Foundation?
     let ipv4Visual: IPv4VisualLesson?
     let ipv4Introduction: IPv4Introduction?
     let subnetMaskIntroduction: SubnetMaskIntroduction?
@@ -74,6 +75,7 @@ struct Course: Codable, Equatable, Identifiable {
     let revision: Int
     let title: String
     let chapters: [Chapter]
+    let archivedLessonIDs: [String]?
 }
 
 struct LessonCatalog: Codable {
@@ -82,6 +84,10 @@ struct LessonCatalog: Codable {
     let reviewItems: [ReviewItem]?
 
     var orderedLessonIDs: [String] { course.chapters.flatMap(\.orderedLessonIDs) }
+    var archivedLessonIDs: [String] { course.archivedLessonIDs ?? [] }
+    // Archived pilots sort before the active route only for draft preservation.
+    // They never participate in recommendation or unlocking.
+    var allLessonIDs: [String] { archivedLessonIDs + orderedLessonIDs }
 
     func lessons(in chapterID: String) -> [Lesson] {
         guard let chapter = course.chapters.first(where: { $0.id == chapterID }) else { return [] }
@@ -99,8 +105,13 @@ struct LessonCatalog: Codable {
             throw ContentError.invalid("课程目录为空或章节标识重复")
         }
         let chapterIDs = course.chapters.flatMap(\.orderedLessonIDs)
-        guard chapterIDs.count == lessons.count, Set(chapterIDs) == Set(lessons.map(\.id)) else {
-            throw ContentError.invalid("章节没有恰好覆盖每一课")
+        let archivedIDs = course.archivedLessonIDs ?? []
+        let listedIDs = chapterIDs + archivedIDs
+        guard Set(chapterIDs).isDisjoint(with: Set(archivedIDs)),
+              Set(archivedIDs).count == archivedIDs.count,
+              listedIDs.count == lessons.count,
+              Set(listedIDs) == Set(lessons.map(\.id)) else {
+            throw ContentError.invalid("章节与归档列表没有恰好覆盖每一课")
         }
         let items = reviewItems ?? []
         guard Set(items.map(\.id)).count == items.count else {
@@ -117,20 +128,31 @@ struct LessonCatalog: Codable {
             }
         }
         for lesson in lessons {
+            if let foundation = lesson.ipv4Foundation {
+                guard foundation.isValid,
+                      lesson.ipv4Introduction == nil,
+                      lesson.subnetMaskIntroduction == nil,
+                      lesson.ipv4Visual == nil,
+                      lesson.explanation.isEmpty else {
+                    throw ContentError.invalid("\(lesson.id) 的 IPv4 基础课参数无效")
+                }
+            }
             if let mask = lesson.subnetMaskIntroduction {
-                guard mask.isValid, lesson.ipv4Introduction == nil, lesson.ipv4Visual == nil,
+                guard mask.isValid, lesson.ipv4Foundation == nil,
+                      lesson.ipv4Introduction == nil, lesson.ipv4Visual == nil,
                       lesson.explanation.isEmpty else {
                     throw ContentError.invalid("\(lesson.id) 的掩码入门参数无效")
                 }
             }
             if let introduction = lesson.ipv4Introduction {
                 guard IPv4AddressValue(ip: introduction.ip, prefix: 32) != nil,
-                      lesson.ipv4Visual == nil else {
+                      lesson.ipv4Foundation == nil, lesson.ipv4Visual == nil else {
                     throw ContentError.invalid("\(lesson.id) 的 IPv4 入门参数无效")
                 }
             }
             if let visual = lesson.ipv4Visual {
-                guard visual.examples.count == 2,
+                guard lesson.ipv4Foundation == nil,
+                      visual.examples.count == 2,
                       visual.examples[0].mode == .explain,
                       visual.examples[1].mode == .practice,
                       visual.examples.allSatisfy({ IPv4AddressValue(ip: $0.ip, prefix: $0.prefix) != nil }),
@@ -167,7 +189,8 @@ struct LessonCatalog: Codable {
                   !left.isEmpty, left.count == right.count,
                   Set(exercise.solution.keys) == left,
                   Set(exercise.solution.values) == right,
-                  (!lesson.explanation.isEmpty || lesson.ipv4Introduction != nil || lesson.subnetMaskIntroduction != nil), !lesson.sources.isEmpty else {
+                  (!lesson.explanation.isEmpty || lesson.ipv4Foundation != nil ||
+                   lesson.ipv4Introduction != nil || lesson.subnetMaskIntroduction != nil), !lesson.sources.isEmpty else {
                 throw ContentError.invalid("\(lesson.id) 的连线或讲解不完整")
             }
         }

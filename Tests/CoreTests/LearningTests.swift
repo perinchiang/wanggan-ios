@@ -29,7 +29,10 @@ final class LearningTests: XCTestCase {
     func testAllShippedLessonsAreConsistent() throws {
         let catalog = try catalog()
         try catalog.validate()
-        XCTAssertTrue(Set(["gateway", "subnet", "arp", "hop", "dns"]).isSubset(of: Set(catalog.lessons.map(\.id))))
+        XCTAssertTrue(Set([
+            "ipv4-address-role", "ipv4-address-format", "ipv4-octet-binary",
+            "gateway", "subnet", "arp", "hop", "dns"
+        ]).isSubset(of: Set(catalog.lessons.map(\.id))))
         for lesson in catalog.lessons {
             XCTAssertFalse(lesson.sources.contains { URL(string: $0)?.scheme != "https" })
         }
@@ -39,8 +42,10 @@ final class LearningTests: XCTestCase {
         let catalog = try catalog()
         try catalog.validate()
         XCTAssertFalse(catalog.course.chapters.isEmpty)
-        XCTAssertEqual(catalog.orderedLessonIDs.count, catalog.lessons.count)
-        XCTAssertEqual(Set(catalog.orderedLessonIDs), Set(catalog.lessons.map(\.id)))
+        XCTAssertEqual(catalog.allLessonIDs.count, catalog.lessons.count)
+        XCTAssertEqual(Set(catalog.allLessonIDs), Set(catalog.lessons.map(\.id)))
+        XCTAssertEqual(catalog.archivedLessonIDs, ["ipv4-address", "subnet-mask"])
+        XCTAssertTrue(Set(catalog.orderedLessonIDs).isDisjoint(with: Set(catalog.archivedLessonIDs)))
         for chapter in catalog.course.chapters {
             XCTAssertEqual(catalog.lessons(in: chapter.id).map(\.id), chapter.orderedLessonIDs)
         }
