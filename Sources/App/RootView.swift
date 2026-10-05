@@ -23,7 +23,7 @@ struct RootView: View {
         .foregroundStyle(Theme.ink)
         .background(Theme.paper)
         .fullScreenCover(item: $activeLesson) { lesson in
-            LessonPlayer(lesson: lesson, initialSession: store.session(for: lesson)) { next in
+            StepLessonPlayer(lesson: lesson, initialSession: store.session(for: lesson)) { next in
                 activeLesson = next
             }
             .id(lesson.id)

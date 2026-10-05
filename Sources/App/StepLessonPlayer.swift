@@ -1,19 +1,5 @@
 import SwiftUI
 
-struct LessonPlayer: View {
-    let lesson: Lesson
-    let initialSession: LessonSession
-    let onNext: (Lesson?) -> Void
-
-    var body: some View {
-        if ["gateway", "subnet", "arp", "hop", "dns"].contains(lesson.id) {
-            StepLessonPlayer(lesson: lesson, initialSession: initialSession, onNext: onNext)
-        } else {
-            StageLessonPlayer(lesson: lesson, initialSession: initialSession, onNext: onNext)
-        }
-    }
-}
-
 struct StepLessonPlayer: View {
     let lesson: Lesson
     let onNext: (Lesson?) -> Void
