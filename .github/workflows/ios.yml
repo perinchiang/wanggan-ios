@@ -53,9 +53,10 @@ jobs:
           xcrun simctl boot '${{ steps.simulator.outputs.id }}' || true
           xcrun simctl bootstatus '${{ steps.simulator.outputs.id }}' -b
           python3 scripts/run_command_with_timeout.py --log build-simulator.log --idle-timeout 180 --wall-timeout 600 -- xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Debug -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.id }}' -derivedDataPath build/simulator CODE_SIGNING_ALLOWED=NO build-for-testing
+          python3 scripts/prepare_simulator_webkit.py --device '${{ steps.simulator.outputs.id }}' --products build/simulator/Build/Products/Debug-iphonesimulator
           mkdir -p build/screenshots
           xcrun simctl install '${{ steps.simulator.outputs.id }}' build/simulator/Build/Products/Debug-iphonesimulator/WangGan.app
-          xcrun simctl launch '${{ steps.simulator.outputs.id }}' com.perinchiang.wanggan --uitesting --reset-progress --seed-before-subnet | tee launch-simulator.log
+          SIMCTL_CHILD_DYLD_LIBRARY_PATH="$PWD/build/simulator/Build/Products/Debug-iphonesimulator" xcrun simctl launch '${{ steps.simulator.outputs.id }}' com.perinchiang.wanggan --uitesting --reset-progress --seed-before-subnet | tee launch-simulator.log
           sleep 15
           xcrun simctl io '${{ steps.simulator.outputs.id }}' screenshot build/screenshots/before-ui-tests.png
           xcrun simctl spawn '${{ steps.simulator.outputs.id }}' launchctl list | grep -i wanggan >> launch-simulator.log || true
