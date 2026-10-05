@@ -6,7 +6,7 @@ struct LessonPlayer: View {
     let onNext: (Lesson?) -> Void
 
     var body: some View {
-        if lesson.id == "gateway" {
+        if lesson.id == "gateway" || lesson.id == "subnet" {
             StepLessonPlayer(lesson: lesson, initialSession: initialSession, onNext: onNext)
         } else {
             StageLessonPlayer(lesson: lesson, initialSession: initialSession, onNext: onNext)

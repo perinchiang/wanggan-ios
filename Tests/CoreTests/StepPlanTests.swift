@@ -27,8 +27,14 @@ final class StepPlanTests: XCTestCase {
         }
     }
 
-    func testGatewayPlaysThroughToCompletion() throws {
-        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "gateway" })
+    func testMigratedLessonsPlayThroughToCompletion() throws {
+        for lessonID in ["gateway", "subnet"] {
+            try assertLessonPlaysThroughToCompletion(lessonID)
+        }
+    }
+
+    private func assertLessonPlaysThroughToCompletion(_ lessonID: String) throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == lessonID })
         let plan = LessonPlan(lesson: lesson)
         var session = StepSession(lessonID: lesson.id)
 
@@ -56,7 +62,13 @@ final class StepPlanTests: XCTestCase {
     }
 
     func testWrongChallengeRequiresRetryAndCountsMistake() throws {
-        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "gateway" })
+        for lessonID in ["gateway", "subnet"] {
+            try assertWrongChallengeRequiresRetry(lessonID)
+        }
+    }
+
+    private func assertWrongChallengeRequiresRetry(_ lessonID: String) throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == lessonID })
         let plan = LessonPlan(lesson: lesson)
         var session = StepSession(lessonID: lesson.id)
         for _ in 0..<plan.questionSceneCount { plan.advance(&session) }
@@ -97,8 +109,14 @@ final class StepPlanTests: XCTestCase {
         XCTAssertEqual(restored, session)
     }
 
-    func testStepPlanAgreesWithStageMachineOnGateway() throws {
-        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "gateway" })
+    func testStepPlanAgreesWithStageMachineOnMigratedLessons() throws {
+        for lessonID in ["gateway", "subnet"] {
+            try assertStepPlanAgreesWithStageMachine(for: lessonID)
+        }
+    }
+
+    private func assertStepPlanAgreesWithStageMachine(for lessonID: String) throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == lessonID })
         let plan = LessonPlan(lesson: lesson)
         var stepSession = StepSession(lessonID: lesson.id)
 
@@ -160,7 +178,13 @@ final class StepPlanTests: XCTestCase {
     }
 
     func testStageToStepAdapterRoundTripsEveryDraftPosition() throws {
-        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "gateway" })
+        for lessonID in ["gateway", "subnet"] {
+            try assertAdapterRoundTripsEveryDraftPosition(for: lessonID)
+        }
+    }
+
+    private func assertAdapterRoundTripsEveryDraftPosition(for lessonID: String) throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == lessonID })
         var drafts: [LessonSession] = []
         var fresh = LessonSession(lessonID: lesson.id)
         drafts.append(fresh)

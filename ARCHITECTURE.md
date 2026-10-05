@@ -15,7 +15,7 @@
 | `Sources/Core/LessonSession.swift` | question → explanation → matching → challenge → complete；课内状态、重试和累计错误数 |
 | `Sources/Core/LessonPlan.swift` | Step 类型与 payload（conversation / question / diagram / text / matching / summary）、Lesson→steps 适配、LessonPlan 步进门控、StepSession 及 stage↔step 双向适配 |
 | `Sources/Core/ProgressLedger.swift` | 完成记录、XP / 等级、复习日期、活动日、结算会话、主线 draft 与 reviewDrafts |
-| `Sources/App/LessonPlayer.swift` | 分派入口：`gateway` 走 `StepLessonPlayer`（LessonPlan / StepSession），其余四课走 `StageLessonPlayer`（旧 stage 状态机）；迁移门待等价行为全面通过后移除 |
+| `Sources/App/StepLessonPlayer.swift` | 分派入口：`gateway`、`subnet` 走 `StepLessonPlayer`（LessonPlan / StepSession），其余三课走 `StageLessonPlayer`（旧 stage 状态机）；迁移门待等价行为全面通过后移除 |
 | `Sources/App/AppStore.swift` | 加载课程、UserDefaults 编解码、解锁与推荐、保存及重置 |
 | `Sources/App` 其余文件 | SwiftUI 导航、页面、原生题型和图示 |
 | `Resources/lessons.json` | 当前五课内容与来源 |
@@ -177,7 +177,7 @@ schemaVersion、课程内容版本、Lesson revision、Web 契约版本独立管
 
 整体阶段由 PRODUCT 维护。工程上每次只迁一个可验证边界：先保护现有规则与存储，再包裹课程目录，然后适配一课为 Step，最后接入一个 Web 组件。其他课继续原路径，待等价行为通过再迁移。
 
-当前迁移门：`gateway` 已切换到 StepLessonPlayer，其余四课仍走 StageLessonPlayer。移除条件：gateway 在新路径上通过全部 UI 测试与真机试用后，把剩余四课逐一迁移（内容与 ID 不变，仅播放路径切换），全部通过后删除 StageLessonPlayer 与分派逻辑。期间不复制专用页面，两个播放器共享 QuestionConversation、MatchingView、CompletionView 等原生组件。
+当前迁移门：`gateway` 已通过上一轮 CI 并完成用户试用，反馈滚动修正尚待验证；`subnet` 已切换到 StepLessonPlayer，仍待阶段性 CI 与真机验收；`arp`、`hop`、`dns` 仍走 StageLessonPlayer。每课仅切换播放路径，内容与 ID 不变。其余课程逐一迁移并验收后，删除 StageLessonPlayer 与分派逻辑。期间不复制专用页面，两个播放器共享 QuestionConversation、MatchingView、CompletionView 等原生组件。
 
 不要把播放器、存储、课程内容和整个视觉系统放在一次重写里。兼容适配器有明确用途和移除条件；不是长期维护两套独立课程来源。课程拆分为多个文件与引入目录模型也不必发生在同一次变更。
 
