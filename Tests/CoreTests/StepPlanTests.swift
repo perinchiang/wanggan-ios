@@ -28,7 +28,7 @@ final class StepPlanTests: XCTestCase {
     }
 
     func testMigratedLessonsPlayThroughToCompletion() throws {
-        for lessonID in ["gateway", "subnet", "arp"] {
+        for lessonID in ["gateway", "subnet", "arp", "hop"] {
             try assertLessonPlaysThroughToCompletion(lessonID)
         }
     }
@@ -62,7 +62,7 @@ final class StepPlanTests: XCTestCase {
     }
 
     func testWrongChallengeRequiresRetryAndCountsMistake() throws {
-        for lessonID in ["gateway", "subnet", "arp"] {
+        for lessonID in ["gateway", "subnet", "arp", "hop"] {
             try assertWrongChallengeRequiresRetry(lessonID)
         }
     }
@@ -110,7 +110,7 @@ final class StepPlanTests: XCTestCase {
     }
 
     func testStepPlanAgreesWithStageMachineOnMigratedLessons() throws {
-        for lessonID in ["gateway", "subnet", "arp"] {
+        for lessonID in ["gateway", "subnet", "arp", "hop"] {
             try assertStepPlanAgreesWithStageMachine(for: lessonID)
         }
     }
@@ -178,7 +178,7 @@ final class StepPlanTests: XCTestCase {
     }
 
     func testStageToStepAdapterRoundTripsEveryDraftPosition() throws {
-        for lessonID in ["gateway", "subnet", "arp"] {
+        for lessonID in ["gateway", "subnet", "arp", "hop"] {
             try assertAdapterRoundTripsEveryDraftPosition(for: lessonID)
         }
     }
