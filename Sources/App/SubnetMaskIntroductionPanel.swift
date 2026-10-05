@@ -106,7 +106,7 @@ struct SubnetMaskIntroductionPanel: View {
                     .buttonStyle(.bordered).frame(minHeight: 44)
                     .accessibilityIdentifier("mask-condition-toggle")
                     if progress.switchedCondition {
-                        Text("地址没有变，网络位数从 \(configuration.initialPrefix) 变成 \(configuration.alternatePrefix)，主机位数从 \(32 - configuration.initialPrefix) 变成 \(32 - configuration.alternatePrefix)。分界由掩码决定。")
+                        Text("地址没有变。当前 /\(prefix) 标记 \(prefix) 个网络位，其余 \(32 - prefix) 位属于主机部分。分界由掩码决定。")
                             .font(.body)
                     }
                 }
