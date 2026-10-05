@@ -156,6 +156,17 @@ final class LearningUITests: XCTestCase {
         XCTAssertFalse(app.buttons["primary-action"].isEnabled)
         tap("question-option-all-fail")
         tap("primary-action")
+        let feedback = app.descendants(matching: .any)["answer-feedback"]
+        XCTAssertTrue(feedback.waitForExistence(timeout: 5))
+        let footer = app.buttons["primary-action"]
+        let deadline = Date().addingTimeInterval(5)
+        while feedback.frame.maxY > footer.frame.minY + 2 && Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.1)
+        }
+        XCTAssertLessThanOrEqual(feedback.frame.maxY, footer.frame.minY + 2,
+                                 "Answer feedback should be visible above the fixed action button")
+        XCTAssertTrue(feedback.isHittable, "Answer feedback should be on screen without a manual swipe")
+        screenshot("10-wrong-answer-feedback")
         tap("primary-action")
         XCTAssertTrue(app.staticTexts["沿着数据走一遍，就清楚了。"].exists)
     }

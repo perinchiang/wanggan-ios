@@ -54,7 +54,8 @@ struct StepLessonPlayer: View {
                     do { try await Task.sleep(for: .milliseconds(reduceMotion ? 80 : 400)) }
                     catch { return }
                     withAnimation(reduceMotion ? nil : .easeOut(duration: 0.24)) {
-                        proxy.scrollTo(conversationScrollTarget ?? "lesson-top", anchor: .top)
+                        proxy.scrollTo(feedbackScrollTarget ?? conversationScrollTarget ?? "lesson-top",
+                                       anchor: feedbackScrollTarget == nil ? .top : .bottom)
                     }
                 }
             }
@@ -169,6 +170,8 @@ struct StepLessonPlayer: View {
                 if submitted, let answer = question.options.first(where: { $0.id == selected }) {
                     feedbackCard(title: selected == question.correctID ? "判断正确" : "这里值得再想想", text: answer.feedback,
                                  correct: selected == question.correctID)
+                        .id("answer-feedback")
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
                     if challenge && !session.challengeSolved {
                         Text("一点提示：\(question.hint)").font(.subheadline).foregroundStyle(Theme.muted).lineSpacing(4)
                     }
@@ -198,7 +201,16 @@ struct StepLessonPlayer: View {
         return nil
     }
 
-    private var scrollRequest: String { conversationScrollTarget ?? "step-\(session.stepIndex)" }
+    private var feedbackScrollTarget: String? {
+        guard plan.step(at: session.stepIndex)?.kind == .question else { return nil }
+        let submitted = session.stepIndex == plan.challengeIndex ? session.challengeSubmitted : session.answerSubmitted
+        return submitted ? "answer-feedback" : nil
+    }
+
+    private var scrollRequest: String {
+        if let feedbackScrollTarget { return "\(session.stepIndex)-\(feedbackScrollTarget)" }
+        return conversationScrollTarget ?? "step-\(session.stepIndex)"
+    }
 
     private func feedbackCard(title: String, text: String, correct: Bool) -> some View {
         VStack(alignment: .leading, spacing: 9) {
