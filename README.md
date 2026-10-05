@@ -4,8 +4,8 @@
 
 ## 当前版本
 
-- 0.1.4（build 5），对应代码提交 `8982dd3`；iPhone 未签名安装包由手动 Actions 运行 37248112960 导出。
-- 源码已进入 0.2.0（build 6）候选版：子网课的 IPv4 可视化试点已接入。提交 `7920957` 的 Core、Web 测试与 iPhone 编译通过，但原生 UI 在 App 启动后未找到课程入口；诊断补跑被 GitHub 账单 / 支出限制阻止。本版模拟器及真机验收未完成，最新网页大字号布局仅在本地浏览器检查；已交付 IPA 仍是 0.1.4。详见 [试点交接](docs/handoffs/2026-10-05-ipv4-visual-pilot-handoff.md)。
+- 0.2.0（build 6），对应代码提交 `92b2dac`；iPhone 未签名安装包由手动 Actions 运行 [37294516851](https://github.com/perinchiang/wanggan-ios/actions/runs/37294516851) 导出，供真机覆盖安装验收。
+- 子网课已加入离线 IPv4 地址拆解和分界练习。27 项 Core、2 项 Web 测试及 1 项子网原生流程测试通过，包含实际 WKWebView、答错改选、退出恢复与经验结算；本轮未运行其余四课 UI 全套。VoiceOver、大字号和后台切换的完整真机体验仍待验收。详见 [发布交接](docs/handoffs/2026-10-05-ipv4-visual-0-2-0-release-handoff.md)。
 - iOS 17+，iPhone，简体中文，竖屏。
 - 5 个原创小节：网关、子网、ARP、逐跳转发、DNS；每节附知识来源。
 - 原生路线图、数据包角色、触感反馈、连接曲线、通关与经验动画。

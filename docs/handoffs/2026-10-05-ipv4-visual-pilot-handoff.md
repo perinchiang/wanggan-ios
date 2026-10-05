@@ -2,6 +2,8 @@
 
 日期：2026-10-05
 
+状态：后续修复与定向验收已完成，0.2.0 build 6 IPA 已导出。最终交付信息见 [发布交接](2026-10-05-ipv4-visual-0-2-0-release-handoff.md)；下文保留本轮诊断经过。
+
 ## Current task / 本轮任务
 
 在子网课接入一个本地 IPv4 地址图示，复用同一组件讲解 `/24` 并练习 `/16`，保持既有五课进度和奖励。
@@ -22,7 +24,6 @@
 
 ## Not completed / 尚未完成
 
-- Core、Web 与 iPhone 构建已通过；原生 UI 验证尚未完成，0.2.0 IPA 尚未交付。
 - iPhone 实际安装、VoiceOver 与大字号体验仍需真机验收；浏览器截图不能代替 WKWebView 验收。
 
 ## Known issues / 已知问题
@@ -49,7 +50,8 @@
 - 运行库脚本本地用临时路径检查了选中 runtime、库链接、重复执行和其他工具链跳过逻辑，尚待真实 macOS 执行。
 - 提交 `291788a` 的运行 37292246799：Core、Web、iPhone 编译及模拟器启动通过；实际讲解截图 `12-ipv4-explanation` 与失败 snapshot / 录像中的练习画面均已检查。子网完整流程仍未通过，尚无交付 IPA。
 - 在 Chromium 验证重播、暂停后位数不再增长、单步增加一位和 Reduce Motion 直接显示完整分界。
+- 最终提交 `92b2dac` 的运行 [37294516851](https://github.com/perinchiang/wanggan-ios/actions/runs/37294516851) 成功：27 项 Core、2 项 Web 与 1 项子网原生流程通过，确认真实 WKWebView、错误改选、退出恢复、完成与累计 XP 60。IPA 版本 / 资源与实际讲解、练习、完成截图已核对；本轮未重跑其余四课 UI。
 
 ## Next recommended task / 推荐下一步
 
-补跑 `ipv4` 范围，确认模拟器运行库修复、独立启动画面及子网课新图、答错重试、退出续学与完成结算；通过后导出 0.2.0（build 6）供 iPhone 覆盖安装验收。其余四课本轮 UI 未通过，应明确保留此前 0.1.4 的验证归属，后续适合的集中验收再跑全套。公开后仍保持仅手动构建，不因普通 commit 自动跑 IPA。
+使用 0.2.0（build 6）覆盖安装做真机及可访问性验收，验收后按 PRODUCT 推进 F 短复习与掌握证据。公开后仍保持仅手动构建，不因普通 commit 自动跑 IPA。
