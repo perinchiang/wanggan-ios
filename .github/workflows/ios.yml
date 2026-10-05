@@ -19,6 +19,8 @@ jobs:
           brew install xcodegen
       - name: Core behavior tests
         run: swift test
+      - name: Local IPv4 visual tests
+        run: node --test scripts/test_ipv4_visual.cjs
       - name: Generate Xcode project
         run: |
           swift scripts/generate_icon.swift
@@ -28,6 +30,7 @@ jobs:
           set -o pipefail
           xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/device CODE_SIGNING_ALLOWED=NO build > build-device.log 2>&1 || { tail -100 build-device.log; exit 1; }
           test -f build/device/Build/Products/Release-iphoneos/WangGan.app/lessons.json
+          test -f build/device/Build/Products/Release-iphoneos/WangGan.app/ipv4-address-visual.html
           test -f build/device/Build/Products/Release-iphoneos/WangGan.app/Assets.car
           mkdir -p build/package/Payload
           cp -R build/device/Build/Products/Release-iphoneos/WangGan.app build/package/Payload/

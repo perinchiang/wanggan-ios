@@ -22,6 +22,12 @@ struct LessonSession: Codable, Equatable, Identifiable {
     var challengeSolved = false
     var mistakes = 0
     var earnedXP: Int?
+    // Optional to keep drafts from earlier app versions decodable.
+    var ipv4VisualPhase: Int?
+    var ipv4SelectedOctet: Int?
+    var ipv4VisualSubmitted: Bool?
+    var ipv4VisualSolved: Bool?
+    var ipv4VisualFinished: Bool?
 
     init(lessonID: String, id: UUID = UUID()) {
         self.id = id

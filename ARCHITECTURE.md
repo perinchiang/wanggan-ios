@@ -1,6 +1,6 @@
 # 网感：系统架构与渐进迁移
 
-状态：职责边界与数据保护原则已确认；目标模型、短复习及 Web 试点尚未实现。下面出现的目标类型不是当前代码 API。
+状态：职责边界与数据保护原则已确认；IPv4 Web 试点已接入 0.2.0 候选版源码，尚待 CI、模拟器与真机验收；目标模型其余部分及短复习未实现。下面出现的目标类型不是当前代码 API。
 基线：0.1.3（build 4），提交 `4ed6b49`。
 
 ## 文档职责
@@ -16,6 +16,7 @@
 | `Sources/Core/LessonPlan.swift` | Step 类型与 payload（conversation / question / diagram / text / matching / summary）、Lesson→steps 适配、LessonPlan 步进门控、StepSession 及 stage↔step 双向适配 |
 | `Sources/Core/ProgressLedger.swift` | 完成记录、XP / 等级、复习日期、活动日、结算会话、主线 draft 与 reviewDrafts |
 | `Sources/App/StepLessonPlayer.swift` | 五个现有 Lesson 均走 `StepLessonPlayer`（LessonPlan / StepSession）；旧原生播放器与按 Lesson ID 分派的入口已移除 |
+| `Sources/Core/IPv4AddressVisual.swift` / `Sources/App/IPv4AddressVisualWebView.swift` / `Resources/ipv4-address-visual.html` | 子网课 IPv4 地址与前缀校验、网络地址计算、一个本地 Web 图示与练习；当前为待验收候选版，不影响其他四课 |
 | `Sources/App/AppStore.swift` | 加载课程、UserDefaults 编解码、解锁与推荐、保存及重置 |
 | `Sources/App` 其余文件 | SwiftUI 导航、页面、原生题型和图示 |
 | `Resources/lessons.json` | 当前五课内容与来源 |
@@ -114,7 +115,7 @@ Challenge 是练习角色 / 组合，不必复制一套专用答案状态。会�
 
 ### 第一版必须只满足 IPv4AddressVisual
 
-第一版目标是验证一个组件能够用不同参数用于至少两处内容，并支持讲解与一个必要的练习交互。不是建设通用可视化平台。
+第一版目标是验证一个组件能够用不同参数用于至少两处内容，并支持讲解与一个必要的练习交互。0.2.0 候选版已在子网课使用 `192.168.1.10/24` 讲解与 `10.20.30.40/16` 分界练习；同一 HTML 接收不同参数，Swift/Core 核对所选边界。真机验收前不算已交付能力。不是建设通用可视化平台。
 
 建议仅有：一个本地 HTML 入口、一个 IPv4 组件、一个 SwiftUI WKWebView 宿主和直接通信方法。先用普通 JS / CSS / SVG，不为试点引入完整前端应用框架、插件加载器或构建平台。
 

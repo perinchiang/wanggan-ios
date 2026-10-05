@@ -6,6 +6,8 @@ struct StepLessonPlayer: View {
     @Environment(LearningStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.scenePhase) private var scenePhase
     private let plan: LessonPlan
     @State private var session: StepSession
@@ -13,6 +15,9 @@ struct StepLessonPlayer: View {
     @State private var showExit = false
     @State private var showSources = false
     @State private var feedbackTick = 0
+    @State private var visualHeight: CGFloat = 340
+    @State private var visualFailed = false
+    @State private var visualReloadID = UUID()
 
     init(lesson: Lesson, initialSession: LessonSession, onNext: @escaping (Lesson?) -> Void) {
         self.lesson = lesson
@@ -98,7 +103,11 @@ struct StepLessonPlayer: View {
 
     @ViewBuilder private var explanationPhase: some View {
         TutorBubble(text: "沿着数据走一遍，就清楚了。")
-        ConceptIllustration(lesson: lesson, animated: true)
+        if session.stepIndex == plan.questionIndex + 1, let visual = lesson.ipv4Visual {
+            ipv4VisualPanel(visual)
+        } else {
+            ConceptIllustration(lesson: lesson, animated: true)
+        }
         if visibleTextCount > 0 {
             ForEach(Array(lesson.explanation.prefix(visibleTextCount)), id: \.self) { paragraph in
                 ConversationBubble(text: paragraph)
@@ -107,6 +116,102 @@ struct StepLessonPlayer: View {
         }
         Button { showSources = true } label: { Label("看看知识来源", systemImage: "book.closed").font(.caption).frame(minHeight: 44) }
             .foregroundStyle(Theme.muted).id("explanation-bottom")
+    }
+
+    @ViewBuilder private func ipv4VisualPanel(_ visual: IPv4VisualLesson) -> some View {
+        let phase = min(max(session.ipv4VisualPhase ?? 0, 0), 1)
+        let example = visual.examples[phase]
+        Text(phase == 0 ? "先看 /24 怎样把地址分成两部分。" : "换一条地址：点选网络部分结束的那个字节。")
+            .font(.subheadline).foregroundStyle(Theme.muted)
+        if !visualFailed {
+            IPv4AddressVisualWebView(
+                example: example, selectedOctet: session.ipv4SelectedOctet,
+                solved: session.ipv4VisualSolved ?? false, theme: colorScheme,
+                fontScale: visualFontScale,
+                reduceMotion: reduceMotion, isActive: scenePhase == .active,
+                onSelect: { selected in selectIPv4Boundary(selected) },
+                onHeight: { height in if abs(visualHeight - height) > 2 { visualHeight = height } },
+                onFailure: { visualFailed = true }
+            )
+            .id(visualReloadID)
+            .frame(height: visualHeight)
+            .accessibilityIdentifier("ipv4-visual")
+        } else {
+            ipv4VisualFallback(example: example)
+            Button("重试动态图") { visualFailed = false; visualReloadID = UUID() }
+                .font(.subheadline).frame(minHeight: 44)
+        }
+        if phase == 1, session.ipv4VisualSubmitted == true {
+            feedbackCard(
+                title: session.ipv4VisualSolved == true ? "分界找对了" : "再数一数网络位",
+                text: session.ipv4VisualSolved == true
+                    ? "前 \(example.prefix) 位属于网络部分，所以边界在第 \(example.prefix / 8) 个字节后。"
+                    : "/\(example.prefix) 表示从左往右数 \(example.prefix) 位；一个字节有 8 位。",
+                correct: session.ipv4VisualSolved == true
+            )
+            .id("ipv4-feedback")
+        }
+    }
+
+    private func ipv4VisualFallback(example: IPv4VisualExample) -> some View {
+        Surface {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("\(example.ip)/\(example.prefix)").font(.headline.monospaced())
+                if let address = IPv4AddressValue(ip: example.ip, prefix: example.prefix) {
+                    ForEach(0..<4, id: \.self) { index in
+                        let octet = Int(address.octets[index])
+                        let bits = address.binaryOctets[index]
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("第 \(index + 1) 个字节：\(octet) = \(bits)")
+                                .font(.subheadline.monospaced())
+                            if example.mode == .practice && session.ipv4VisualSolved != true {
+                                Button("选第 \(index + 1) 个字节后") { selectIPv4Boundary(index + 1) }
+                                    .accessibilityAddTraits(session.ipv4SelectedOctet == index + 1 ? .isSelected : [])
+                                    .accessibilityIdentifier("ipv4-fallback-boundary-\(index + 1)")
+                            }
+                        }
+                    }
+                    if example.mode == .explain || session.ipv4VisualSolved == true {
+                        Text("前 \(example.prefix) 位是网络部分；网络地址是 \(address.networkAddress)/\(example.prefix)。")
+                            .font(.subheadline)
+                    }
+                }
+            }
+        }
+    }
+
+    private func selectIPv4Boundary(_ selected: Int) {
+        guard (session.ipv4VisualPhase ?? 0) == 1, session.ipv4VisualSolved != true,
+              (1...4).contains(selected) else { return }
+        session.ipv4SelectedOctet = selected
+        session.ipv4VisualSubmitted = false
+    }
+
+    private var visualFontScale: Double {
+        switch dynamicTypeSize {
+        case .xSmall: return 0.9
+        case .small: return 0.95
+        case .medium, .large: return 1.0
+        case .xLarge: return 1.1
+        case .xxLarge: return 1.2
+        case .xxxLarge: return 1.3
+        case .accessibility1: return 1.45
+        case .accessibility2: return 1.65
+        case .accessibility3: return 1.85
+        case .accessibility4: return 2.0
+        case .accessibility5: return 2.2
+        @unknown default: return 1.0
+        }
+    }
+
+    private func checkIPv4Boundary() {
+        guard let example = lesson.ipv4Visual?.examples.last,
+              let selected = session.ipv4SelectedOctet,
+              session.ipv4VisualSubmitted != true,
+              let address = IPv4AddressValue(ip: example.ip, prefix: example.prefix) else { return }
+        session.ipv4VisualSubmitted = true
+        session.ipv4VisualSolved = address.isCorrectBoundary(selected)
+        if session.ipv4VisualSolved != true { session.mistakes += 1 }
     }
 
     private var visibleTextCount: Int {
@@ -188,6 +293,10 @@ struct StepLessonPlayer: View {
     }
 
     private var feedbackScrollTarget: String? {
+        if plan.step(at: session.stepIndex)?.kind == .diagram,
+           lesson.ipv4Visual != nil, session.ipv4VisualSubmitted == true {
+            return "ipv4-feedback"
+        }
         guard plan.step(at: session.stepIndex)?.kind == .question else { return nil }
         let submitted = session.stepIndex == plan.challengeIndex ? session.challengeSubmitted : session.answerSubmitted
         return submitted ? "answer-feedback" : nil
@@ -232,6 +341,10 @@ struct StepLessonPlayer: View {
             }
             return session.answerSubmitted ? "看看为什么" : "确认答案"
         case .diagram:
+            if lesson.ipv4Visual != nil {
+                if (session.ipv4VisualPhase ?? 0) == 0 { return "换一条试试" }
+                return session.ipv4VisualSolved == true ? "继续看一小步" : "检查分界"
+            }
             return lesson.explanation.isEmpty ? "试着连一连" : "继续看一小步"
         case .text:
             return plan.step(at: session.stepIndex + 1)?.kind == .matching ? "试着连一连" : "继续看一小步"
@@ -245,8 +358,12 @@ struct StepLessonPlayer: View {
     private var buttonEnabled: Bool {
         guard let step = plan.step(at: session.stepIndex) else { return true }
         switch step.kind {
-        case .conversation, .diagram, .text, .summary:
+        case .conversation, .text, .summary:
             return true
+        case .diagram:
+            guard lesson.ipv4Visual != nil, (session.ipv4VisualPhase ?? 0) == 1 else { return true }
+            return session.ipv4VisualSolved == true ||
+                (session.ipv4SelectedOctet != nil && session.ipv4VisualSubmitted != true)
         case .question:
             if session.stepIndex == plan.challengeIndex { return session.challengeAnswer != nil }
             return session.selectedAnswer != nil
@@ -282,11 +399,32 @@ struct StepLessonPlayer: View {
                 }
             } else {
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) {
-                    if session.answerSubmitted { plan.advance(&session) }
+                    if session.answerSubmitted {
+                        plan.advance(&session)
+                        if lesson.ipv4Visual != nil {
+                            session.ipv4VisualPhase = 0
+                            session.ipv4VisualFinished = false
+                        }
+                    }
                     else { plan.submitAnswer(session.selectedAnswer ?? "", in: &session) }
                 }
             }
-        case .diagram, .text:
+        case .diagram:
+            if lesson.ipv4Visual != nil {
+                if (session.ipv4VisualPhase ?? 0) == 0 {
+                    session.ipv4VisualPhase = 1
+                    return
+                }
+                if session.ipv4VisualSolved != true {
+                    checkIPv4Boundary()
+                    return
+                }
+            }
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) {
+                if lesson.ipv4Visual != nil { session.ipv4VisualFinished = true }
+                plan.advance(&session)
+            }
+        case .text:
             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) { plan.advance(&session) }
         case .matching:
             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) {

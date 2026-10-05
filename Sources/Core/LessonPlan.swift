@@ -116,6 +116,11 @@ struct StepSession: Codable, Equatable {
     var challengeSubmitted = false
     var challengeSolved = false
     var mistakes = 0
+    var ipv4VisualPhase: Int?
+    var ipv4SelectedOctet: Int?
+    var ipv4VisualSubmitted: Bool?
+    var ipv4VisualSolved: Bool?
+    var ipv4VisualFinished: Bool?
 
     init(lessonID: String, id: UUID = UUID()) {
         self.id = id
@@ -234,6 +239,11 @@ extension StepSession {
         let plan = LessonPlan(lesson: lesson)
         self.init(lessonID: lesson.id, id: stage.id)
         mistakes = stage.mistakes
+        ipv4VisualPhase = stage.ipv4VisualPhase
+        ipv4SelectedOctet = stage.ipv4SelectedOctet
+        ipv4VisualSubmitted = stage.ipv4VisualSubmitted
+        ipv4VisualSolved = stage.ipv4VisualSolved
+        ipv4VisualFinished = stage.ipv4VisualFinished
         selectedAnswer = stage.selectedAnswer
         answerSubmitted = stage.answerSubmitted
         matches = stage.matches
@@ -246,7 +256,11 @@ extension StepSession {
         case .question:
             stepIndex = min(stage.sceneStep(for: lesson.question, challenge: false), plan.questionSceneCount)
         case .explanation:
-            stepIndex = plan.questionIndex + 2 + min(stage.explanationIndex, max(lesson.explanation.count - 1, 0))
+            if lesson.ipv4Visual != nil, stage.ipv4VisualPhase != nil, stage.ipv4VisualFinished != true {
+                stepIndex = plan.questionIndex + 1
+            } else {
+                stepIndex = plan.questionIndex + 2 + min(stage.explanationIndex, max(lesson.explanation.count - 1, 0))
+            }
         case .matching:
             stepIndex = plan.matchingIndex
         case .challenge:
@@ -260,6 +274,11 @@ extension StepSession {
         let plan = LessonPlan(lesson: lesson)
         var result = LessonSession(lessonID: lesson.id, id: id)
         result.mistakes = mistakes
+        result.ipv4VisualPhase = ipv4VisualPhase
+        result.ipv4SelectedOctet = ipv4SelectedOctet
+        result.ipv4VisualSubmitted = ipv4VisualSubmitted
+        result.ipv4VisualSolved = ipv4VisualSolved
+        result.ipv4VisualFinished = ipv4VisualFinished
         result.selectedAnswer = selectedAnswer
         result.answerSubmitted = answerSubmitted
         result.matches = matches
@@ -277,6 +296,10 @@ extension StepSession {
         } else if stepIndex < plan.matchingIndex {
             result.stage = .explanation
             result.explanationIndex = max(min(stepIndex - plan.questionIndex - 2, lesson.explanation.count - 1), 0)
+            if lesson.ipv4Visual != nil, stepIndex == plan.questionIndex + 1 {
+                result.ipv4VisualPhase = ipv4VisualPhase ?? 0
+                result.ipv4VisualFinished = false
+            }
         } else if stepIndex == plan.matchingIndex {
             result.stage = .matching
         } else if stepIndex < plan.challengeIndex {

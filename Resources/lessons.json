@@ -145,6 +145,12 @@
       "takeaway": "IP 与掩码要一起看",
       "nextCuriosity": "知道了对方的 IP，为什么还要找 MAC？",
       "diagram": "subnet",
+      "ipv4Visual": {
+        "examples": [
+          { "ip": "192.168.1.10", "prefix": 24, "mode": "explain" },
+          { "ip": "10.20.30.40", "prefix": 16, "mode": "practice" }
+        ]
+      },
       "question": {
         "prompt": "它们属于同一个 IP 子网吗？",
         "options": [

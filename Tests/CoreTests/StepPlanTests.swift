@@ -7,6 +7,52 @@ final class StepPlanTests: XCTestCase {
         return try JSONDecoder().decode(LessonCatalog.self, from: Data(contentsOf: root.appendingPathComponent("Resources/lessons.json")))
     }
 
+    func testIPv4VisualCalculatesBoundariesAndRejectsInvalidInput() throws {
+        let first = try XCTUnwrap(IPv4AddressValue(ip: "192.168.1.10", prefix: 24))
+        XCTAssertEqual(first.binaryOctets, ["11000000", "10101000", "00000001", "00001010"])
+        XCTAssertEqual(first.networkAddress, "192.168.1.0")
+        XCTAssertTrue(first.isCorrectBoundary(3))
+        XCTAssertFalse(first.isCorrectBoundary(2))
+
+        let second = try XCTUnwrap(IPv4AddressValue(ip: "10.20.30.40", prefix: 16))
+        XCTAssertEqual(second.networkAddress, "10.20.0.0")
+        XCTAssertTrue(second.isCorrectBoundary(2))
+        XCTAssertEqual(IPv4AddressValue(ip: "192.168.1.200", prefix: 25)?.networkAddress, "192.168.1.128")
+        XCTAssertNil(IPv4AddressValue(ip: "256.1.2.3", prefix: 24))
+        XCTAssertNil(IPv4AddressValue(ip: "01.2.3.4", prefix: 24))
+        XCTAssertNil(IPv4AddressValue(ip: "10.20.30.40", prefix: 33))
+    }
+
+    func testIPv4VisualDraftResumesAtPracticeWithoutChangingLegacyDrafts() throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "subnet" })
+        let visual = try XCTUnwrap(lesson.ipv4Visual)
+        XCTAssertEqual(visual.examples.map(\.mode), [.explain, .practice])
+        let plan = LessonPlan(lesson: lesson)
+
+        var practice = LessonSession(lessonID: lesson.id)
+        practice.stage = .explanation
+        practice.ipv4VisualPhase = 1
+        practice.ipv4SelectedOctet = 3
+        practice.ipv4VisualSubmitted = true
+        practice.ipv4VisualSolved = false
+        practice.ipv4VisualFinished = false
+        let restored = try JSONDecoder().decode(LessonSession.self, from: JSONEncoder().encode(practice))
+        let step = StepSession(lesson: lesson, from: restored)
+        XCTAssertEqual(step.stepIndex, plan.questionIndex + 1)
+        XCTAssertEqual(step.ipv4SelectedOctet, 3)
+        XCTAssertEqual(step.stageSession(lesson: lesson), restored)
+
+        var afterVisual = practice
+        afterVisual.ipv4VisualSolved = true
+        afterVisual.ipv4VisualFinished = true
+        let textStep = StepSession(lesson: lesson, from: afterVisual)
+        XCTAssertEqual(textStep.stepIndex, plan.questionIndex + 2)
+
+        var oldDraft = LessonSession(lessonID: lesson.id)
+        oldDraft.stage = .explanation
+        XCTAssertEqual(StepSession(lesson: lesson, from: oldDraft).stepIndex, plan.questionIndex + 2)
+    }
+
     func testEveryLessonDerivesConsistentSteps() throws {
         let lessons = try catalog().lessons
         XCTAssertEqual(lessons.count, 5)

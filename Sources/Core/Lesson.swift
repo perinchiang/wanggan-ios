@@ -53,6 +53,7 @@ struct Lesson: Codable, Equatable, Identifiable {
     let takeaway: String
     let nextCuriosity: String
     let diagram: String
+    let ipv4Visual: IPv4VisualLesson?
     let question: Question
     let explanation: [String]
     let matching: MatchingExercise
@@ -99,6 +100,16 @@ struct LessonCatalog: Codable {
             throw ContentError.invalid("章节没有恰好覆盖每一课")
         }
         for lesson in lessons {
+            if let visual = lesson.ipv4Visual {
+                guard visual.examples.count == 2,
+                      visual.examples[0].mode == .explain,
+                      visual.examples[1].mode == .practice,
+                      visual.examples.allSatisfy({ IPv4AddressValue(ip: $0.ip, prefix: $0.prefix) != nil }),
+                      visual.examples[1].prefix.isMultiple(of: 8),
+                      (8...32).contains(visual.examples[1].prefix) else {
+                    throw ContentError.invalid("\(lesson.id) 的 IPv4 可视化参数无效")
+                }
+            }
             for question in [lesson.question, lesson.challenge] {
                 guard question.options.count >= 2,
                       Set(question.options.map(\.id)).count == question.options.count,

@@ -218,6 +218,32 @@ final class LearningUITests: XCTestCase {
         XCTAssertEqual(app.buttons["primary-action"].label, "看看为什么")
         tap("primary-action")
 
+        if flow.id == "subnet" {
+            let web = app.webViews.firstMatch
+            XCTAssertTrue(web.waitForExistence(timeout: 10), "The local IPv4 visual should load inside the lesson")
+            XCTAssertTrue(web.staticTexts["192.168.1.10/24"].waitForExistence(timeout: 10))
+            XCTAssertEqual(app.buttons["primary-action"].label, "换一条试试")
+            screenshot("12-ipv4-explanation")
+            tap("primary-action")
+            XCTAssertFalse(app.buttons["primary-action"].isEnabled)
+            tapIPv4Boundary(3)
+            tap("primary-action")
+            XCTAssertTrue(app.staticTexts["再数一数网络位"].exists)
+            tap("exit-lesson")
+            app.buttons["保存进度并退出"].tap()
+            app.terminate()
+            app.launchArguments = ["--uitesting"]
+            app.launch()
+            tap("start-lesson")
+            XCTAssertEqual(app.buttons["primary-action"].label, "检查分界")
+            XCTAssertTrue(app.staticTexts["再数一数网络位"].exists)
+            tapIPv4Boundary(2)
+            tap("primary-action")
+            XCTAssertTrue(app.staticTexts["分界找对了"].exists)
+            screenshot("13-ipv4-practice")
+            tap("primary-action")
+        }
+
         for _ in 0..<8 {
             if app.buttons["match-left-\(flow.matches[0].0)"].exists { break }
             tap("primary-action")
@@ -237,6 +263,20 @@ final class LearningUITests: XCTestCase {
         screenshot("11-\(flow.id)-completion")
         tap("finish-session")
         XCTAssertEqual(app.staticTexts["xp-badge"].label, "\(flow.expectedXP) 经验值")
+    }
+
+    private func tapIPv4Boundary(_ octet: Int) {
+        let button = app.webViews.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH %@", "第 \(octet) 个字节")
+        ).firstMatch
+        XCTAssertTrue(button.waitForExistence(timeout: 10), "Missing IPv4 byte \(octet) in WebView")
+        for _ in 0..<5 where !button.isHittable { app.swipeUp() }
+        XCTAssertTrue(button.isHittable)
+        button.tap()
+        let enabled = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "enabled == true"), object: app.buttons["primary-action"]
+        )
+        XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 5), .completed)
     }
 
     func testSceneRevealsOneMessageAtATimeAndResumesAfterRelaunch() {
