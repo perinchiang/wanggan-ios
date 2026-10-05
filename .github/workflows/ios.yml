@@ -76,6 +76,8 @@ jobs:
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testSubnetMaskAtLargestTextSizeWithStaticPresentation')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4IntroductionObservationBacktrackingResumeAndCompletion')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testSubnetResumesAndCompletesOnStepPlayer')
+            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testShortReviewResumesWithoutReplacingMainOrDuplicatingXP')
+            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testFullLessonPersistenceAndResume')
           elif [ '${{ inputs.ui_scope }}' = 'review' ]; then
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testShortReviewResumesWithoutReplacingMainOrDuplicatingXP')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testDNSShortReviewHintAndNextScenario')

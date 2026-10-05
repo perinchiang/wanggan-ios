@@ -171,9 +171,7 @@ final class LearningUITests: XCTestCase {
         let octet = app.webViews.descendants(matching: .any).matching(
             NSPredicate(format: "label BEGINSWITH %@", "第 4 段，10，点选")
         ).firstMatch
-        XCTAssertTrue(octet.waitForExistence(timeout: 10))
-        for _ in 0..<5 where !octet.isHittable { app.swipeUp() }
-        octet.tap()
+        tapWebControl(octet, evidence: "G00-intro-before-select")
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: app.buttons["primary-action"])
         XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 5), .completed)
         screenshot("G01-intro-select")
@@ -229,6 +227,8 @@ final class LearningUITests: XCTestCase {
     func testShortReviewResumesWithoutReplacingMainOrDuplicatingXP() {
         app.launchArguments += ["--seed-before-subnet"]
         app.launch()
+        XCTAssertTrue(app.staticTexts["xp-badge"].waitForExistence(timeout: 10))
+        let startingXP = app.staticTexts["xp-badge"].label
         tap("start-lesson")
         tap("primary-action")
         tap("exit-lesson")
@@ -272,7 +272,7 @@ final class LearningUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["short-evidence"].label, "独立答对过")
         tap("short-primary")
         app.tabBars.buttons["学习"].tap()
-        XCTAssertEqual(app.staticTexts["xp-badge"].label, "60 经验值")
+        XCTAssertEqual(app.staticTexts["xp-badge"].label, startingXP)
         XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "谁才是我的邻居？")
         tap("start-lesson")
         XCTAssertFalse(app.buttons["question-option-different"].exists)
@@ -307,6 +307,8 @@ final class LearningUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.buttons["start-lesson"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.buttons["start-lesson"].isHittable, "Start should be visible without scrolling")
+        let startingXP = Int(app.staticTexts["xp-badge"].label.split(separator: " ").first ?? "") ?? -1
+        XCTAssertGreaterThanOrEqual(startingXP, 0)
         screenshot("01-learning-route")
         tap("start-lesson")
         XCTAssertFalse(app.buttons["question-option-local"].exists)
@@ -347,7 +349,7 @@ final class LearningUITests: XCTestCase {
         app.launchArguments = ["--uitesting"]
         app.launch()
         XCTAssertTrue(app.staticTexts["xp-badge"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.staticTexts["xp-badge"].label, "60 经验值")
+        XCTAssertEqual(app.staticTexts["xp-badge"].label, "\(startingXP + 30) 经验值")
         tap("lesson-subnet")
         revealScene(option: "question-option-different")
         let firstAddress = app.descendants(matching: .any)["question-answer-addresses-a"]
@@ -526,14 +528,40 @@ final class LearningUITests: XCTestCase {
         let button = app.webViews.descendants(matching: .any).matching(
             NSPredicate(format: "label BEGINSWITH %@", "第 \(octet) 个字节")
         ).firstMatch
-        XCTAssertTrue(button.waitForExistence(timeout: 10), "Missing IPv4 byte \(octet) in WebView")
-        for _ in 0..<5 where !button.isHittable { app.swipeUp() }
-        XCTAssertTrue(button.isHittable)
-        button.tap()
+        tapWebControl(button, evidence: "ipv4-before-boundary-\(octet)")
         let enabled = XCTNSPredicateExpectation(
             predicate: NSPredicate(format: "enabled == true"), object: app.buttons["primary-action"]
         )
         XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 5), .completed)
+    }
+
+    private func tapWebControl(_ control: XCUIElement, evidence: String) {
+        XCTAssertTrue(control.waitForExistence(timeout: 10), "Missing Web control")
+        let footer = app.buttons["primary-action"]
+        for _ in 0..<5 {
+            if control.isHittable && control.frame.minY > 100 && control.frame.maxY < footer.frame.minY { break }
+            if control.frame.minY < 100 { app.swipeDown() }
+            else { app.swipeUp() }
+        }
+        // WebKit can expose its accessibility tree before the resized native
+        // frame and rendered content settle. Observe stable geometry before tapping.
+        let deadline = Date().addingTimeInterval(5)
+        var previous = control.frame
+        var stableSamples = 0
+        while stableSamples < 4 && Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.25)
+            let current = control.frame
+            stableSamples = current == previous ? stableSamples + 1 : 0
+            previous = current
+        }
+        XCTAssertEqual(stableSamples, 4, "Web control geometry did not settle")
+        XCTAssertTrue(control.isHittable)
+        XCTAssertGreaterThan(control.frame.minY, 100)
+        XCTAssertLessThan(control.frame.maxY, footer.frame.minY)
+        screenshot(evidence)
+        // aria-pressed is exposed as a Switch. Use the visible card center,
+        // so the event tests the HTML hit target rather than a native Switch action.
+        control.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
     }
 
     func testSceneRevealsOneMessageAtATimeAndResumesAfterRelaunch() {
