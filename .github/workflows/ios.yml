@@ -1,5 +1,8 @@
 name: Build and test iOS
 on:
+  push:
+    branches:
+      - codex/ipv4-introduction
   workflow_dispatch:
     inputs:
       ui_scope:
@@ -68,7 +71,7 @@ jobs:
           scope_args=()
           if [ '${{ inputs.ui_scope }}' = 'ipv4' ]; then
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testSubnetResumesAndCompletesOnStepPlayer')
-          elif [ '${{ inputs.ui_scope }}' = 'foundation' ]; then
+          elif [ -z '${{ inputs.ui_scope }}' ] || [ '${{ inputs.ui_scope }}' = 'foundation' ]; then
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4FoundationAddressRoleFlow')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4FoundationFormatBacktrackingResumeAndCompletion')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4FoundationOctetBinaryFlow')
