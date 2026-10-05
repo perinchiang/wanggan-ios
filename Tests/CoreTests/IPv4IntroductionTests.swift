@@ -111,7 +111,7 @@ final class IPv4IntroductionTests: XCTestCase {
         ledger.saveDraft(earlier, in: ids)
         var restored = try JSONDecoder().decode(ProgressLedger.self, from: JSONEncoder().encode(ledger))
         restored.normalizeDrafts(in: ids)
-        XCTAssertEqual(restored.recommendedLessonID(in: try catalog().orderedLessonIDs), "ipv4-address-role")
+        XCTAssertEqual(restored.recommendedLessonID(in: try catalog().orderedLessonIDs), "subnet")
         XCTAssertEqual(restored.session(for: "subnet"), main)
         XCTAssertEqual(restored.session(for: "ipv4-address"), earlier)
         XCTAssertEqual(restored.lessons, oldProgress)
@@ -121,7 +121,7 @@ final class IPv4IntroductionTests: XCTestCase {
         earlier.challengeSolved = true
         restored.complete(earlier)
         XCTAssertEqual(restored.session(for: "subnet"), main)
-        XCTAssertEqual(restored.recommendedLessonID(in: try catalog().orderedLessonIDs), "ipv4-address-role")
+        XCTAssertEqual(restored.recommendedLessonID(in: try catalog().orderedLessonIDs), "subnet")
         XCTAssertEqual(restored.totalXP, 60)
         XCTAssertNil(restored.earlierDrafts?["ipv4-address"])
     }

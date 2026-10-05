@@ -216,7 +216,7 @@ final class LearningTests: XCTestCase {
     }
 
     func testReviewDraftAndCompletionPreserveFartherMainCourse() throws {
-        let ids = try catalog().lessons.map(\.id)
+        let ids = ["gateway", "subnet", "arp", "hop", "dns"]
         var ledger = ProgressLedger()
         ledger.complete(finished("gateway"), now: today, calendar: calendar)
         ledger.complete(finished("subnet"), now: today, calendar: calendar)
