@@ -3,9 +3,11 @@ import SwiftUI
 struct StepLessonPlayer: View {
     let lesson: Lesson
     let onNext: (Lesson?) -> Void
+    let usesStaticPresentation: Bool
     @Environment(LearningStore.self) private var store
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+    private var reduceMotion: Bool { systemReduceMotion || usesStaticPresentation }
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.scenePhase) private var scenePhase
@@ -19,9 +21,10 @@ struct StepLessonPlayer: View {
     @State private var visualFailed = false
     @State private var visualReloadID = UUID()
 
-    init(lesson: Lesson, initialSession: LessonSession, onNext: @escaping (Lesson?) -> Void) {
+    init(lesson: Lesson, initialSession: LessonSession, usesStaticPresentation: Bool = false, onNext: @escaping (Lesson?) -> Void) {
         self.lesson = lesson
         self.onNext = onNext
+        self.usesStaticPresentation = usesStaticPresentation
         self.plan = LessonPlan(lesson: lesson)
         _session = State(initialValue: StepSession(lesson: lesson, from: initialSession))
     }
@@ -103,7 +106,7 @@ struct StepLessonPlayer: View {
 
     @ViewBuilder private var explanationPhase: some View {
         if let mask = lesson.subnetMaskIntroduction {
-            SubnetMaskIntroductionPanel(configuration: mask, progress: Binding(
+            SubnetMaskIntroductionPanel(configuration: mask, usesStaticPresentation: usesStaticPresentation, progress: Binding(
                 get: { session.subnetMaskProgress ?? SubnetMaskProgress() },
                 set: { session.subnetMaskProgress = $0 }
             ))

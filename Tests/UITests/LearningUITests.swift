@@ -135,7 +135,7 @@ final class LearningUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "网关填错会怎样？")
     }
 
-    func testSubnetMaskAtLargestTextSizeWithReduceMotion() {
+    func testSubnetMaskAtLargestTextSizeWithStaticPresentation() {
         app.launchArguments += ["--seed-before-subnet-mask", "--test-mask-accessibility"]
         app.launch()
         tap("start-lesson")

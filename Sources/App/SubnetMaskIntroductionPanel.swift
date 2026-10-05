@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SubnetMaskIntroductionPanel: View {
     let configuration: SubnetMaskIntroduction
+    let usesStaticPresentation: Bool
     @Binding var progress: SubnetMaskProgress
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AccessibilityFocusState private var headingFocused: Bool
@@ -91,7 +92,7 @@ struct SubnetMaskIntroductionPanel: View {
                         }
                     }
                 }
-                .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: prefix)
+                .animation(reduceMotion || usesStaticPresentation ? nil : .easeInOut(duration: 0.25), value: prefix)
                 if progress.stage == 1 {
                     Text("已观察：网络部分\(progress.inspectedNetwork ? " ✓" : " 待点选") · 主机部分\(progress.inspectedHost ? " ✓" : " 待点选")")
                         .font(.subheadline).foregroundStyle(Theme.muted)
