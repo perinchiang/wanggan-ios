@@ -12,7 +12,7 @@
     .card { border: 1px solid #d9dbd2; border-radius: 18px; padding: 16px; background: #fff; }
     .address { font-size: 1.12em; font-weight: 750; letter-spacing: .01em; margin-bottom: 6px; overflow-wrap: anywhere; }
     .subline { color: #555b52; font-size: .87em; margin-bottom: 16px; line-height: 1.45; }
-    .octets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+    .octets { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(140px * var(--font-scale, 1))), 1fr)); gap: 9px; }
     .octet { border: 1.5px solid #d9dbd2; border-radius: 13px; background: #f6f7f2; padding: 11px 7px; min-width: 0; text-align: center; color: inherit; font: inherit; }
     button.octet { min-height: 76px; cursor: pointer; }
     .octet.selected { border-color: #171916; box-shadow: inset 0 0 0 1px #171916; }

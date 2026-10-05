@@ -1,6 +1,6 @@
 # 网感：系统架构与渐进迁移
 
-状态：职责边界与数据保护原则已确认；IPv4 Web 试点已接入 0.2.0 候选版源码，尚待 CI、模拟器与真机验收；目标模型其余部分及短复习未实现。下面出现的目标类型不是当前代码 API。
+状态：职责边界与数据保护原则已确认；IPv4 Web 试点已接入 0.2.0 候选版源码，Core / Web 与 iPhone 编译通过，原生 UI 未通过，诊断受 GitHub 账单限制；目标模型其余部分及短复习未实现。下面出现的目标类型不是当前代码 API。
 基线：0.1.3（build 4），提交 `4ed6b49`。
 
 ## 文档职责
@@ -69,7 +69,7 @@ ReviewItem: id, lessonID, knowledgePointIDs, scenarioFamilyID, steps
 
 这是模型职责草案，不是要求一次添加所有字段。KnowledgePoint 独立定义并由多课引用；稳定 ID 不使用显示名称或章节序号。内容版本、Lesson 修订、存储 schema 与 Web 协议版本各自解决不同兼容问题。
 
-Step 使用有类型的 payload，不把所有内容放入无约束字典。`conversation`、`question`、`diagram`、`text`、`matching`、`summary` 已在 Core 落地（`LessonPlan` / `LessonStep`），`Lesson.steps` 适配器把旧 Lesson 映射为等价步骤；五课播放器已切换到 step 路径。Sorting、PathChoice 等有真实课程需求后再增加。HTMLVisualization 留待可视化试点接入。
+Step 使用有类型的 payload，不把所有内容放入无约束字典。`conversation`、`question`、`diagram`、`text`、`matching`、`summary` 已在 Core 落地（`LessonPlan` / `LessonStep`），`Lesson.steps` 适配器把旧 Lesson 映射为等价步骤；五课播放器已切换到 step 路径。Sorting、PathChoice 等有真实课程需求后再增加。当前 IPv4 试点通过 `diagram` 步骤读取可选的 `IPv4VisualLesson` 参数，尚无通用 HTMLVisualization 类型。
 
 Challenge 是练习角色 / 组合，不必复制一套专用答案状态。会话最终按稳定 stepID 保存位置，而不是只依赖枚举序号；兼容适配器先把旧 Lesson 映射为等价步骤。不要把五课同时改写来验证新播放器。
 
@@ -178,7 +178,7 @@ schemaVersion、课程内容版本、Lesson revision、Web 契约版本独立管
 
 整体阶段由 PRODUCT 维护。工程上每次只迁一个可验证边界：先保护现有规则与存储，再包裹课程目录，然后适配一课为 Step，最后接入一个 Web 组件。其他课继续原路径，待等价行为通过再迁移。
 
-当前迁移状态：五课均已切换到 StepLessonPlayer，0.1.4（build 5）的 Core、iPhone 构建与 7 项原生 UI 测试已通过，包含答错反馈可见性及五课代表性完成流程；用户已确认该版本可用。旧 StageLessonPlayer 与按 Lesson ID 分派的入口已移除；持久化仍使用 LessonSession，播放器通过 stage↔step 适配器恢复与保存旧草稿，不改内容、稳定 ID 或历史记录。本次移除后的源码尚未运行 macOS CI。
+当前迁移状态：五课均已切换到 StepLessonPlayer，0.1.4（build 5）的 Core、iPhone 构建与 7 项原生 UI 测试已通过，包含答错反馈可见性及五课代表性完成流程；用户已确认该版本可用。旧 StageLessonPlayer 与按 Lesson ID 分派的入口已移除；持久化仍使用 LessonSession，播放器通过 stage↔step 适配器恢复与保存旧草稿，不改内容、稳定 ID 或历史记录。移除后的 0.2.0 候选提交已通过 Core 与 iPhone 编译，但原生 UI 尚未通过，不能沿用 0.1.4 的 UI 结果宣称当前源码已验收。
 
 不要把播放器、存储、课程内容和整个视觉系统放在一次重写里。兼容适配器有明确用途和移除条件；不是长期维护两套独立课程来源。课程拆分为多个文件与引入目录模型也不必发生在同一次变更。
 
