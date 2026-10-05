@@ -82,116 +82,6 @@
   ],
   "lessons": [
     {
-      "id": "subnet-mask",
-      "title": "子网掩码怎样划分地址？",
-      "subtitle": "先认出规则，再判断邻居",
-      "takeaway": "掩码标记网络位与主机位，前缀写出网络位的数量。分界看掩码，不靠地址长相猜。",
-      "nextCuriosity": "知道分界后，怎样判断两个地址是不是邻居？",
-      "diagram": "subnet-mask",
-      "subnetMaskIntroduction": {
-        "ip": "10.20.30.40",
-        "initialPrefix": 24,
-        "alternatePrefix": 16,
-        "practicePrefix": 8
-      },
-      "question": {
-        "prompt": "只看这四段数字，能确定网络部分在第几段后结束吗？",
-        "scene": [
-          {
-            "id": "card",
-            "text": "一张 IPv4 配置卡只露出了地址：10.20.30.40。每段都是 8 位，合起来 32 位。"
-          },
-          {
-            "id": "missing",
-            "text": "卡片上的子网掩码被盖住了。现在想把地址分成网络部分和主机部分；我们只讨论给定配置的分界，不测试能否通信。"
-          }
-        ],
-        "options": [
-          {
-            "id": "three",
-            "text": "能，总是前三段网络、最后一段主机",
-            "feedback": "前三段并不是固定规则。同一条地址可以搭配不同掩码，先把配置卡上的规则找出来。"
-          },
-          {
-            "id": "mask",
-            "text": "不能，还需要这张卡上的掩码",
-            "feedback": "还缺分界规则。四段是为了阅读，哪几位属于网络部分要看给定掩码。"
-          }
-        ],
-        "correctID": "mask",
-        "hint": "四段是写法；分界是配置，两者是同一回事吗？"
-      },
-      "explanation": [],
-      "matching": {
-        "prompt": "让掩码的一位，对应到它标记的角色。",
-        "left": [
-          {
-            "id": "one",
-            "text": "掩码中的 1",
-            "symbol": "1.circle"
-          },
-          {
-            "id": "zero",
-            "text": "掩码中的 0",
-            "symbol": "0.circle"
-          }
-        ],
-        "right": [
-          {
-            "id": "network",
-            "text": "对应地址的网络位",
-            "symbol": "network"
-          },
-          {
-            "id": "host",
-            "text": "对应地址的主机位",
-            "symbol": "desktopcomputer"
-          }
-        ],
-        "solution": {
-          "one": "network",
-          "zero": "host"
-        },
-        "explanation": "掩码与地址逐位对应。连续的 1 标记网络部分，后面的 0 标记主机部分；/后面的数就是网络位数量。"
-      },
-      "challenge": {
-        "prompt": "现在，网络部分和主机部分的分界在哪里？",
-        "scene": [
-          {
-            "id": "before",
-            "text": "刚才配置卡上是 10.20.30.40/16，掩码为 255.255.0.0。"
-          },
-          {
-            "id": "change",
-            "text": "现在只把地址换成 192.168.8.25，仍然使用 /16，也就是同一掩码。这里只问各位的角色划分。"
-          }
-        ],
-        "options": [
-          {
-            "id": "three",
-            "text": "第 3 段后，因为地址变成了 192 开头",
-            "feedback": "你根据地址长相猜了分界。这里明确给了 /16，要从左数 16 位，不能自动改成 /24。"
-          },
-          {
-            "id": "same",
-            "text": "第 2 段后，分界仍按 /16",
-            "feedback": "地址数值变了，掩码没变。前 16 位仍是网络部分、后 16 位仍是主机部分；这不意味着两个地址属于同一个子网。"
-          },
-          {
-            "id": "identical",
-            "text": "地址不会改变，因为掩码没变",
-            "feedback": "掩码只标记各位的角色，不固定地址的数值。题目已经给了新的地址，但保留原来的分界规则。"
-          }
-        ],
-        "correctID": "same",
-        "hint": "改变的是地址数值，还是网络位的数量？"
-      },
-      "sources": [
-        "https://www.rfc-editor.org/rfc/rfc4632#section-3.1",
-        "https://www.rfc-editor.org/rfc/rfc950#section-2.2"
-      ]
-    },
-    {
       "id": "gateway",
       "title": "网关填错会怎样？",
       "subtitle": "先分清：邻居，还是远方",
@@ -915,6 +805,116 @@
       "sources": [
         "https://www.rfc-editor.org/rfc/rfc791#section-3.1",
         "https://www.rfc-editor.org/rfc/rfc3986#section-3.2.2"
+      ]
+    },
+    {
+      "id": "subnet-mask",
+      "title": "子网掩码怎样划分地址？",
+      "subtitle": "先认出规则，再判断邻居",
+      "takeaway": "掩码标记网络位与主机位，前缀写出网络位的数量。分界看掩码，不靠地址长相猜。",
+      "nextCuriosity": "知道分界后，怎样判断两个地址是不是邻居？",
+      "diagram": "subnet-mask",
+      "subnetMaskIntroduction": {
+        "ip": "10.20.30.40",
+        "initialPrefix": 24,
+        "alternatePrefix": 16,
+        "practicePrefix": 8
+      },
+      "question": {
+        "prompt": "只看这四段数字，能确定网络部分在第几段后结束吗？",
+        "scene": [
+          {
+            "id": "card",
+            "text": "一张 IPv4 配置卡只露出了地址：10.20.30.40。每段都是 8 位，合起来 32 位。"
+          },
+          {
+            "id": "missing",
+            "text": "卡片上的子网掩码被盖住了。现在想把地址分成网络部分和主机部分；我们只讨论给定配置的分界，不测试能否通信。"
+          }
+        ],
+        "options": [
+          {
+            "id": "three",
+            "text": "能，总是前三段网络、最后一段主机",
+            "feedback": "前三段并不是固定规则。同一条地址可以搭配不同掩码，先把配置卡上的规则找出来。"
+          },
+          {
+            "id": "mask",
+            "text": "不能，还需要这张卡上的掩码",
+            "feedback": "还缺分界规则。四段是为了阅读，哪几位属于网络部分要看给定掩码。"
+          }
+        ],
+        "correctID": "mask",
+        "hint": "四段是写法；分界是配置，两者是同一回事吗？"
+      },
+      "explanation": [],
+      "matching": {
+        "prompt": "让掩码的一位，对应到它标记的角色。",
+        "left": [
+          {
+            "id": "one",
+            "text": "掩码中的 1",
+            "symbol": "1.circle"
+          },
+          {
+            "id": "zero",
+            "text": "掩码中的 0",
+            "symbol": "0.circle"
+          }
+        ],
+        "right": [
+          {
+            "id": "network",
+            "text": "对应地址的网络位",
+            "symbol": "network"
+          },
+          {
+            "id": "host",
+            "text": "对应地址的主机位",
+            "symbol": "desktopcomputer"
+          }
+        ],
+        "solution": {
+          "one": "network",
+          "zero": "host"
+        },
+        "explanation": "掩码与地址逐位对应。连续的 1 标记网络部分，后面的 0 标记主机部分；/后面的数就是网络位数量。"
+      },
+      "challenge": {
+        "prompt": "现在，网络部分和主机部分的分界在哪里？",
+        "scene": [
+          {
+            "id": "before",
+            "text": "刚才配置卡上是 10.20.30.40/16，掩码为 255.255.0.0。"
+          },
+          {
+            "id": "change",
+            "text": "现在只把地址换成 192.168.8.25，仍然使用 /16，也就是同一掩码。这里只问各位的角色划分。"
+          }
+        ],
+        "options": [
+          {
+            "id": "three",
+            "text": "第 3 段后，因为地址变成了 192 开头",
+            "feedback": "你根据地址长相猜了分界。这里明确给了 /16，要从左数 16 位，不能自动改成 /24。"
+          },
+          {
+            "id": "same",
+            "text": "第 2 段后，分界仍按 /16",
+            "feedback": "地址数值变了，掩码没变。前 16 位仍是网络部分、后 16 位仍是主机部分；这不意味着两个地址属于同一个子网。"
+          },
+          {
+            "id": "identical",
+            "text": "地址不会改变，因为掩码没变",
+            "feedback": "掩码只标记各位的角色，不固定地址的数值。题目已经给了新的地址，但保留原来的分界规则。"
+          }
+        ],
+        "correctID": "same",
+        "hint": "改变的是地址数值，还是网络位的数量？"
+      },
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc4632#section-3.1",
+        "https://www.rfc-editor.org/rfc/rfc950#section-2.2"
       ]
     }
   ]

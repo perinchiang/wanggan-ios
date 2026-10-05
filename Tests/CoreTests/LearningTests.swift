@@ -68,7 +68,7 @@ final class LearningTests: XCTestCase {
     }
 
     func testCannotSkipUnansweredStages() throws {
-        let lesson = try XCTUnwrap(catalog().lessons.first)
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "gateway" })
         var session = LessonSession(lessonID: lesson.id)
         session.advance(lesson: lesson)
         XCTAssertEqual(session.stage, .question)
@@ -81,7 +81,7 @@ final class LearningTests: XCTestCase {
     }
 
     func testWrongAnswerOpensExplanationAndCountsOnlyOnce() throws {
-        let lesson = try XCTUnwrap(catalog().lessons.first)
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "gateway" })
         var session = LessonSession(lessonID: lesson.id)
         session.selectedAnswer = "all-fail"
         session.submitQuestion(lesson.question)
@@ -92,7 +92,7 @@ final class LearningTests: XCTestCase {
     }
 
     func testMatchingReassignmentIsOneToOneAndWrongAnswersCanBeCorrected() throws {
-        let lesson = try XCTUnwrap(catalog().lessons.first)
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "gateway" })
         var session = LessonSession(lessonID: lesson.id)
         session.connect("nas", to: "router")
         session.connect("internet", to: "router")
@@ -114,7 +114,7 @@ final class LearningTests: XCTestCase {
     }
 
     func testChallengeRequiresCorrectRetry() throws {
-        let lesson = try XCTUnwrap(catalog().lessons.first)
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "gateway" })
         var session = LessonSession(lessonID: lesson.id)
         session.stage = .challenge
         session.challengeAnswer = "no"
@@ -293,7 +293,7 @@ final class LearningTests: XCTestCase {
     }
 
     func testConversationProgressPersistsAndLegacyDraftsStillDecode() throws {
-        let lesson = try XCTUnwrap(catalog().lessons.first)
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "gateway" })
         var session = LessonSession(lessonID: lesson.id)
         XCTAssertEqual(session.sceneStep(for: lesson.question, challenge: false), 0)
         XCTAssertFalse(session.sceneIsComplete(for: lesson.question, challenge: false))
