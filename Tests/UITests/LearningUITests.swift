@@ -49,6 +49,75 @@ final class LearningUITests: XCTestCase {
         XCTAssertTrue(app.buttons[option].exists, "Choices appear after the conversation")
     }
 
+    func testIPv4IntroductionObservationBacktrackingResumeAndCompletion() {
+        app.launchArguments = ["--uitesting", "--reset-progress"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["recommended-lesson-title"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "IPv4 地址为什么写成四段？")
+        tap("start-lesson")
+        revealScene(option: "question-option-devices")
+        tap("question-option-devices")
+        tap("primary-action")
+        tap("primary-action")
+        XCTAssertFalse(app.buttons["primary-action"].isEnabled)
+        let octet = app.webViews.descendants(matching: .any).matching(
+            NSPredicate(format: "label BEGINSWITH %@", "第 4 段，10，点选")
+        ).firstMatch
+        XCTAssertTrue(octet.waitForExistence(timeout: 10))
+        for _ in 0..<5 where !octet.isHittable { app.swipeUp() }
+        octet.tap()
+        let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: app.buttons["primary-action"])
+        XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 5), .completed)
+        screenshot("G01-intro-select")
+        tap("primary-action")
+        XCTAssertEqual(app.staticTexts["intro-stage"].label, "观察 2 / 4")
+        screenshot("G02-intro-eight-bits")
+        tap("primary-action")
+        XCTAssertFalse(app.buttons["primary-action"].isEnabled)
+        tap("intro-range-toggle")
+        XCTAssertTrue(app.buttons["primary-action"].isEnabled)
+        screenshot("G03-intro-range")
+        tap("intro-previous")
+        XCTAssertEqual(app.staticTexts["intro-stage"].label, "观察 2 / 4")
+        tap("exit-lesson")
+        app.buttons["保存进度并退出"].tap()
+        app.terminate()
+        app.launchArguments = ["--uitesting"]
+        app.launch()
+        tap("start-lesson")
+        XCTAssertEqual(app.staticTexts["intro-stage"].label, "观察 2 / 4")
+        tap("primary-action")
+        XCTAssertTrue(app.buttons["primary-action"].isEnabled, "Observed range survives backtracking and relaunch")
+        tap("primary-action")
+        XCTAssertEqual(app.staticTexts["intro-stage"].label, "观察 4 / 4")
+        screenshot("G04-intro-whole-address")
+        // The gesture is deliberately limited to the teaching text, away from the WebView.
+        let heading = app.staticTexts["四段，合起来是 32 位"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 5))
+        for _ in 0..<4 where !heading.isHittable { app.swipeDown() }
+        heading.swipeLeft()
+        XCTAssertEqual(app.staticTexts["intro-stage"].label, "观察 3 / 4")
+        tap("primary-action")
+        tap("primary-action")
+        for (left, right) in [("bit", "zeroone"), ("octet", "eight"), ("address", "thirtytwo")] {
+            tap("match-left-\(left)")
+            tap("match-right-\(right)")
+        }
+        tap("primary-action")
+        tap("primary-action")
+        revealScene(option: "challenge-option-four")
+        tap("challenge-option-four")
+        tap("primary-action")
+        tap("primary-action")
+        tap("challenge-option-no")
+        tap("primary-action")
+        tap("primary-action")
+        XCTAssertTrue(app.staticTexts["+30 XP"].waitForExistence(timeout: 5))
+        tap("finish-session")
+        XCTAssertEqual(app.staticTexts["xp-badge"].label, "30 经验值")
+        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "网关填错会怎样？")
+    }
+
     func testShortReviewResumesWithoutReplacingMainOrDuplicatingXP() {
         app.launchArguments += ["--seed-before-subnet"]
         app.launch()
@@ -95,7 +164,7 @@ final class LearningUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["short-evidence"].label, "独立答对过")
         tap("short-primary")
         app.tabBars.buttons["学习"].tap()
-        XCTAssertEqual(app.staticTexts["xp-badge"].label, "30 经验值")
+        XCTAssertEqual(app.staticTexts["xp-badge"].label, "60 经验值")
         XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "谁才是我的邻居？")
         tap("start-lesson")
         XCTAssertFalse(app.buttons["question-option-different"].exists)
@@ -122,10 +191,11 @@ final class LearningUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["short-evidence"].label, "独立答对过")
         tap("short-primary")
         app.tabBars.buttons["学习"].tap()
-        XCTAssertEqual(app.staticTexts["xp-badge"].label, "150 经验值")
+        XCTAssertEqual(app.staticTexts["xp-badge"].label, "180 经验值")
     }
 
     func testFullLessonPersistenceAndResume() {
+        app.launchArguments += ["--seed-before-gateway"]
         app.launch()
         XCTAssertTrue(app.buttons["start-lesson"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.buttons["start-lesson"].isHittable, "Start should be visible without scrolling")
@@ -169,7 +239,7 @@ final class LearningUITests: XCTestCase {
         app.launchArguments = ["--uitesting"]
         app.launch()
         XCTAssertTrue(app.staticTexts["xp-badge"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.staticTexts["xp-badge"].label, "30 经验值")
+        XCTAssertEqual(app.staticTexts["xp-badge"].label, "60 经验值")
         tap("lesson-subnet")
         revealScene(option: "question-option-different")
         let firstAddress = app.descendants(matching: .any)["question-answer-addresses-a"]
@@ -236,6 +306,7 @@ final class LearningUITests: XCTestCase {
     }
 
     func testWrongChoiceTeachesInsteadOfBlockingProgress() {
+        app.launchArguments += ["--seed-before-gateway"]
         app.launch()
         tap("lesson-gateway")
         revealScene(option: "question-option-all-fail")
@@ -259,22 +330,22 @@ final class LearningUITests: XCTestCase {
 
     func testSubnetResumesAndCompletesOnStepPlayer() {
         verifyFlow(LessonFlow(id: "subnet", question: "different", challenge: "yes",
-                              matches: [("24", "three"), ("16", "two")], expectedXP: 60))
+                              matches: [("24", "three"), ("16", "two")], expectedXP: 90))
     }
 
     func testARPResumesAndCompletesOnStepPlayer() {
         verifyFlow(LessonFlow(id: "arp", question: "gateway", challenge: "no",
-                              matches: [("local", "nasip"), ("remote", "gwip")], expectedXP: 90))
+                              matches: [("local", "nasip"), ("remote", "gwip")], expectedXP: 120))
     }
 
     func testHopResumesAndCompletesOnStepPlayer() {
         verifyFlow(LessonFlow(id: "hop", question: "frame", challenge: "no",
-                              matches: [("ip", "final"), ("mac", "next")], expectedXP: 120))
+                              matches: [("ip", "final"), ("mac", "next")], expectedXP: 150))
     }
 
     func testDNSResumesAndCompletesOnStepPlayer() {
         verifyFlow(LessonFlow(id: "dns", question: "dns", challenge: "no",
-                              matches: [("name", "resolve"), ("service", "connect")], expectedXP: 150))
+                              matches: [("name", "resolve"), ("service", "connect")], expectedXP: 180))
     }
 
     private func verifyFlow(_ flow: LessonFlow) {
@@ -358,6 +429,7 @@ final class LearningUITests: XCTestCase {
     }
 
     func testSceneRevealsOneMessageAtATimeAndResumesAfterRelaunch() {
+        app.launchArguments += ["--seed-before-gateway"]
         app.launch()
         tap("start-lesson")
         XCTAssertTrue(app.descendants(matching: .any)["question-scene-home"].exists)

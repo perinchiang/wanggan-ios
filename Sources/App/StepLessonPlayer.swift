@@ -102,10 +102,16 @@ struct StepLessonPlayer: View {
     }
 
     @ViewBuilder private var explanationPhase: some View {
-        TutorBubble(text: "沿着数据走一遍，就清楚了。")
-        if session.stepIndex == plan.questionIndex + 1, let visual = lesson.ipv4Visual {
+        if let introduction = lesson.ipv4Introduction {
+            IPv4IntroductionPanel(introduction: introduction, progress: Binding(
+                get: { session.ipv4IntroductionProgress ?? IPv4IntroductionProgress() },
+                set: { session.ipv4IntroductionProgress = $0 }
+            ), fontScale: visualFontScale)
+        } else if session.stepIndex == plan.questionIndex + 1, let visual = lesson.ipv4Visual {
+            TutorBubble(text: "沿着数据走一遍，就清楚了。")
             ipv4VisualPanel(visual)
         } else {
+            TutorBubble(text: "沿着数据走一遍，就清楚了。")
             ConceptIllustration(lesson: lesson, animated: true)
         }
         if visibleTextCount > 0 {
@@ -303,6 +309,9 @@ struct StepLessonPlayer: View {
     }
 
     private var scrollRequest: String {
+        if lesson.ipv4Introduction != nil, plan.step(at: session.stepIndex)?.kind == .diagram {
+            return "introduction-\(session.ipv4IntroductionProgress?.stage ?? 0)"
+        }
         if let feedbackScrollTarget { return "\(session.stepIndex)-\(feedbackScrollTarget)" }
         return conversationScrollTarget ?? "step-\(session.stepIndex)"
     }
@@ -341,6 +350,14 @@ struct StepLessonPlayer: View {
             }
             return session.answerSubmitted ? "看看为什么" : "确认答案"
         case .diagram:
+            if lesson.ipv4Introduction != nil {
+                switch session.ipv4IntroductionProgress?.stage ?? 0 {
+                case 0: return "拆开这一段"
+                case 1: return "看看取值范围"
+                case 2: return "拼回完整地址"
+                default: return "试着连一连"
+                }
+            }
             if lesson.ipv4Visual != nil {
                 if (session.ipv4VisualPhase ?? 0) == 0 { return "换一条试试" }
                 return session.ipv4VisualSolved == true ? "继续看一小步" : "检查分界"
@@ -361,6 +378,9 @@ struct StepLessonPlayer: View {
         case .conversation, .text, .summary:
             return true
         case .diagram:
+            if lesson.ipv4Introduction != nil {
+                return session.ipv4IntroductionProgress?.canAdvance == true
+            }
             guard lesson.ipv4Visual != nil, (session.ipv4VisualPhase ?? 0) == 1 else { return true }
             return session.ipv4VisualSolved == true ||
                 (session.ipv4SelectedOctet != nil && session.ipv4VisualSubmitted != true)
@@ -410,6 +430,14 @@ struct StepLessonPlayer: View {
                 }
             }
         case .diagram:
+            if lesson.ipv4Introduction != nil {
+                var progress = session.ipv4IntroductionProgress ?? IPv4IntroductionProgress()
+                let isLastStage = progress.stage == 3
+                progress.advance()
+                session.ipv4IntroductionProgress = progress
+                if isLastStage { plan.advance(&session) }
+                return
+            }
             if lesson.ipv4Visual != nil {
                 if (session.ipv4VisualPhase ?? 0) == 0 {
                     session.ipv4VisualPhase = 1

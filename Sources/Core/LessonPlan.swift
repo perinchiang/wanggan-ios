@@ -121,6 +121,7 @@ struct StepSession: Codable, Equatable {
     var ipv4VisualSubmitted: Bool?
     var ipv4VisualSolved: Bool?
     var ipv4VisualFinished: Bool?
+    var ipv4IntroductionProgress: IPv4IntroductionProgress?
 
     init(lessonID: String, id: UUID = UUID()) {
         self.id = id
@@ -174,7 +175,9 @@ struct LessonPlan {
     func canAdvance(_ session: StepSession) -> Bool {
         guard let step = step(at: session.stepIndex) else { return false }
         switch step.kind {
-        case .conversation, .diagram, .text, .summary:
+        case .diagram:
+            return lesson.ipv4Introduction == nil || session.ipv4IntroductionProgress?.finished == true
+        case .conversation, .text, .summary:
             return true
         case .question:
             if session.stepIndex == questionIndex { return session.answerSubmitted }
@@ -244,6 +247,7 @@ extension StepSession {
         ipv4VisualSubmitted = stage.ipv4VisualSubmitted
         ipv4VisualSolved = stage.ipv4VisualSolved
         ipv4VisualFinished = stage.ipv4VisualFinished
+        ipv4IntroductionProgress = stage.ipv4IntroductionProgress
         selectedAnswer = stage.selectedAnswer
         answerSubmitted = stage.answerSubmitted
         matches = stage.matches
@@ -256,7 +260,9 @@ extension StepSession {
         case .question:
             stepIndex = min(stage.sceneStep(for: lesson.question, challenge: false), plan.questionSceneCount)
         case .explanation:
-            if lesson.ipv4Visual != nil, stage.ipv4VisualPhase != nil, stage.ipv4VisualFinished != true {
+            if lesson.ipv4Introduction != nil {
+                stepIndex = plan.questionIndex + 1
+            } else if lesson.ipv4Visual != nil, stage.ipv4VisualPhase != nil, stage.ipv4VisualFinished != true {
                 stepIndex = plan.questionIndex + 1
             } else {
                 stepIndex = plan.questionIndex + 2 + min(stage.explanationIndex, max(lesson.explanation.count - 1, 0))
@@ -279,6 +285,7 @@ extension StepSession {
         result.ipv4VisualSubmitted = ipv4VisualSubmitted
         result.ipv4VisualSolved = ipv4VisualSolved
         result.ipv4VisualFinished = ipv4VisualFinished
+        result.ipv4IntroductionProgress = ipv4IntroductionProgress
         result.selectedAnswer = selectedAnswer
         result.answerSubmitted = answerSubmitted
         result.matches = matches

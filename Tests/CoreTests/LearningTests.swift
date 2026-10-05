@@ -29,7 +29,7 @@ final class LearningTests: XCTestCase {
     func testAllShippedLessonsAreConsistent() throws {
         let catalog = try catalog()
         try catalog.validate()
-        XCTAssertEqual(catalog.lessons.count, 5)
+        XCTAssertTrue(Set(["gateway", "subnet", "arp", "hop", "dns"]).isSubset(of: Set(catalog.lessons.map(\.id))))
         for lesson in catalog.lessons {
             XCTAssertFalse(lesson.sources.contains { URL(string: $0)?.scheme != "https" })
         }

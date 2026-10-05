@@ -47,3 +47,41 @@ test('practice hides the answer until the app confirms it, and sends only a sele
   assert.match(root.innerHTML, /网络地址：/);
   assert.match(root.innerHTML, /10\.20\.0\.0\/16/);
 });
+
+test('introduction reveals only the requested semantic stage and keeps subnet concepts hidden', () => {
+  const { api, root, messages } = loadVisual();
+  const input = { ip: '192.168.1.10', prefix: 32, mode: 'explain', selectedOctet: null,
+    solved: false, theme: 'light', fontScale: 1, reduceMotion: true, introductionStage: 0, rangeValue: 0 };
+  api.update(input);
+  assert.match(root.innerHTML, /data-boundary="4"/);
+  assert.doesNotMatch(root.innerHTML, /class="bits|网络位|主机位|网络地址|data-command|\/32/);
+  root.click({ target: { closest(selector) { return selector === '[data-boundary]' ? { dataset: { boundary: '4' } } : null; } } });
+  assert.equal(messages.at(-1).type, 'select');
+  api.update({ ...input, introductionStage: 1, selectedOctet: 4 });
+  assert.match(root.innerHTML, /00001010 = 10/);
+  assert.equal((root.innerHTML.match(/class="bit[ "]/g) || []).length, 8);
+  api.update({ ...input, introductionStage: 2, selectedOctet: 4, rangeValue: 255 });
+  assert.match(root.innerHTML, /11111111 = 255/);
+  api.update({ ...input, introductionStage: 3, selectedOctet: 4 });
+  assert.equal((root.innerHTML.match(/class="bit[ "]/g) || []).length, 32);
+  assert.match(root.innerHTML, /4 × 8 = 32/);
+  api.update({ ...input, introductionStage: 1, selectedOctet: 4 });
+  assert.match(root.innerHTML, /00001010 = 10/);
+  assert.doesNotMatch(root.innerHTML, /4 × 8 = 32/);
+  api.update({ ...input, ip: '10.20.30.40', introductionStage: 1, selectedOctet: 1, theme: 'dark', fontScale: 2.2 });
+  assert.match(root.innerHTML, /00001010 = 10/);
+});
+
+test('invalid introduction phases, missing selections and out of range values fail without replacing the view', () => {
+  const { api, root, messages } = loadVisual();
+  const input = { ip: '10.20.30.40', prefix: 32, mode: 'explain', selectedOctet: 1,
+    solved: false, theme: 'light', fontScale: 1, reduceMotion: false, introductionStage: 1, rangeValue: 0 };
+  api.update(input);
+  const before = root.innerHTML;
+  for (const invalid of [{ introductionStage: -1 }, { introductionStage: 4 }, { introductionStage: 1.5 },
+    { selectedOctet: null }, { rangeValue: 256 }]) {
+    api.update({ ...input, ...invalid });
+    assert.equal(messages.at(-1).type, 'error');
+    assert.equal(root.innerHTML, before);
+  }
+});

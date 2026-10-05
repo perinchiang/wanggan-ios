@@ -28,6 +28,7 @@ struct LessonSession: Codable, Equatable, Identifiable {
     var ipv4VisualSubmitted: Bool?
     var ipv4VisualSolved: Bool?
     var ipv4VisualFinished: Bool?
+    var ipv4IntroductionProgress: IPv4IntroductionProgress?
 
     init(lessonID: String, id: UUID = UUID()) {
         self.id = id

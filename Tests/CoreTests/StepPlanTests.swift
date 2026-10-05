@@ -55,7 +55,7 @@ final class StepPlanTests: XCTestCase {
 
     func testEveryLessonDerivesConsistentSteps() throws {
         let lessons = try catalog().lessons
-        XCTAssertEqual(lessons.count, 5)
+        XCTAssertTrue(Set(["gateway", "subnet", "arp", "hop", "dns"]).isSubset(of: Set(lessons.map(\.id))))
         for lesson in lessons {
             let plan = LessonPlan(lesson: lesson)
             XCTAssertEqual(Set(plan.steps.map(\.id)).count, plan.steps.count)

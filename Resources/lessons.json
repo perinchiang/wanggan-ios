@@ -1,12 +1,17 @@
 {
   "course": {
     "id": "wanggan-network-intuition",
-    "revision": 1,
+    "revision": 2,
     "title": "网感",
     "chapters": [
       {
+        "id": "address-basics",
+        "title": "基础 · 认识地址",
+        "orderedLessonIDs": ["ipv4-address"]
+      },
+      {
         "id": "first-look",
-        "title": "第一章 · 数据如何出发",
+        "title": "应用 · 数据如何出发",
         "orderedLessonIDs": [
           "gateway",
           "subnet",
@@ -677,6 +682,129 @@
       "sources": [
         "https://www.rfc-editor.org/rfc/rfc1034#section-5.3.3",
         "https://www.rfc-editor.org/rfc/rfc1035"
+      ]
+    },
+    {
+      "id": "ipv4-address",
+      "title": "IPv4 地址为什么写成四段？",
+      "subtitle": "拆开一段，看懂 32 位",
+      "takeaway": "四段数字背后的 32 位",
+      "nextCuriosity": "地址的哪一部分用来判断是不是邻居？之后我们会用子网掩码划出分界。",
+      "diagram": "ipv4-address",
+      "ipv4Introduction": {
+        "ip": "192.168.1.10"
+      },
+      "question": {
+        "scene": [
+          {
+            "id": "address",
+            "text": "电脑的网络设置里，IPv4 地址写着 192.168.1.10。"
+          },
+          {
+            "id": "guess",
+            "text": "不用先背术语。我们先猜一猜，这四段数字代表什么？"
+          }
+        ],
+        "prompt": "为什么用点号把地址分成四段？",
+        "options": [
+          {
+            "id": "bytes",
+            "text": "把一串二进制地址分组，方便人阅读",
+            "feedback": "方向对了。接下来亲手拆开一段，看看它对应多少个二进制位。"
+          },
+          {
+            "id": "devices",
+            "text": "四段分别代表沿途的四台设备",
+            "feedback": "地址不是沿途设备清单。路上设备变多，不会给地址多加一段。"
+          },
+          {
+            "id": "digits",
+            "text": "点号只是随便加的，想分几段都行",
+            "feedback": "这里的分组有固定含义，不能随便挪动点号。我们拆开看看。"
+          }
+        ],
+        "correctID": "bytes",
+        "hint": "想想计算机保存的 0 和 1，怎样变成容易读的数字。"
+      },
+      "explanation": [],
+      "matching": {
+        "prompt": "把每种表示，与它的含义连起来。",
+        "left": [
+          {
+            "id": "bit",
+            "text": "一个二进制位",
+            "symbol": "circle.lefthalf.filled"
+          },
+          {
+            "id": "octet",
+            "text": "地址中的一段",
+            "symbol": "square.split.2x2"
+          },
+          {
+            "id": "address",
+            "text": "整个 IPv4 地址",
+            "symbol": "network"
+          }
+        ],
+        "right": [
+          {
+            "id": "thirtytwo",
+            "text": "共 32 位",
+            "symbol": "number"
+          },
+          {
+            "id": "zeroone",
+            "text": "只能是 0 或 1",
+            "symbol": "switch.2"
+          },
+          {
+            "id": "eight",
+            "text": "8 位，写成 0～255",
+            "symbol": "square.grid.2x2"
+          }
+        ],
+        "solution": {
+          "bit": "zeroone",
+          "octet": "eight",
+          "address": "thirtytwo"
+        },
+        "explanation": "一个位有两种状态；8 位组成一段，四段组成 32 位地址。"
+      },
+      "challenge": {
+        "scene": [
+          {
+            "id": "change",
+            "text": "有人把 10.20.30.40 的最后一段改成 256，写成 10.20.30.256。"
+          },
+          {
+            "id": "scope",
+            "text": "先只检查四段十进制写法，不讨论这个地址能否分配或通信。"
+          }
+        ],
+        "prompt": "这个写法符合 IPv4 地址的规则吗？",
+        "options": [
+          {
+            "id": "no",
+            "text": "不符合，256 超出了一个字节的范围",
+            "feedback": "对。一个字节只有 8 位，最多表示 255；256 需要第 9 位。"
+          },
+          {
+            "id": "four",
+            "text": "符合，只要还是四段数字就可以",
+            "feedback": "四段只是一个条件。每一段还必须能装进 8 位，范围是 0～255。"
+          },
+          {
+            "id": "three",
+            "text": "符合，256 和 255 都是三位数",
+            "feedback": "十进制写出来有几位，不等于二进制占几位。256 虽然是三位数，却需要 9 个二进制位。"
+          }
+        ],
+        "correctID": "no",
+        "hint": "全 1 的八个位是 255；再加 1，还装得下吗？"
+      },
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc791#section-3.1",
+        "https://www.rfc-editor.org/rfc/rfc3986#section-3.2.2"
       ]
     }
   ]

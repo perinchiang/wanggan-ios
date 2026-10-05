@@ -54,6 +54,7 @@ struct Lesson: Codable, Equatable, Identifiable {
     let nextCuriosity: String
     let diagram: String
     let ipv4Visual: IPv4VisualLesson?
+    let ipv4Introduction: IPv4Introduction?
     let question: Question
     let explanation: [String]
     let matching: MatchingExercise
@@ -115,6 +116,12 @@ struct LessonCatalog: Codable {
             }
         }
         for lesson in lessons {
+            if let introduction = lesson.ipv4Introduction {
+                guard IPv4AddressValue(ip: introduction.ip, prefix: 32) != nil,
+                      lesson.ipv4Visual == nil else {
+                    throw ContentError.invalid("\(lesson.id) 的 IPv4 入门参数无效")
+                }
+            }
             if let visual = lesson.ipv4Visual {
                 guard visual.examples.count == 2,
                       visual.examples[0].mode == .explain,
@@ -153,7 +160,7 @@ struct LessonCatalog: Codable {
                   !left.isEmpty, left.count == right.count,
                   Set(exercise.solution.keys) == left,
                   Set(exercise.solution.values) == right,
-                  !lesson.explanation.isEmpty, !lesson.sources.isEmpty else {
+                  (!lesson.explanation.isEmpty || lesson.ipv4Introduction != nil), !lesson.sources.isEmpty else {
                 throw ContentError.invalid("\(lesson.id) 的连线或讲解不完整")
             }
         }

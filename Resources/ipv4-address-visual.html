@@ -20,6 +20,13 @@
     .bits { display: flex; justify-content: center; gap: 1px; font-family: ui-monospace, Menlo, monospace; font-size: .83em; }
     .bit { min-width: .9em; border-radius: 3px; padding: 2px 0; }
     .bit.network { background: #d5fa52; color: #171916; font-weight: 750; }
+    .intro-bits { flex-wrap: wrap; gap: 5px; margin-top: 18px; font-size: 1.15em; }
+    .intro-bits .bit { min-width: 1.2em; background: #e9ecdF; color: #171916; padding: 9px 0; }
+    .intro-bits .bit.one { background: #d5fa52; }
+    .intro-change { animation: reveal .25s ease-out both; }
+    @keyframes reveal { from { opacity: .3; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+    body.reduce-motion .intro-change { animation: none; }
+    @media (prefers-reduced-motion: reduce) { .intro-change { animation: none; } }
     .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; color: #4b5247; font-size: .81em; }
     .key { display: inline-block; width: 13px; height: 13px; border-radius: 3px; vertical-align: -2px; margin-right: 4px; border: 1px solid #c5c9bd; }
     .key.network { background: #d5fa52; border-color: #b3d43d; }
@@ -80,6 +87,7 @@
         if (!state) return;
         const octets = parseIPv4(state.ip, state.prefix);
         if (!octets) { app.textContent = '地址暂时无法显示。'; post('error'); return; }
+        if (state.introductionStage !== undefined) { renderIntroduction(octets); return; }
         const practice = state.mode === 'practice';
         const showNetwork = !practice || state.solved;
         const bitsShown = showNetwork ? Math.min(revealCount, state.prefix) : 0;
@@ -109,8 +117,37 @@
         post('height', Math.ceil(document.body.scrollHeight));
       }
 
+      function renderIntroduction(octets) {
+        const stage = state.introductionStage;
+        document.body.classList.toggle('dark', state.theme === 'dark');
+        document.body.classList.toggle('reduce-motion', state.reduceMotion);
+        document.documentElement.style.setProperty('--font-scale', String(state.fontScale));
+        const bits = value => [...value.toString(2).padStart(8, '0')].map(digit =>
+          `<span class="bit${digit === '1' ? ' one' : ''}">${digit}</span>`).join('');
+        let content;
+        if (stage === 0) {
+          content = `<div class="octets">${octets.map((value, i) =>
+            `<button type="button" class="octet${state.selectedOctet === i + 1 ? ' selected' : ''}" data-boundary="${i + 1}" aria-pressed="${state.selectedOctet === i + 1}" aria-label="第 ${i + 1} 段，${value}，点选这一段"><span class="decimal">${value}</span><span>第 ${i + 1} 段</span></button>`).join('')}</div>`;
+        } else if (stage === 1 || stage === 2) {
+          const value = stage === 2 ? state.rangeValue : octets[state.selectedOctet - 1];
+          const binary = value.toString(2).padStart(8, '0');
+          content = `<div class="intro-change" role="img" aria-label="${value}，二进制 ${binary}，8 位">
+            <div class="address">${stage === 1 ? `第 ${state.selectedOctet} 段：` : ''}${value}</div>
+            <div class="bits intro-bits" aria-hidden="true">${bits(value)}</div>
+            <div class="result">${binary} = ${value}<br>8 位 · 1 个字节</div></div>`;
+        } else {
+          content = `<div class="octets intro-change">${octets.map((value, i) =>
+            `<div class="octet" role="img" aria-label="第 ${i + 1} 段，${value}，二进制 ${value.toString(2).padStart(8, '0')}，8 位"><span class="decimal">${value}</span><span class="bits" aria-hidden="true">${bits(value)}</span></div>`).join('')}</div><div class="result">4 × 8 = 32 位</div>`;
+        }
+        // Keep a selected byte's keyboard focus when Swift sends its selection back.
+        const focused = document.activeElement?.dataset?.boundary;
+        app.innerHTML = `<section class="card"><div class="address">${state.ip}</div><div class="subline">IPv4 地址 · 四段十进制写法</div>${content}</section>`;
+        if (focused && stage === 0) app.querySelector(`[data-boundary="${focused}"]`)?.focus();
+        post('height', Math.ceil(document.body.scrollHeight));
+      }
+
       function play() {
-        if (!state || state.mode !== 'explain') return;
+        if (!state || state.introductionStage !== undefined || state.mode !== 'explain') return;
         stop();
         if (state.reduceMotion) { revealCount = state.prefix; render(); return; }
         timer = setInterval(() => {
@@ -131,6 +168,10 @@
             !(input.selectedOctet === null || Number.isInteger(input.selectedOctet) && input.selectedOctet >= 1 && input.selectedOctet <= 4)) {
           post('error'); return;
         }
+        if (input.introductionStage !== undefined &&
+            (!Number.isInteger(input.introductionStage) || input.introductionStage < 0 || input.introductionStage > 3 ||
+             ![0, 255].includes(input.rangeValue) || input.mode !== 'explain' ||
+             (input.introductionStage > 0 && input.selectedOctet === null))) { post('error'); return; }
         const changedExample = !state || state.ip !== input.ip || state.prefix !== input.prefix || state.mode !== input.mode;
         state = input;
         if (changedExample) { stop(); revealCount = input.prefix; }
@@ -139,7 +180,8 @@
 
       app.addEventListener('click', event => {
         const boundary = event.target.closest('[data-boundary]');
-        if (boundary && state?.mode === 'practice' && !state.solved) {
+        if (boundary && state && (state.introductionStage === 0 ||
+            (state.introductionStage === undefined && state.mode === 'practice' && !state.solved))) {
           post('select', Number(boundary.dataset.boundary));
           return;
         }

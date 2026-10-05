@@ -20,6 +20,8 @@ struct ProgressLedger: Codable, Equatable {
     // Additive optional fields keep the original v1 ledger readable.
     var shortReviewDrafts: [String: ShortReviewSession]?
     var reviewEvidence: [ReviewAttempt]?
+    // A newly inserted earlier lesson must not displace a farther main draft.
+    var earlierDrafts: [String: LessonSession]?
 
     var level: Int { totalXP / 100 + 1 }
     var levelProgress: Double { Double(totalXP % 100) / 100 }
@@ -36,7 +38,9 @@ struct ProgressLedger: Codable, Equatable {
     }
 
     func session(for lessonID: String) -> LessonSession {
-        let saved = lessons[lessonID] == nil ? draft : reviewDrafts?[lessonID]
+        let saved = lessons[lessonID] == nil
+            ? (draft?.lessonID == lessonID ? draft : earlierDrafts?[lessonID])
+            : reviewDrafts?[lessonID]
         if let saved, saved.lessonID == lessonID, saved.stage != .complete { return saved }
         return LessonSession(lessonID: lessonID)
     }
@@ -53,8 +57,18 @@ struct ProgressLedger: Codable, Equatable {
             // Reopening an earlier lesson must not replace a farther main-course draft.
             if let draft, let oldIndex = orderedIDs.firstIndex(of: draft.lessonID),
                let newIndex = orderedIDs.firstIndex(of: session.lessonID), oldIndex > newIndex {
+                var earlier = earlierDrafts ?? [:]
+                earlier[session.lessonID] = session
+                earlierDrafts = earlier
                 return
             }
+            if let draft, draft.lessonID != session.lessonID, draft.stage != .complete,
+               lessons[draft.lessonID] == nil {
+                var earlier = earlierDrafts ?? [:]
+                earlier[draft.lessonID] = draft
+                earlierDrafts = earlier
+            }
+            earlierDrafts?.removeValue(forKey: session.lessonID)
             draft = session
         }
     }
@@ -75,10 +89,17 @@ struct ProgressLedger: Codable, Equatable {
             orderedIDs.contains($0.key) && lessons[$0.key] != nil &&
             $0.value.lessonID == $0.key && $0.value.stage != .complete
         }
+        earlierDrafts = earlierDrafts?.filter {
+            orderedIDs.contains($0.key) && lessons[$0.key] == nil &&
+            $0.value.lessonID == $0.key && $0.value.stage != .complete
+        }
     }
 
     private mutating func clearDraft(for session: LessonSession) {
         if draft?.id == session.id { draft = nil }
+        if earlierDrafts?[session.lessonID]?.id == session.id {
+            earlierDrafts?.removeValue(forKey: session.lessonID)
+        }
         if reviewDrafts?[session.lessonID]?.id == session.id {
             reviewDrafts?.removeValue(forKey: session.lessonID)
         }
@@ -92,6 +113,7 @@ struct ProgressLedger: Codable, Equatable {
     func isUnlocked(_ id: String, in orderedIDs: [String]) -> Bool {
         guard let index = orderedIDs.firstIndex(of: id) else { return false }
         if lessons[id] != nil { return true }
+        if draft?.lessonID == id || earlierDrafts?[id] != nil { return true }
         return index == 0 || lessons[orderedIDs[index - 1]] != nil
     }
 
