@@ -266,7 +266,8 @@ final class LearningUITests: XCTestCase {
     }
 
     private func tapIPv4Boundary(_ octet: Int) {
-        let button = app.webViews.buttons.matching(
+        // WebKit exposes aria-pressed buttons as a selectable native element.
+        let button = app.webViews.descendants(matching: .any).matching(
             NSPredicate(format: "label BEGINSWITH %@", "第 \(octet) 个字节")
         ).firstMatch
         XCTAssertTrue(button.waitForExistence(timeout: 10), "Missing IPv4 byte \(octet) in WebView")

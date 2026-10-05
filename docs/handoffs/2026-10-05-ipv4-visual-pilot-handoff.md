@@ -34,6 +34,7 @@
 - 诊断运行 [37287085627](https://github.com/perinchiang/wanggan-ios/actions/runs/37287085627)（提交 `4595302`）未开始执行任何步骤；GitHub 注明最近账户付款失败或需要提高支出限额。已停止触发 Actions，不能断言只是免费分钟用尽。
 - 用户已授权将 `perinchiang/wanggan-ios` 公开，现已确认 PUBLIC；公开后的运行 37290140620 正常启动，不再受此前账单拦截。
 - 运行 37290140620 的两份 `.ips` 确认启动中止原因：Xcode 16.4 / iOS 18.5 模拟器缺少可见的 `libswiftWebKit.dylib`，属于 [WebKit 293831 的已知问题与 Apple 工程师提供的修复方式](https://developer.apple.com/forums/thread/785964)。新增仅用于模拟器的运行库链接脚本；真机包不加入这份库、不改变 iOS 17 最低支持版本。补跑验收前不宣称修复已通过。
+- 运行 37292246799 已证实运行库修复生效，App 启动、首题续学和实际 WKWebView 讲解显示通过。练习选择检查失败于测试查询：snapshot 中四个 `aria-pressed` 控件的 native elementType 是 40，而普通 Button 是 9，原 `.buttons` 查询漏掉它们。已改成 WebView 内按同一可访问标签查找控件；尚待补跑完整子网流程。
 
 ## Verification / 已做验证
 
@@ -46,6 +47,8 @@
 - `git diff --check` 通过；Windows 无 Swift / Xcode 工具链，本地运行检查仍只有 Web 和保护脚本。
 - 提交 `3ba57a7` 的运行 37290140620：Core、Web、iPhone 包编译通过，模拟器 App / UI 编译通过；独立启动与 XCTest 启动均因 DYLD Library missing 中止。资料位于工作区 `WangGan-0.2.0-build6/verification-37290140620`。
 - 运行库脚本本地用临时路径检查了选中 runtime、库链接、重复执行和其他工具链跳过逻辑，尚待真实 macOS 执行。
+- 提交 `291788a` 的运行 37292246799：Core、Web、iPhone 编译及模拟器启动通过；实际讲解截图 `12-ipv4-explanation` 与失败 snapshot / 录像中的练习画面均已检查。子网完整流程仍未通过，尚无交付 IPA。
+- 在 Chromium 验证重播、暂停后位数不再增长、单步增加一位和 Reduce Motion 直接显示完整分界。
 
 ## Next recommended task / 推荐下一步
 
