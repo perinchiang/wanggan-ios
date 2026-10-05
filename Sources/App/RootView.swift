@@ -4,6 +4,7 @@ struct RootView: View {
     @Environment(LearningStore.self) private var store
     @State private var selectedTab = 0
     @State private var activeLesson: Lesson?
+    @State private var activeReview: ShortReviewSession?
 
     var body: some View {
         Group {
@@ -13,7 +14,7 @@ struct RootView: View {
                 TabView(selection: $selectedTab) {
                     LearningRouteView { activeLesson = $0 }
                         .tabItem { Label("学习", systemImage: "book.closed.fill") }.tag(0)
-                    ReviewView { activeLesson = $0 }
+                    ReviewView(openLesson: { activeLesson = $0 }, openShortReview: { activeReview = store.shortSession(for: $0) })
                         .tabItem { Label("复习", systemImage: "arrow.counterclockwise") }.tag(1)
                     ProfileView()
                         .tabItem { Label("我的", systemImage: "person.crop.circle") }.tag(2)
@@ -33,6 +34,11 @@ struct RootView: View {
         )) {
             Button("知道了") { store.storageWarning = nil }
         } message: { Text(store.storageWarning ?? "") }
+        .fullScreenCover(item: $activeReview) { session in
+            if let item = store.reviewItems.first(where: { session.matches($0) }) {
+                ShortReviewPlayer(item: item, initialSession: session).id(session.id)
+            }
+        }
     }
 }
 

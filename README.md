@@ -4,6 +4,8 @@
 
 ## 当前版本
 
+- 开发候选 0.3.0（build 7）：网关 / DNS 一题短复习，独立草稿与作答证据，保留整课重学；待集中 Core / iPhone / 原生 UI 验证，下列 0.2.0 记录不代表新代码已通过。
+
 - 0.2.0（build 6），对应代码提交 `92b2dac`；iPhone 未签名安装包由手动 Actions 运行 [37294516851](https://github.com/perinchiang/wanggan-ios/actions/runs/37294516851) 导出，供真机覆盖安装验收。
 - 子网课已加入离线 IPv4 地址拆解和分界练习。27 项 Core、2 项 Web 测试及 1 项子网原生流程测试通过，包含实际 WKWebView、答错改选、退出恢复与经验结算；本轮未运行其余四课 UI 全套。VoiceOver、大字号和后台切换的完整真机体验仍待验收。详见 [发布交接](docs/handoffs/2026-10-05-ipv4-visual-0-2-0-release-handoff.md)。
 - iOS 17+，iPhone，简体中文，竖屏。

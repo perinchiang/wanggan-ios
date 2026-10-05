@@ -34,17 +34,21 @@ final class LearningStore {
                 let saved = try JSONDecoder().decode(ProgressLedger.self, from: data)
                 guard saved.schemaVersion == 1 else { throw ContentError.invalid("未知进度版本") }
                 ledger = saved
-                ledger.normalizeDrafts(in: orderedLessonIDs)
-                persist()
+                if catalog != nil {
+                    ledger.normalizeDrafts(in: orderedLessonIDs)
+                    persist()
+                }
             } catch {
                 defaults.set(data, forKey: "wanggan.progress.recovery")
                 storageWarning = "旧进度暂时无法读取，原始数据已保留在本机备份。当前使用新进度。"
             }
         }
 
-        if testing,
-           let argument = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--seed-before-") }),
-           let index = orderedLessonIDs.firstIndex(of: String(argument.dropFirst("--seed-before-".count))) {
+        let seedArgument = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--seed-before-") })
+        let seedIndex = ProcessInfo.processInfo.arguments.contains("--seed-completed-course")
+            ? orderedLessonIDs.count
+            : seedArgument.flatMap { orderedLessonIDs.firstIndex(of: String($0.dropFirst("--seed-before-".count))) }
+        if testing, let index = seedIndex {
             // UI tests can open a later lesson without replaying every prerequisite.
             for lessonID in orderedLessonIDs.prefix(index) {
                 var session = LessonSession(lessonID: lessonID)
@@ -58,6 +62,7 @@ final class LearningStore {
     }
 
     var lessons: [Lesson] { catalog?.lessons ?? [] }
+    var reviewItems: [ReviewItem] { catalog?.reviewItems ?? [] }
     var chapters: [Chapter] { catalog?.course.chapters ?? [] }
     var orderedLessonIDs: [String] { catalog?.orderedLessonIDs ?? [] }
     var currentLesson: Lesson? {
@@ -84,6 +89,21 @@ final class LearningStore {
 
     func finish(_ session: LessonSession) -> Int {
         let result = ledger.complete(session)
+        persist()
+        return result
+    }
+
+    func shortSession(for lesson: Lesson) -> ShortReviewSession? {
+        ledger.shortSession(for: lesson.id, items: reviewItems)
+    }
+
+    func saveShortDraft(_ session: ShortReviewSession) {
+        ledger.saveShortDraft(session, items: reviewItems)
+        persist()
+    }
+
+    func finishShortReview(_ session: ShortReviewSession) -> Int {
+        let result = ledger.completeShortReview(session, items: reviewItems)
         persist()
         return result
     }

@@ -23,7 +23,8 @@ final class LearningUITests: XCTestCase {
         XCTAssertTrue(button.waitForExistence(timeout: 10), "Missing \(id)")
         for _ in 0..<5 {
             let isChoice = id.contains("-option-")
-            let aboveFooter = !isChoice || button.frame.midY < app.buttons["primary-action"].frame.minY
+            let footer = app.buttons["short-primary"].exists ? app.buttons["short-primary"] : app.buttons["primary-action"]
+            let aboveFooter = !isChoice || button.frame.midY < footer.frame.minY
             if button.isHittable && aboveFooter { break }
             app.swipeUp()
         }
@@ -46,6 +47,82 @@ final class LearningUITests: XCTestCase {
             tap("primary-action")
         }
         XCTAssertTrue(app.buttons[option].exists, "Choices appear after the conversation")
+    }
+
+    func testShortReviewResumesWithoutReplacingMainOrDuplicatingXP() {
+        app.launchArguments += ["--seed-before-subnet"]
+        app.launch()
+        tap("start-lesson")
+        tap("primary-action")
+        tap("exit-lesson")
+        app.buttons["保存进度并退出"].tap()
+        app.tabBars.buttons["复习"].tap()
+        tap("short-review-gateway")
+        XCTAssertFalse(app.buttons["short-primary"].isEnabled)
+        tap("short-option-all-fail")
+        tap("short-primary")
+        XCTAssertTrue(app.staticTexts["这里值得再想想"].waitForExistence(timeout: 5))
+        let feedback = app.staticTexts["你把网关当成了所有通信的必经之路。同一子网内，电脑可以直接把数据交给打印机。"]
+        XCTAssertTrue(feedback.waitForExistence(timeout: 5))
+        Thread.sleep(forTimeInterval: 0.5)
+        XCTAssertTrue(feedback.isHittable)
+        XCTAssertLessThan(feedback.frame.maxY, app.buttons["short-primary"].frame.minY)
+        screenshot("F01-short-review-wrong-feedback")
+        tap("exit-short-review")
+        app.buttons["保存进度并退出"].tap()
+        app.terminate()
+        app.launchArguments = ["--uitesting"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["recommended-lesson-title"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "谁才是我的邻居？")
+        app.tabBars.buttons["复习"].tap()
+        tap("short-review-gateway")
+        XCTAssertTrue(app.staticTexts["这里值得再想想"].waitForExistence(timeout: 5))
+        tap("short-primary")
+        tap("short-option-local")
+        tap("short-primary")
+        XCTAssertTrue(app.staticTexts["这次在帮助下完成，下次换个场景再试。"].waitForExistence(timeout: 5))
+        tap("short-primary")
+        XCTAssertEqual(app.staticTexts["short-evidence"].label, "这次在帮助下完成")
+        XCTAssertEqual(app.staticTexts["short-reward"].label, "今天这节课的经验已领取，判断记录仍会更新。")
+        screenshot("F02-short-review-completion")
+        tap("short-primary")
+        tap("short-review-gateway")
+        XCTAssertTrue(app.staticTexts["这次本地投影还能连接吗？"].waitForExistence(timeout: 5))
+        tap("short-option-local")
+        tap("short-primary")
+        tap("short-primary")
+        XCTAssertEqual(app.staticTexts["short-evidence"].label, "独立答对过")
+        tap("short-primary")
+        app.tabBars.buttons["学习"].tap()
+        XCTAssertEqual(app.staticTexts["xp-badge"].label, "30 经验值")
+        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "谁才是我的邻居？")
+        tap("start-lesson")
+        XCTAssertFalse(app.buttons["question-option-different"].exists)
+        revealScene(option: "question-option-different")
+    }
+
+    func testDNSShortReviewHintAndNextScenario() {
+        app.launchArguments += ["--seed-completed-course"]
+        app.launch()
+        app.tabBars.buttons["复习"].tap()
+        tap("short-review-dns")
+        tap("short-hint")
+        tap("short-option-ip")
+        tap("short-primary")
+        tap("short-primary")
+        XCTAssertEqual(app.staticTexts["short-evidence"].label, "这次在帮助下完成")
+        tap("short-primary")
+        tap("short-review-dns")
+        XCTAssertTrue(app.staticTexts["这个已缓存的网站此刻还能打开吗？"].waitForExistence(timeout: 5))
+        screenshot("F03-dns-cached-scene")
+        tap("short-option-cached")
+        tap("short-primary")
+        tap("short-primary")
+        XCTAssertEqual(app.staticTexts["short-evidence"].label, "独立答对过")
+        tap("short-primary")
+        app.tabBars.buttons["学习"].tap()
+        XCTAssertEqual(app.staticTexts["xp-badge"].label, "150 经验值")
     }
 
     func testFullLessonPersistenceAndResume() {

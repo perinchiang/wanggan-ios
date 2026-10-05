@@ -17,6 +17,9 @@ struct ProgressLedger: Codable, Equatable {
     var draft: LessonSession?
     // Optional so progress written before review drafts existed still decodes.
     var reviewDrafts: [String: LessonSession]?
+    // Additive optional fields keep the original v1 ledger readable.
+    var shortReviewDrafts: [String: ShortReviewSession]?
+    var reviewEvidence: [ReviewAttempt]?
 
     var level: Int { totalXP / 100 + 1 }
     var levelProgress: Double { Double(totalXP % 100) / 100 }
@@ -96,15 +99,24 @@ struct ProgressLedger: Codable, Equatable {
     mutating func complete(_ session: LessonSession, now: Date = Date(), calendar: Calendar = .current) -> Int {
         guard session.stage == .complete, session.challengeSolved, session.matchingSolved else { return 0 }
         clearDraft(for: session)
-        if let reward = settledSessions[session.id] { return reward }
+        return settle(sessionID: session.id, lessonID: session.lessonID, mistakes: session.mistakes,
+                      independent: session.mistakes == 0, now: now, calendar: calendar)
+    }
+
+    private mutating func settle(sessionID: UUID, lessonID: String, mistakes: Int,
+                                 independent: Bool, now: Date, calendar: Calendar) -> Int {
+        if let reward = settledSessions[sessionID] { return reward }
         let day = calendar.startOfDay(for: now)
         let reward: Int
-        if var previous = lessons[session.lessonID] {
+        if var previous = lessons[lessonID] {
             let firstPracticeToday = !calendar.isDate(previous.lastPracticedAt, inSameDayAs: now)
             reward = firstPracticeToday ? 5 : 0
             previous.lastPracticedAt = now
-            previous.lastMistakes = session.mistakes
-            if session.mistakes > 0 {
+            previous.lastMistakes = mistakes
+            let shortReviewErrorToday = (reviewEvidence ?? []).contains {
+                $0.lessonID == lessonID && !$0.correct && calendar.isDate($0.submittedAt, inSameDayAs: now)
+            }
+            if !independent || shortReviewErrorToday {
                 previous.reviewLevel = 0
                 previous.nextReviewAt = calendar.date(byAdding: .day, value: 1, to: day) ?? now
             } else if firstPracticeToday {
@@ -112,21 +124,79 @@ struct ProgressLedger: Codable, Equatable {
                 let interval = [1, 3, 7, 14][previous.reviewLevel]
                 previous.nextReviewAt = calendar.date(byAdding: .day, value: interval, to: day) ?? now
             }
-            lessons[session.lessonID] = previous
+            lessons[lessonID] = previous
         } else {
             reward = 30
-            lessons[session.lessonID] = LessonProgress(
+            lessons[lessonID] = LessonProgress(
                 completedAt: now, lastPracticedAt: now,
                 nextReviewAt: calendar.date(byAdding: .day, value: 1, to: day) ?? now,
-                reviewLevel: 0, lastMistakes: session.mistakes
+                reviewLevel: 0, lastMistakes: mistakes
             )
         }
-        settledSessions[session.id] = reward
+        settledSessions[sessionID] = reward
         totalXP += reward
         if !activityDays.contains(where: { calendar.isDate($0, inSameDayAs: now) }) {
             activityDays.append(day)
         }
         return reward
+    }
+
+    func shortSession(for lessonID: String, items: [ReviewItem]) -> ShortReviewSession? {
+        guard lessons[lessonID] != nil else { return nil }
+        let available = items.filter { $0.lessonID == lessonID }
+        if let saved = shortReviewDrafts?[lessonID], available.contains(where: { saved.matches($0) }),
+           settledSessions[saved.id] == nil { return saved }
+        guard !available.isEmpty else { return nil }
+        // A new session uses another scene; interrupted sessions keep the exact item.
+        let lastItem = reviewEvidence?.last(where: { $0.lessonID == lessonID })?.itemID
+        let nextIndex = available.firstIndex(where: { $0.id == lastItem }).map { ($0 + 1) % available.count } ?? 0
+        return ShortReviewSession(item: available[nextIndex])
+    }
+
+    mutating func saveShortDraft(_ session: ShortReviewSession, items: [ReviewItem],
+                                 calendar: Calendar = .current) {
+        guard lessons[session.lessonID] != nil, settledSessions[session.id] == nil,
+              let item = items.first(where: { session.matches($0) }) else { return }
+        var drafts = shortReviewDrafts ?? [:]
+        drafts[session.lessonID] = session
+        shortReviewDrafts = drafts
+        var evidence = reviewEvidence ?? []
+        for attempt in session.attempts where !evidence.contains(where: { $0.id == attempt.id }) {
+            guard attempt.sessionID == session.id, attempt.itemID == item.id,
+                  attempt.contentRevision == item.revision, attempt.lessonID == item.lessonID,
+                  attempt.knowledgePointID == item.knowledgePointID,
+                  attempt.scenarioFamilyID == item.scenarioFamilyID,
+                  item.options.contains(where: { $0.id == attempt.answerID }),
+                  attempt.correct == (attempt.answerID == item.correctID) else { continue }
+            evidence.append(attempt)
+            if !attempt.correct, var previous = lessons[session.lessonID] {
+                previous.reviewLevel = 0
+                previous.lastMistakes = session.mistakes
+                let day = calendar.startOfDay(for: attempt.submittedAt)
+                previous.nextReviewAt = calendar.date(byAdding: .day, value: 1, to: day) ?? attempt.submittedAt
+                lessons[session.lessonID] = previous
+            }
+        }
+        reviewEvidence = evidence
+    }
+
+    @discardableResult
+    mutating func completeShortReview(_ session: ShortReviewSession, items: [ReviewItem],
+                                      now: Date = Date(), calendar: Calendar = .current) -> Int {
+        guard lessons[session.lessonID] != nil, let item = items.first(where: { session.matches($0) }),
+              session.solved, session.selectedAnswer == item.correctID else { return 0 }
+        if let reward = settledSessions[session.id] { return reward }
+        saveShortDraft(session, items: items, calendar: calendar)
+        let reward = settle(sessionID: session.id, lessonID: session.lessonID, mistakes: session.mistakes,
+                            independent: session.independent, now: now, calendar: calendar)
+        if shortReviewDrafts?[session.lessonID]?.id == session.id {
+            shortReviewDrafts?.removeValue(forKey: session.lessonID)
+        }
+        return reward
+    }
+
+    func evidenceStatus(for knowledgePointID: String) -> ReviewEvidenceStatus {
+        ReviewEvidenceStatus.summarize((reviewEvidence ?? []).filter { $0.knowledgePointID == knowledgePointID })
     }
 
     func activeDaysThisWeek(now: Date = Date(), calendar: Calendar = .current) -> Int {

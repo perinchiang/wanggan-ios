@@ -17,6 +17,64 @@
       }
     ]
   },
+  "reviewItems": [
+    {
+      "id": "gateway.local-printer", "revision": 1, "lessonID": "gateway",
+      "knowledgePointID": "ipv4.local-vs-gateway", "objective": "分清本地通信与网关转交",
+      "scenarioFamilyID": "local-printer",
+      "scene": "电脑和打印机接在一台独立交换机上，属于同一个 IP 子网，没有网络隔离。地址、掩码和打印服务正常，通过 IP 连接打印机。只有电脑的默认网关填错了。",
+      "prompt": "电脑还能把文件发给打印机吗？",
+      "options": [
+        {"id": "local", "text": "能，本地通信仍可进行", "feedback": "目标就在本地，不需要默认网关转交。"},
+        {"id": "all-fail", "text": "不能，所有数据都必须经过网关", "feedback": "你把网关当成了所有通信的必经之路。同一子网内，电脑可以直接把数据交给打印机。"},
+        {"id": "slow", "text": "能，但网关会让打印变慢", "feedback": "这条本地路径不经过默认网关，填错它不会自动让打印变慢。"}
+      ],
+      "correctID": "local", "hint": "先判断目标在本地还是远方，再决定是否需要网关。",
+      "explanation": "同一子网且没有隔离时，电脑在本地找到打印机并直接交付；默认网关用于转交去往其他网络的数据。"
+    },
+    {
+      "id": "gateway.local-projector", "revision": 1, "lessonID": "gateway",
+      "knowledgePointID": "ipv4.local-vs-gateway", "objective": "分清本地通信与网关转交",
+      "scenarioFamilyID": "local-projector",
+      "scene": "电脑与投影仪接在独立交换机上，属于同一个 IP 子网，地址与掩码正确，没有网络隔离。投影服务正常，电脑按 IP 连接。路由器关机了，交换机和两台设备仍通电。",
+      "prompt": "这次本地投影还能连接吗？",
+      "options": [
+        {"id": "local", "text": "能，本地路径仍正常", "feedback": "本地投影不用路由器转交。"},
+        {"id": "all-fail", "text": "不能，路由器关机就是全部断网", "feedback": "你把路由器关机当成了所有路径都消失。这里的本地路径仍由独立交换机连着。"},
+        {"id": "internet", "text": "只有能上互联网，投影才能连接", "feedback": "这里按 IP 连接本地服务，没有要求通过互联网。"}
+      ],
+      "correctID": "local", "hint": "画一下电脑到投影仪的路径：必须经过路由器吗？",
+      "explanation": "这条本地路径只经过仍工作的独立交换机。若路由器同时承担 Wi-Fi 或交换角色，关机的影响就需要重新判断。"
+    },
+    {
+      "id": "dns.uncached-name", "revision": 1, "lessonID": "dns",
+      "knowledgePointID": "dns.resolution-vs-connectivity", "objective": "分清名字解析与地址连通",
+      "scenarioFamilyID": "uncached-name",
+      "scene": "电脑的 IP、路由和网络连接正常。DNS 查询失败，没有可用缓存或本地名称映射。NAS 服务正常，支持直接按 IP 访问；一个新网站必须先查到域名对应的地址。",
+      "prompt": "现在最合理的判断是什么？",
+      "options": [
+        {"id": "ip", "text": "NAS 可按 IP 访问，新网站的域名访问受阻", "feedback": "DNS 失败阻碍找地址，不等于已知地址的路径失效。"},
+        {"id": "all-fail", "text": "DNS 失败，NAS 和网站一定都不能访问", "feedback": "你把查名字失败当成了所有地址都不可达。按已知 IP 访问 NAS，不需要这次 DNS 查询。"},
+        {"id": "all-work", "text": "网络正常，两个都一定能访问", "feedback": "新网站还缺少域名对应的地址；题目排除了缓存与本地名称映射。"}
+      ],
+      "correctID": "ip", "hint": "访问已知 IP 与查一个新域名，哪一个还需要 DNS？",
+      "explanation": "DNS 把名字对应到地址。查名字失败，不能因此断定已知 IP 的路径也坏了；新域名没有缓存或本地映射，才会卡在找地址这一步。"
+    },
+    {
+      "id": "dns.cached-name", "revision": 1, "lessonID": "dns",
+      "knowledgePointID": "dns.resolution-vs-connectivity", "objective": "分清名字解析与地址连通",
+      "scenarioFamilyID": "cached-name",
+      "scene": "DNS 服务器暂时不可用，但电脑已有某网站仍有效的地址缓存。缓存地址没有变化，路由、网络和网站服务正常，浏览器会使用该缓存。",
+      "prompt": "这个已缓存的网站此刻还能打开吗？",
+      "options": [
+        {"id": "cached", "text": "能，已有缓存可提供地址", "feedback": "这次不必重新向 DNS 服务器查地址。"},
+        {"id": "all-fail", "text": "不能，每次访问都必须重新查询 DNS", "feedback": "你忽略了有效缓存：名字已经能对应到地址，不必每次重新查询服务器。"},
+        {"id": "forever", "text": "能，所以以后永远不需要 DNS", "feedback": "缓存有有效期，也可能遇到新域名；现在可访问不能推出以后都不用 DNS。"}
+      ],
+      "correctID": "cached", "hint": "这一次，电脑是否已经有可用的地址？",
+      "explanation": "有效缓存可暂时替代新的 DNS 查询。这里地址和路径都正常，所以仍可访问；缓存过期或遇到新名字时，仍可能需要 DNS。"
+    }
+  ],
   "lessons": [
     {
       "id": "gateway",
