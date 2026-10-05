@@ -16,7 +16,6 @@ final class LearningUITests: XCTestCase {
         executionTimeAllowance = 300
         app = XCUIApplication()
         app.launchArguments = ["--uitesting", "--reset-progress"]
-        app.launch()
     }
 
     private func tap(_ id: String) {
@@ -50,6 +49,7 @@ final class LearningUITests: XCTestCase {
     }
 
     func testFullLessonPersistenceAndResume() {
+        app.launch()
         XCTAssertTrue(app.buttons["start-lesson"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.buttons["start-lesson"].isHittable, "Start should be visible without scrolling")
         screenshot("01-learning-route")
@@ -159,6 +159,7 @@ final class LearningUITests: XCTestCase {
     }
 
     func testWrongChoiceTeachesInsteadOfBlockingProgress() {
+        app.launch()
         tap("lesson-gateway")
         revealScene(option: "question-option-all-fail")
         XCTAssertFalse(app.buttons["primary-action"].isEnabled)
@@ -200,7 +201,6 @@ final class LearningUITests: XCTestCase {
     }
 
     private func verifyFlow(_ flow: LessonFlow) {
-        app.terminate()
         app.launchArguments = ["--uitesting", "--reset-progress", "--seed-before-\(flow.id)"]
         app.launch()
         tap("lesson-\(flow.id)")
@@ -280,6 +280,7 @@ final class LearningUITests: XCTestCase {
     }
 
     func testSceneRevealsOneMessageAtATimeAndResumesAfterRelaunch() {
+        app.launch()
         tap("start-lesson")
         XCTAssertTrue(app.descendants(matching: .any)["question-scene-home"].exists)
         XCTAssertFalse(app.descendants(matching: .any)["question-scene-wiring"].exists)

@@ -1,6 +1,14 @@
 name: Build and test iOS
 on:
   workflow_dispatch:
+    inputs:
+      ui_scope:
+        description: Native UI verification scope
+        type: choice
+        default: full
+        options:
+          - full
+          - ipv4
 permissions:
   contents: read
 concurrency:
@@ -44,11 +52,16 @@ jobs:
         run: |
           xcrun simctl boot '${{ steps.simulator.outputs.id }}' || true
           xcrun simctl bootstatus '${{ steps.simulator.outputs.id }}' -b
-          xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Debug -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.id }}' -parallel-testing-enabled NO -derivedDataPath build/simulator -resultBundlePath build/UITests.xcresult CODE_SIGNING_ALLOWED=NO test > build-ui.log 2>&1 || { tail -100 build-ui.log; exit 1; }
+          scope_args=()
+          if [ '${{ inputs.ui_scope }}' = 'ipv4' ]; then
+            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testSubnetResumesAndCompletesOnStepPlayer')
+          fi
+          python3 scripts/run_command_with_timeout.py --log build-ui.log --idle-timeout 180 --wall-timeout 1200 -- xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Debug -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.id }}' -parallel-testing-enabled NO -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 -derivedDataPath build/simulator -resultBundlePath build/UITests.xcresult "${scope_args[@]}" CODE_SIGNING_ALLOWED=NO test
       - name: Export simulator screenshots
         if: always()
         run: |
           mkdir -p build/screenshots
+          xcrun simctl io '${{ steps.simulator.outputs.id }}' screenshot build/screenshots/final-simulator.png || true
           if [ -d build/UITests.xcresult ]; then
             xcrun xcresulttool export attachments --path build/UITests.xcresult --output-path build/screenshots || true
           fi

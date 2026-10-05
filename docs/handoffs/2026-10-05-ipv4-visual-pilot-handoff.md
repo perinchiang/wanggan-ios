@@ -21,20 +21,23 @@
 
 ## Not completed / 尚未完成
 
-- 当前候选源码仍需 macOS 上的 Core、Web、iPhone 构建和原生 UI 验证；0.2.0 IPA 尚未交付。
+- Core、Web 与 iPhone 构建已通过；原生 UI 验证尚未完成，0.2.0 IPA 尚未交付。
 - iPhone 实际安装、VoiceOver 与大字号体验仍需真机验收；浏览器截图不能代替 WKWebView 验收。
 
 ## Known issues / 已知问题
 
 - `LearningStore` 课程加载失败时可能清草稿、未知 schema 恢复路径不足的既有风险未在本轮改动。
 - App 当前强制浅色；图示具备深色参数和样式，但完整 App Dark Mode 尚未交付。
+- 首次 CI 在第一项 ARP 测试的第二次 App 启动处停滞，未进入 IPv4 流程，35 分钟后任务自动取消；没有 UI 断言结果或有效 xcresult。已移除四课流程测试之前的冗余 App 启动，具体停滞原因未确认。
 
 ## Verification / 已做验证
 
 - 本地 Node 测试覆盖两组地址、非整字节前缀、非法输入、练习提交前隐藏答案和网页选择回调。
 - 在 Chromium 本地预览浅色讲解及大字号深色练习，检查四个可点击边界、文字换行与不提前显示答案。
-- `git diff --check` 通过；Windows 无 Swift / Xcode 工具链，尚未运行 Core 或原生测试。
+- 提交 `9a49185` 的手动运行 37280539186：Core 测试、Web 测试、iPhone 构建和 HTML 入包检查通过；模拟器 App 和 UI 测试源码也编译完成，但首项 ARP 测试在启动 App 时停滞后超时。不能记为 UI 通过。
+- 增加 UI 检查范围 `full` / `ipv4` 和输出停滞限时保护；本地验证保护脚本的正常退出、失败退出与静默超时路径。
+- `git diff --check` 通过；Windows 无 Swift / Xcode 工具链，本地运行检查仍只有 Web 和保护脚本。
 
 ## Next recommended task / 推荐下一步
 
-集中运行一次手动 iOS Actions，确认 Web 资源进入 IPA、Core 与原生 UI 测试通过，下载 0.2.0（build 6）供 iPhone 覆盖安装验收。
+只补跑 `ipv4` 原生 UI 范围，验证子网课新图、答错重试、退出续学与完成结算；通过后下载 0.2.0（build 6）供 iPhone 覆盖安装验收。其余四课本轮 UI 未通过，应明确保留此前 0.1.4 的验证归属，后续适合的集中验收再跑全套。
