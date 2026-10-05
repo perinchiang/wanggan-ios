@@ -89,7 +89,7 @@ final class IPv4IntroductionTests: XCTestCase {
         XCTAssertEqual(ledger.complete(completed), 30)
         ledger.complete(completed)
         XCTAssertEqual(ledger.totalXP, 30)
-        XCTAssertTrue(ledger.isUnlocked("gateway", in: content.orderedLessonIDs))
+        XCTAssertTrue(ledger.isUnlocked("subnet-mask", in: content.orderedLessonIDs))
     }
 
     func testInsertedLessonKeepsOldMainAndIndependentEarlierDraftAfterRelaunch() throws {

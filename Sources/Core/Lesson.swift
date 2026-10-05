@@ -55,6 +55,7 @@ struct Lesson: Codable, Equatable, Identifiable {
     let diagram: String
     let ipv4Visual: IPv4VisualLesson?
     let ipv4Introduction: IPv4Introduction?
+    let subnetMaskIntroduction: SubnetMaskIntroduction?
     let question: Question
     let explanation: [String]
     let matching: MatchingExercise
@@ -116,6 +117,12 @@ struct LessonCatalog: Codable {
             }
         }
         for lesson in lessons {
+            if let mask = lesson.subnetMaskIntroduction {
+                guard mask.isValid, lesson.ipv4Introduction == nil, lesson.ipv4Visual == nil,
+                      lesson.explanation.isEmpty else {
+                    throw ContentError.invalid("\(lesson.id) 的掩码入门参数无效")
+                }
+            }
             if let introduction = lesson.ipv4Introduction {
                 guard IPv4AddressValue(ip: introduction.ip, prefix: 32) != nil,
                       lesson.ipv4Visual == nil else {
@@ -160,7 +167,7 @@ struct LessonCatalog: Codable {
                   !left.isEmpty, left.count == right.count,
                   Set(exercise.solution.keys) == left,
                   Set(exercise.solution.values) == right,
-                  (!lesson.explanation.isEmpty || lesson.ipv4Introduction != nil), !lesson.sources.isEmpty else {
+                  (!lesson.explanation.isEmpty || lesson.ipv4Introduction != nil || lesson.subnetMaskIntroduction != nil), !lesson.sources.isEmpty else {
                 throw ContentError.invalid("\(lesson.id) 的连线或讲解不完整")
             }
         }

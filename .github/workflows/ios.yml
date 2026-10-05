@@ -11,6 +11,7 @@ on:
           - ipv4
           - review
           - foundation
+          - mask
 permissions:
   contents: read
 concurrency:
@@ -70,6 +71,11 @@ jobs:
           elif [ '${{ inputs.ui_scope }}' = 'foundation' ]; then
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4IntroductionObservationBacktrackingResumeAndCompletion')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testHopResumesAndCompletesOnStepPlayer')
+          elif [ '${{ inputs.ui_scope }}' = 'mask' ]; then
+            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testSubnetMaskObservationRetryBacktrackingResumeAndCompletion')
+            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testSubnetMaskAtLargestTextSizeWithReduceMotion')
+            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4IntroductionObservationBacktrackingResumeAndCompletion')
+            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testSubnetResumesAndCompletesOnStepPlayer')
           elif [ '${{ inputs.ui_scope }}' = 'review' ]; then
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testShortReviewResumesWithoutReplacingMainOrDuplicatingXP')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testDNSShortReviewHintAndNextScenario')

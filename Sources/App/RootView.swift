@@ -5,6 +5,13 @@ struct RootView: View {
     @State private var selectedTab = 0
     @State private var activeLesson: Lesson?
     @State private var activeReview: ShortReviewSession?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var testsMaskAccessibility: Bool {
+        let arguments = ProcessInfo.processInfo.arguments
+        return arguments.contains("--uitesting") && arguments.contains("--test-mask-accessibility")
+    }
 
     var body: some View {
         Group {
@@ -28,6 +35,8 @@ struct RootView: View {
                 activeLesson = next
             }
             .id(lesson.id)
+            .environment(\.dynamicTypeSize, testsMaskAccessibility ? .accessibility5 : dynamicTypeSize)
+            .environment(\.accessibilityReduceMotion, testsMaskAccessibility || reduceMotion)
         }
         .alert("进度提示", isPresented: Binding(
             get: { store.storageWarning != nil }, set: { if !$0 { store.storageWarning = nil } }

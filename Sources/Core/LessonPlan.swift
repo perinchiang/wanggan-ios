@@ -122,6 +122,7 @@ struct StepSession: Codable, Equatable {
     var ipv4VisualSolved: Bool?
     var ipv4VisualFinished: Bool?
     var ipv4IntroductionProgress: IPv4IntroductionProgress?
+    var subnetMaskProgress: SubnetMaskProgress?
 
     init(lessonID: String, id: UUID = UUID()) {
         self.id = id
@@ -176,6 +177,7 @@ struct LessonPlan {
         guard let step = step(at: session.stepIndex) else { return false }
         switch step.kind {
         case .diagram:
+            if lesson.subnetMaskIntroduction != nil { return session.subnetMaskProgress?.finished == true }
             return lesson.ipv4Introduction == nil || session.ipv4IntroductionProgress?.finished == true
         case .conversation, .text, .summary:
             return true
@@ -248,6 +250,7 @@ extension StepSession {
         ipv4VisualSolved = stage.ipv4VisualSolved
         ipv4VisualFinished = stage.ipv4VisualFinished
         ipv4IntroductionProgress = stage.ipv4IntroductionProgress
+        subnetMaskProgress = stage.subnetMaskProgress
         selectedAnswer = stage.selectedAnswer
         answerSubmitted = stage.answerSubmitted
         matches = stage.matches
@@ -260,7 +263,7 @@ extension StepSession {
         case .question:
             stepIndex = min(stage.sceneStep(for: lesson.question, challenge: false), plan.questionSceneCount)
         case .explanation:
-            if lesson.ipv4Introduction != nil {
+            if lesson.ipv4Introduction != nil || lesson.subnetMaskIntroduction != nil {
                 stepIndex = plan.questionIndex + 1
             } else if lesson.ipv4Visual != nil, stage.ipv4VisualPhase != nil, stage.ipv4VisualFinished != true {
                 stepIndex = plan.questionIndex + 1
@@ -286,6 +289,7 @@ extension StepSession {
         result.ipv4VisualSolved = ipv4VisualSolved
         result.ipv4VisualFinished = ipv4VisualFinished
         result.ipv4IntroductionProgress = ipv4IntroductionProgress
+        result.subnetMaskProgress = subnetMaskProgress
         result.selectedAnswer = selectedAnswer
         result.answerSubmitted = answerSubmitted
         result.matches = matches

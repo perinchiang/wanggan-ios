@@ -102,7 +102,12 @@ struct StepLessonPlayer: View {
     }
 
     @ViewBuilder private var explanationPhase: some View {
-        if let introduction = lesson.ipv4Introduction {
+        if let mask = lesson.subnetMaskIntroduction {
+            SubnetMaskIntroductionPanel(configuration: mask, progress: Binding(
+                get: { session.subnetMaskProgress ?? SubnetMaskProgress() },
+                set: { session.subnetMaskProgress = $0 }
+            ))
+        } else if let introduction = lesson.ipv4Introduction {
             IPv4IntroductionPanel(introduction: introduction, progress: Binding(
                 get: { session.ipv4IntroductionProgress ?? IPv4IntroductionProgress() },
                 set: { session.ipv4IntroductionProgress = $0 }
@@ -300,6 +305,9 @@ struct StepLessonPlayer: View {
 
     private var feedbackScrollTarget: String? {
         if plan.step(at: session.stepIndex)?.kind == .diagram,
+           lesson.subnetMaskIntroduction != nil, session.subnetMaskProgress?.stage == 3,
+           session.subnetMaskProgress?.boundarySubmitted == true { return "mask-feedback" }
+        if plan.step(at: session.stepIndex)?.kind == .diagram,
            lesson.ipv4Visual != nil, session.ipv4VisualSubmitted == true {
             return "ipv4-feedback"
         }
@@ -309,6 +317,10 @@ struct StepLessonPlayer: View {
     }
 
     private var scrollRequest: String {
+        if lesson.subnetMaskIntroduction != nil, plan.step(at: session.stepIndex)?.kind == .diagram {
+            let progress = session.subnetMaskProgress ?? SubnetMaskProgress()
+            return "mask-\(progress.stage)-\(progress.boundarySubmitted)"
+        }
         if lesson.ipv4Introduction != nil, plan.step(at: session.stepIndex)?.kind == .diagram {
             return "introduction-\(session.ipv4IntroductionProgress?.stage ?? 0)"
         }
@@ -350,6 +362,15 @@ struct StepLessonPlayer: View {
             }
             return session.answerSubmitted ? "看看为什么" : "确认答案"
         case .diagram:
+            if lesson.subnetMaskIntroduction != nil {
+                let progress = session.subnetMaskProgress ?? SubnetMaskProgress()
+                switch progress.stage {
+                case 0: return "看看掩码怎么标记"
+                case 1: return "只换掩码看看"
+                case 2: return "自己选一次分界"
+                default: return progress.boundarySolved ? "试着连一连" : "检查分界"
+                }
+            }
             if lesson.ipv4Introduction != nil {
                 switch session.ipv4IntroductionProgress?.stage ?? 0 {
                 case 0: return "拆开这一段"
@@ -378,6 +399,11 @@ struct StepLessonPlayer: View {
         case .conversation, .text, .summary:
             return true
         case .diagram:
+            if lesson.subnetMaskIntroduction != nil {
+                let progress = session.subnetMaskProgress ?? SubnetMaskProgress()
+                return progress.canAdvance || progress.stage == 3 &&
+                    progress.selectedBoundary != nil && !progress.boundarySubmitted
+            }
             if lesson.ipv4Introduction != nil {
                 return session.ipv4IntroductionProgress?.canAdvance == true
             }
@@ -430,6 +456,20 @@ struct StepLessonPlayer: View {
                 }
             }
         case .diagram:
+            if let configuration = lesson.subnetMaskIntroduction {
+                var progress = session.subnetMaskProgress ?? SubnetMaskProgress()
+                if progress.stage == 3 && !progress.boundarySolved {
+                    if progress.submitBoundary(configuration: configuration) == false { session.mistakes += 1 }
+                } else {
+                    let lastStage = progress.stage == 3
+                    progress.advance()
+                    session.subnetMaskProgress = progress
+                    if lastStage { plan.advance(&session) }
+                    return
+                }
+                session.subnetMaskProgress = progress
+                return
+            }
             if lesson.ipv4Introduction != nil {
                 var progress = session.ipv4IntroductionProgress ?? IPv4IntroductionProgress()
                 let isLastStage = progress.stage == 3

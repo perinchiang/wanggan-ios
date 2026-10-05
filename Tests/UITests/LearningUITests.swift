@@ -22,7 +22,7 @@ final class LearningUITests: XCTestCase {
         let button = app.buttons[id]
         XCTAssertTrue(button.waitForExistence(timeout: 10), "Missing \(id)")
         for _ in 0..<5 {
-            let isChoice = id.contains("-option-")
+            let isChoice = id.contains("-option-") || id.hasPrefix("mask-")
             let footer = app.buttons["short-primary"].exists ? app.buttons["short-primary"] : app.buttons["primary-action"]
             let aboveFooter = !isChoice || button.frame.midY < footer.frame.minY
             // A row with a tiny visible edge can be "hittable" while its tap point
@@ -31,7 +31,8 @@ final class LearningUITests: XCTestCase {
             let visibleRouteRow = !id.hasPrefix("lesson-") || !recommendation.exists ||
                 button.frame.maxY < recommendation.frame.minY - 14
             if button.isHittable && aboveFooter && visibleRouteRow { break }
-            app.swipeUp()
+            if button.frame.maxY < 100 { app.swipeDown() }
+            else { app.swipeUp() }
         }
         XCTAssertTrue(button.isHittable, "Not hittable: \(id)")
         if id.hasPrefix("lesson-"), app.staticTexts["recommended-lesson-title"].exists {
@@ -55,6 +56,105 @@ final class LearningUITests: XCTestCase {
             tap("primary-action")
         }
         XCTAssertTrue(app.buttons[option].exists, "Choices appear after the conversation")
+    }
+
+    func testSubnetMaskObservationRetryBacktrackingResumeAndCompletion() {
+        app.launchArguments += ["--seed-before-subnet-mask"]
+        app.launch()
+        tap("start-lesson")
+        revealScene(option: "question-option-three")
+        tap("question-option-three")
+        tap("primary-action")
+        tap("primary-action")
+        XCTAssertEqual(app.staticTexts["mask-stage"].label, "观察 1 / 4")
+        XCTAssertFalse(app.staticTexts["mask-decimal"].exists)
+        tap("primary-action")
+        XCTAssertFalse(app.buttons["primary-action"].isEnabled)
+        tap("mask-octet-3")
+        XCTAssertFalse(app.buttons["primary-action"].isEnabled)
+        tap("mask-octet-4")
+        XCTAssertTrue(app.buttons["primary-action"].isEnabled)
+        screenshot("M01-mask-decompose")
+        tap("primary-action")
+        XCTAssertFalse(app.buttons["primary-action"].isEnabled)
+        tap("mask-condition-toggle")
+        XCTAssertEqual(app.staticTexts["mask-prefix"].label, "前缀 /16")
+        screenshot("M02-mask-condition")
+        tap("mask-previous")
+        XCTAssertEqual(app.staticTexts["mask-stage"].label, "观察 2 / 4")
+        tap("exit-lesson")
+        app.buttons["保存进度并退出"].tap()
+        app.terminate()
+        app.launchArguments = ["--uitesting"]
+        app.launch()
+        tap("start-lesson")
+        XCTAssertEqual(app.staticTexts["mask-stage"].label, "观察 2 / 4")
+        XCTAssertTrue(app.buttons["primary-action"].isEnabled)
+        tap("primary-action")
+        XCTAssertEqual(app.staticTexts["mask-prefix"].label, "前缀 /16")
+        let heading = app.staticTexts["地址不动，只换分界规则"]
+        for _ in 0..<4 where !heading.isHittable { app.swipeDown() }
+        heading.swipeLeft()
+        XCTAssertEqual(app.staticTexts["mask-stage"].label, "观察 2 / 4")
+        tap("primary-action")
+        tap("primary-action")
+        XCTAssertFalse(app.staticTexts["mask-decimal"].exists, "Practice does not expose the answer mask")
+        XCTAssertFalse(app.staticTexts["mask-partition"].exists)
+        tap("mask-octet-3")
+        tap("primary-action")
+        XCTAssertTrue(app.staticTexts["再数一数网络位"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["primary-action"].isEnabled)
+        tap("exit-lesson")
+        app.buttons["保存进度并退出"].tap()
+        app.terminate()
+        app.launch()
+        tap("start-lesson")
+        XCTAssertEqual(app.staticTexts["mask-stage"].label, "观察 4 / 4")
+        XCTAssertTrue(app.staticTexts["再数一数网络位"].exists)
+        tap("mask-octet-1")
+        tap("primary-action")
+        XCTAssertTrue(app.staticTexts["分界找对了"].exists)
+        screenshot("M03-mask-practice")
+        tap("primary-action")
+        for (left, right) in [("one", "network"), ("zero", "host")] {
+            tap("match-left-\(left)")
+            tap("match-right-\(right)")
+        }
+        tap("primary-action")
+        tap("primary-action")
+        revealScene(option: "challenge-option-three")
+        tap("challenge-option-three")
+        tap("primary-action")
+        tap("primary-action")
+        tap("challenge-option-same")
+        tap("primary-action")
+        tap("primary-action")
+        XCTAssertTrue(app.staticTexts["+30 XP"].waitForExistence(timeout: 5))
+        tap("finish-session")
+        XCTAssertEqual(app.staticTexts["xp-badge"].label, "60 经验值")
+        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "网关填错会怎样？")
+    }
+
+    func testSubnetMaskAtLargestTextSizeWithReduceMotion() {
+        app.launchArguments += ["--seed-before-subnet-mask", "--test-mask-accessibility"]
+        app.launch()
+        tap("start-lesson")
+        revealScene(option: "question-option-mask")
+        tap("question-option-mask")
+        tap("primary-action")
+        tap("primary-action")
+        tap("primary-action")
+        tap("mask-octet-1")
+        tap("mask-octet-4")
+        XCTAssertTrue(app.buttons["primary-action"].isEnabled)
+        screenshot("M04-mask-largest-text-static")
+        tap("primary-action")
+        tap("mask-condition-toggle")
+        tap("primary-action")
+        tap("mask-octet-1")
+        tap("primary-action")
+        XCTAssertTrue(app.staticTexts["分界找对了"].exists)
+        screenshot("M05-mask-largest-text-result")
     }
 
     func testIPv4IntroductionObservationBacktrackingResumeAndCompletion() {
@@ -123,7 +223,7 @@ final class LearningUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["+30 XP"].waitForExistence(timeout: 5))
         tap("finish-session")
         XCTAssertEqual(app.staticTexts["xp-badge"].label, "30 经验值")
-        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "网关填错会怎样？")
+        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "子网掩码怎样划分地址？")
     }
 
     func testShortReviewResumesWithoutReplacingMainOrDuplicatingXP() {
@@ -199,7 +299,7 @@ final class LearningUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["short-evidence"].label, "独立答对过")
         tap("short-primary")
         app.tabBars.buttons["学习"].tap()
-        XCTAssertEqual(app.staticTexts["xp-badge"].label, "180 经验值")
+        XCTAssertEqual(app.staticTexts["xp-badge"].label, "210 经验值")
     }
 
     func testFullLessonPersistenceAndResume() {
@@ -338,22 +438,22 @@ final class LearningUITests: XCTestCase {
 
     func testSubnetResumesAndCompletesOnStepPlayer() {
         verifyFlow(LessonFlow(id: "subnet", question: "different", challenge: "yes",
-                              matches: [("24", "three"), ("16", "two")], expectedXP: 90))
+                              matches: [("24", "three"), ("16", "two")], expectedXP: 120))
     }
 
     func testARPResumesAndCompletesOnStepPlayer() {
         verifyFlow(LessonFlow(id: "arp", question: "gateway", challenge: "no",
-                              matches: [("local", "nasip"), ("remote", "gwip")], expectedXP: 120))
+                              matches: [("local", "nasip"), ("remote", "gwip")], expectedXP: 150))
     }
 
     func testHopResumesAndCompletesOnStepPlayer() {
         verifyFlow(LessonFlow(id: "hop", question: "frame", challenge: "no",
-                              matches: [("ip", "final"), ("mac", "next")], expectedXP: 150))
+                              matches: [("ip", "final"), ("mac", "next")], expectedXP: 180))
     }
 
     func testDNSResumesAndCompletesOnStepPlayer() {
         verifyFlow(LessonFlow(id: "dns", question: "dns", challenge: "no",
-                              matches: [("name", "resolve"), ("service", "connect")], expectedXP: 180))
+                              matches: [("name", "resolve"), ("service", "connect")], expectedXP: 210))
     }
 
     private func verifyFlow(_ flow: LessonFlow) {
