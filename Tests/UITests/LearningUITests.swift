@@ -25,10 +25,18 @@ final class LearningUITests: XCTestCase {
             let isChoice = id.contains("-option-")
             let footer = app.buttons["short-primary"].exists ? app.buttons["short-primary"] : app.buttons["primary-action"]
             let aboveFooter = !isChoice || button.frame.midY < footer.frame.minY
-            if button.isHittable && aboveFooter { break }
+            // A row with a tiny visible edge can be "hittable" while its tap point
+            // sits behind the fixed recommendation panel. Scroll the full row in.
+            let recommendation = app.staticTexts["recommended-lesson-title"]
+            let visibleRouteRow = !id.hasPrefix("lesson-") || !recommendation.exists ||
+                button.frame.maxY < recommendation.frame.minY - 14
+            if button.isHittable && aboveFooter && visibleRouteRow { break }
             app.swipeUp()
         }
         XCTAssertTrue(button.isHittable, "Not hittable: \(id)")
+        if id.hasPrefix("lesson-"), app.staticTexts["recommended-lesson-title"].exists {
+            XCTAssertLessThan(button.frame.maxY, app.staticTexts["recommended-lesson-title"].frame.minY - 14)
+        }
         button.tap()
     }
 

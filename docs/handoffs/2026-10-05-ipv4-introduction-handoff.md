@@ -27,7 +27,8 @@
 ## Verification / 已做验证
 
 - 4 项本地 Web 参数 / 呈现 / 回调检查通过。
-- Swift Core、iPhone 构建、实际 WKWebView、原生 UI 与截图待集中 macOS CI。
+- 首次集中 CI [37314695992](https://github.com/perinchiang/wanggan-ios/actions/runs/37314695992)，应用源码 `7617846`：41 Core、4 Web、iPhone 编译通过；10 原生 UI 中 9 项通过（含新课完整流程、按钮 / 左滑、重启恢复、结算）。Hop 入口测试误点：课程行 y=634.3～705.3，固定推荐面板从 y=636 开始，而 XCTest 仍报告该行 hittable；未进入课内后找不到 primary-action。已修改测试点击助手，先把课程行完整滚到面板上方再点；App 代码不变。追加 foundation 范围，仅复测新课和 Hop，待结果。
+- 已查看真实模拟器新课截图；本地浏览器在 346px 宽度及 2.2 倍字号下检查图示无横向溢出、深色与静态阶段正常。浏览器检查不代表整个 iOS 界面已完成相同验收。
 - 真机、完整 VoiceOver 与最大字号验收待用户试学。
 
 ## Next recommended task / 推荐下一步
