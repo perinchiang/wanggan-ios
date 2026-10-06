@@ -99,7 +99,9 @@ extension Lesson {
         for (index, paragraph) in explanation.enumerated() {
             result.append(LessonStep(id: "\(id).explanation.\(index)", payload: .text(paragraph)))
         }
-        result.append(LessonStep(id: "\(id).matching", payload: .matching(matching)))
+        if usesMatching {
+            result.append(LessonStep(id: "\(id).matching", payload: .matching(matching)))
+        }
         for message in challenge.scene {
             result.append(LessonStep(id: "\(id).challenge.scene.\(message.id)", payload: .conversation(message)))
         }
@@ -153,7 +155,14 @@ struct LessonPlan {
         self.steps = steps
         questionSceneCount = lesson.question.scene.count
         questionIndex = steps.firstIndex { $0.id == "\(lesson.id).question" } ?? steps.count
-        matchingIndex = steps.firstIndex { $0.id == "\(lesson.id).matching" } ?? steps.count
+        if let index = steps.firstIndex(where: { $0.id == "\(lesson.id).matching" }) {
+            matchingIndex = index
+        } else if let firstChallengeScene = steps.firstIndex(where: { $0.id.hasPrefix("\(lesson.id).challenge.scene.") }) {
+            // Preserve the old boundary arithmetic even when matching is skipped.
+            matchingIndex = firstChallengeScene - 1
+        } else {
+            matchingIndex = steps.count
+        }
         challengeSceneCount = lesson.challenge.scene.count
         challengeIndex = steps.firstIndex { $0.id == "\(lesson.id).challenge" } ?? steps.count
         summaryIndex = steps.firstIndex { $0.id == "\(lesson.id).summary" }!
@@ -292,7 +301,7 @@ extension StepSession {
             stepIndex = ipv4FoundationProgress?.finished == true ? plan.summaryIndex : 0
             return
         }
-        if stage.stage == .matching {
+        if stage.stage == .matching, lesson.usesMatching {
             matches = matches.filter { lesson.matching.solution[$0.key] == $0.value }
             matchingSolved = lesson.matching.isCorrect(matches)
             matchingSubmitted = matchingSolved
@@ -309,7 +318,7 @@ extension StepSession {
                 stepIndex = plan.questionIndex + 2 + min(stage.explanationIndex, max(lesson.explanation.count - 1, 0))
             }
         case .matching:
-            stepIndex = plan.matchingIndex
+            stepIndex = lesson.usesMatching ? plan.matchingIndex : min(plan.matchingIndex + 1, plan.challengeIndex)
         case .challenge:
             stepIndex = min(plan.matchingIndex + 1 + stage.sceneStep(for: lesson.challenge, challenge: true), plan.challengeIndex)
         case .complete:
@@ -348,7 +357,7 @@ extension StepSession {
         } else if stepIndex == plan.questionIndex {
             result.stage = .question
             result.questionSceneStep = answerSubmitted ? lesson.question.scene.count : stepIndex
-        } else if stepIndex < plan.matchingIndex {
+        } else if stepIndex < plan.matchingIndex || (!lesson.usesMatching && stepIndex == plan.matchingIndex) {
             result.stage = .explanation
             result.explanationIndex = max(min(stepIndex - plan.questionIndex - 2, lesson.explanation.count - 1), 0)
             if lesson.ipv4Visual != nil, stepIndex == plan.questionIndex + 1 {

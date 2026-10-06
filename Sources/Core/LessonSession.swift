@@ -99,9 +99,9 @@ struct LessonSession: Codable, Equatable, Identifiable {
             if answerSubmitted { stage = .explanation }
         case .explanation:
             if explanationIndex + 1 < lesson.explanation.count { explanationIndex += 1 }
-            else { stage = .matching }
+            else { stage = lesson.usesMatching ? .matching : .challenge }
         case .matching:
-            if matchingSolved { stage = .challenge }
+            if !lesson.usesMatching || matchingSolved { stage = .challenge }
         case .challenge:
             if challengeSolved { stage = .complete }
         case .complete: break

@@ -10,6 +10,8 @@ struct SceneMessage: Codable, Equatable, Identifiable {
     let id: String
     let text: String
     let visual: String?
+    /// Optional presentational role. nil keeps the narrator/tutor bubble.
+    let speaker: String?
 }
 
 struct SceneDevice: Codable, Equatable, Identifiable {
@@ -60,9 +62,14 @@ struct Lesson: Codable, Equatable, Identifiable {
     let subnetMaskIntroduction: SubnetMaskIntroduction?
     let question: Question
     let explanation: [String]
+    /// Existing lessons show matching by default; a story may opt out when the
+    /// interaction would interrupt rather than reinforce the learning thread.
+    let matchingEnabled: Bool?
     let matching: MatchingExercise
     let challenge: Question
     let sources: [String]
+
+    var usesMatching: Bool { matchingEnabled ?? true }
 }
 
 struct Chapter: Codable, Equatable, Identifiable {

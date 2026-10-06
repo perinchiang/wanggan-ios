@@ -41,15 +41,12 @@ struct StepLessonPlayer: View {
                         stepContent
                     }.padding(.horizontal, 22).padding(.bottom, 22)
                 }
-                .onChange(of: session.stepIndex) { _, _ in
-                    withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { proxy.scrollTo("step-bottom", anchor: .bottom) }
-                }
                 .task(id: scrollRequest) {
                     do { try await Task.sleep(for: .milliseconds(reduceMotion ? 80 : 400)) }
                     catch { return }
+                    let target = feedbackScrollTarget ?? conversationScrollTarget ?? explanationScrollTarget ?? "lesson-top"
                     withAnimation(reduceMotion ? nil : .easeOut(duration: 0.24)) {
-                        proxy.scrollTo(feedbackScrollTarget ?? conversationScrollTarget ?? "lesson-top",
-                                       anchor: feedbackScrollTarget == nil ? .top : .bottom)
+                        proxy.scrollTo(target, anchor: feedbackScrollTarget == nil ? .top : .bottom)
                     }
                 }
             }
@@ -91,14 +88,16 @@ struct StepLessonPlayer: View {
             case .diagram, .text:
                 explanationPhase
             case .matching:
-                TutorBubble(text: "找找哪些意思对应。")
-                Text(lesson.matching.prompt).font(.body).foregroundStyle(Theme.muted)
-                MatchingView(exercise: lesson.matching, matches: session.matches, onPair: { left, right in
-                    plan.matchPair(left, to: right, in: &session)
-                }, usesStaticPresentation: usesStaticPresentation)
-                .id(step.id)
-                if session.matchingSolved {
-                    feedbackCard(title: "配对完成", text: lesson.matching.explanation, correct: true)
+                if lesson.usesMatching {
+                    TutorBubble(text: "找找哪些意思对应。")
+                    Text(lesson.matching.prompt).font(.body).foregroundStyle(Theme.muted)
+                    MatchingView(exercise: lesson.matching, matches: session.matches, onPair: { left, right in
+                        plan.matchPair(left, to: right, in: &session)
+                    }, usesStaticPresentation: usesStaticPresentation)
+                    .id(step.id)
+                    if session.matchingSolved {
+                        feedbackCard(title: "配对完成", text: lesson.matching.explanation, correct: true)
+                    }
                 }
             case .summary:
                 ConversationBubble(text: lesson.takeaway)
@@ -108,6 +107,7 @@ struct StepLessonPlayer: View {
     }
 
     @ViewBuilder private var explanationPhase: some View {
+        Color.clear.frame(height: 0).accessibilityIdentifier("explanation-phase")
         if let foundation = lesson.ipv4Foundation {
             IPv4FoundationPanel(configuration: foundation, usesStaticPresentation: usesStaticPresentation, progress: Binding(
                 get: { session.ipv4FoundationProgress ?? IPv4FoundationProgress() },
@@ -124,15 +124,15 @@ struct StepLessonPlayer: View {
                 set: { session.ipv4IntroductionProgress = $0 }
             ), fontScale: visualFontScale)
         } else if session.stepIndex == plan.questionIndex + 1, let visual = lesson.ipv4Visual {
-            TutorBubble(text: "沿着数据走一遍，就清楚了。")
             ipv4VisualPanel(visual)
         } else {
-            TutorBubble(text: "沿着数据走一遍，就清楚了。")
             ConceptIllustration(lesson: lesson, animated: true, stage: visibleTextCount + 1)
+                .accessibilityIdentifier("concept-illustration")
+                .id(lesson.topology == nil ? "concept-illustration" : "topology-anchor")
         }
         if visibleTextCount > 0 {
             ForEach(Array(lesson.explanation.prefix(visibleTextCount)), id: \.self) { paragraph in
-                ConversationBubble(text: paragraph)
+                ConversationBubble(text: paragraph, emphasis: topologyEmphasis(in: paragraph))
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
@@ -314,6 +314,12 @@ struct StepLessonPlayer: View {
         return nil
     }
 
+    private var explanationScrollTarget: String? {
+        guard lesson.topology != nil, let kind = plan.step(at: session.stepIndex)?.kind,
+              kind == .diagram || kind == .text else { return nil }
+        return "topology-anchor"
+    }
+
     private var feedbackScrollTarget: String? {
         if plan.step(at: session.stepIndex)?.kind == .diagram,
            lesson.subnetMaskIntroduction != nil, session.subnetMaskProgress?.stage == 3,
@@ -338,8 +344,15 @@ struct StepLessonPlayer: View {
         if lesson.ipv4Introduction != nil, plan.step(at: session.stepIndex)?.kind == .diagram {
             return "introduction-\(session.ipv4IntroductionProgress?.stage ?? 0)"
         }
+        if explanationScrollTarget != nil { return "topology-explanation" }
         if let feedbackScrollTarget { return "\(session.stepIndex)-\(feedbackScrollTarget)" }
         return conversationScrollTarget ?? "step-\(session.stepIndex)"
+    }
+
+    private func topologyEmphasis(in paragraph: String) -> String? {
+        guard let topology = lesson.topology else { return nil }
+        let labels = topology.nodes.map(\.label).filter { paragraph.contains($0) }
+        return labels.isEmpty ? nil : labels.joined(separator: " · ")
     }
 
     private func feedbackCard(title: String, text: String, correct: Bool) -> some View {

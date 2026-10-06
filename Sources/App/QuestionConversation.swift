@@ -14,7 +14,7 @@ struct QuestionConversation: View {
         VStack(alignment: .leading, spacing: 18) {
             ForEach(visibleMessages) { message in
                 VStack(alignment: .leading, spacing: 16) {
-                    ConversationBubble(text: message.text)
+                    ConversationBubble(text: message.text, role: message.speaker)
                         .accessibilityIdentifier("\(prefix)-scene-\(message.id)")
                     if message.visual == "network" {
                         NetworkDiagram(kind: lesson.diagram)
@@ -43,17 +43,55 @@ struct QuestionConversation: View {
 struct ConversationBubble: View {
     let text: String
     var isQuestion = false
+    var role: String? = nil
+    var emphasis: String? = nil
+
+    private var isUser: Bool { role == "user" }
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            PacketMascot(size: 34).padding(.top, 10)
-            Text(text)
-                .font(.system(size: isQuestion ? 22 : 20, weight: isQuestion ? .bold : .medium))
-                .lineSpacing(6)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(20)
-                .background(isQuestion ? Theme.lime.opacity(0.24) : Theme.surface,
-                            in: .rect(topLeadingRadius: 6, bottomLeadingRadius: 22, bottomTrailingRadius: 22, topTrailingRadius: 22))
+            if isUser { Spacer(minLength: 42) }
+
+            if !isUser {
+                if role == "technician" {
+                    Image(systemName: "wrench.and.screwdriver.fill")
+                        .font(.system(size: 17, weight: .semibold))
+                        .frame(width: 34, height: 34)
+                        .background(Theme.surface, in: .circle)
+                        .padding(.top, 10)
+                        .accessibilityHidden(true)
+                } else {
+                    PacketMascot(size: 34).padding(.top, 10)
+                }
+            }
+
+            VStack(alignment: isUser ? .trailing : .leading, spacing: 9) {
+                if let emphasis, !emphasis.isEmpty {
+                    Text(emphasis)
+                        .font(.caption.weight(.bold))
+                        .padding(.horizontal, 9).padding(.vertical, 4)
+                        .background(Theme.lime.opacity(0.55), in: .capsule)
+                }
+                Text(text)
+                    .font(.system(size: isQuestion ? 22 : 20, weight: isQuestion ? .bold : .medium))
+                    .lineSpacing(6)
+                    .multilineTextAlignment(isUser ? .trailing : .leading)
+            }
+            .frame(maxWidth: .infinity, alignment: isUser ? .trailing : .leading)
+            .padding(20)
+            .background(isUser || isQuestion ? Theme.lime.opacity(0.24) : Theme.surface,
+                        in: .rect(topLeadingRadius: isUser ? 22 : 6,
+                                  bottomLeadingRadius: 22,
+                                  bottomTrailingRadius: 22,
+                                  topTrailingRadius: isUser ? 6 : 22))
+
+            if isUser {
+                Image(systemName: "person.crop.circle.fill")
+                    .font(.system(size: 32))
+                    .foregroundStyle(Theme.ink)
+                    .padding(.top, 10)
+                    .accessibilityHidden(true)
+            }
         }
         .accessibilityElement(children: .combine)
     }

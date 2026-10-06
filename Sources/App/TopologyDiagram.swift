@@ -77,14 +77,23 @@ struct TopologyDiagram: View {
     }
 
     private func nodeView(_ node: TopologyNode, at point: CGPoint) -> some View {
-        VStack(spacing: 6) {
-            Image(systemName: node.symbol).font(.system(size: 27, weight: .regular))
+        let focused = stage != Int.max && node.stage == stage
+        return VStack(spacing: 6) {
+            Image(systemName: node.symbol).font(.system(size: 27, weight: focused ? .semibold : .regular))
                 .frame(width: 52, height: 40)
-                .background(Theme.paper, in: .rect(cornerRadius: 8))
-            Text(node.label).font(.caption.weight(.medium))
+                .background(focused ? Theme.lime.opacity(0.55) : Theme.paper, in: .rect(cornerRadius: 8))
+            Text(node.label).font(.caption.weight(focused ? .bold : .medium))
                 .lineLimit(1).minimumScaleFactor(0.6)
         }
+        .padding(.horizontal, 7).padding(.vertical, 5)
+        .background(focused ? Theme.lime.opacity(0.18) : Color.clear, in: .rect(cornerRadius: 12))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(focused ? Theme.ink.opacity(0.7) : Color.clear, lineWidth: 1.5)
+        }
+        .opacity(stage != Int.max && !focused ? 0.62 : 1)
         .position(point)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: stage)
         .transition(.opacity.combined(with: .scale(scale: 0.7)))
     }
 
