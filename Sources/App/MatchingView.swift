@@ -8,12 +8,23 @@ private struct EndpointPreference: PreferenceKey {
 }
 
 struct MatchingView: View {
+    private struct Selection: Equatable {
+        let id: String
+        let isLeft: Bool
+    }
+
     let exercise: MatchingExercise
     @Binding var matches: [String: String]
     @Binding var matchingSubmitted: Bool
     @Binding var matchingSolved: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var selectedLeft: String?
+    @State private var selection: Selection?
+
+    private var selectionPrompt: String {
+        if matchingSolved { return "配对已完成" }
+        guard let selection else { return "左右任一侧都可以先选" }
+        return selection.isLeft ? "再点右边，为它选择对应项" : "再点左边，为它选择对应项"
+    }
 
     var body: some View {
         VStack(spacing: 18) {
@@ -53,11 +64,12 @@ struct MatchingView: View {
                 }.allowsHitTesting(false).accessibilityHidden(true)
             }
             HStack {
-                Text(selectedLeft == nil ? "先点左边，再点右边" : "再点右边，为它选择对应项")
+                Text(selectionPrompt)
                     .font(.caption).foregroundStyle(Theme.muted)
+                    .accessibilityIdentifier("matching-selection-prompt")
                 Spacer()
                 if !matchingSolved {
-                    Button("清空") { matches = [:]; matchingSubmitted = false; selectedLeft = nil }
+                    Button("清空") { matches = [:]; matchingSubmitted = false; selection = nil }
                         .font(.subheadline).frame(minHeight: 44)
                         .accessibilityIdentifier("clear-matches")
                 }
@@ -66,19 +78,22 @@ struct MatchingView: View {
     }
 
     private func endpoint(_ item: MatchItem, left: Bool) -> some View {
-        let chosen = left ? selectedLeft == item.id : false
+        let chosen = selection == Selection(id: item.id, isLeft: left)
         let connection = left ? matches[item.id] : matches.first(where: { $0.value == item.id })?.key
         let connectedName: String? = left
             ? exercise.right.first(where: { $0.id == connection })?.text
             : exercise.left.first(where: { $0.id == connection })?.text
         return Button {
             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
-                if left { selectedLeft = item.id }
-                else if let selectedLeft {
-                    matches = matches.filter { $0.key == selectedLeft || $0.value != item.id }
-                    matches[selectedLeft] = item.id
+                if let previous = selection, previous.isLeft != left {
+                    let leftID = left ? item.id : previous.id
+                    let rightID = left ? previous.id : item.id
+                    matches = matches.filter { $0.key != leftID && $0.value != rightID }
+                    matches[leftID] = rightID
                     matchingSubmitted = false
-                    self.selectedLeft = nil
+                    selection = nil
+                } else {
+                    selection = chosen ? nil : Selection(id: item.id, isLeft: left)
                 }
             }
         } label: {
@@ -101,7 +116,10 @@ struct MatchingView: View {
         .disabled(matchingSolved)
         .anchorPreference(key: EndpointPreference.self, value: .bounds) { ["\(left ? "left" : "right")-\(item.id)": $0] }
         .accessibilityLabel(item.text)
-        .accessibilityValue(connectedName.map { "已连接到\($0)" } ?? (chosen ? "已选中，接着选择右侧" : "未连接"))
+        .accessibilityValue(
+            (chosen ? "已选中，接着选择\(left ? "右侧" : "左侧")。" : "") +
+            (connectedName.map { "已连接到\($0)" } ?? "未连接")
+        )
         .accessibilityIdentifier("match-\(left ? "left" : "right")-\(item.id)")
     }
 }

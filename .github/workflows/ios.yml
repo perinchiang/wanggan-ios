@@ -1,8 +1,5 @@
 name: Build and test iOS
 on:
-  push:
-    branches:
-      - codex/ipv4-introduction
   workflow_dispatch:
     inputs:
       ui_scope:

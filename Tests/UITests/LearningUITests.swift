@@ -22,7 +22,7 @@ final class LearningUITests: XCTestCase {
         let button = app.buttons[id]
         XCTAssertTrue(button.waitForExistence(timeout: 10), "Missing \(id)")
         for _ in 0..<5 {
-            let isChoice = id.contains("-option-") || id.hasPrefix("mask-")
+            let isChoice = id.contains("-option-") || id.hasPrefix("mask-") || id.hasPrefix("match-")
             let footer = app.buttons["short-primary"].exists ? app.buttons["short-primary"] : app.buttons["primary-action"]
             let aboveFooter = !isChoice || button.frame.midY < footer.frame.minY
             // A row with a tiny visible edge can be "hittable" while its tap point
@@ -65,7 +65,8 @@ final class LearningUITests: XCTestCase {
         challenge: String,
         expectedXP: Int,
         expectedNextTitle: String,
-        evidencePrefix: String
+        evidencePrefix: String,
+        verifyMatchingEdits: Bool = false
     ) {
         XCTAssertTrue(app.staticTexts["recommended-lesson-title"].waitForExistence(timeout: 10))
         XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, expectedTitle)
@@ -85,11 +86,22 @@ final class LearningUITests: XCTestCase {
         screenshot("\(evidencePrefix)-02-final-stage")
         tap("primary-action")
 
-        for (left, right) in matches {
-            tap("match-left-\(left)")
-            tap("match-right-\(right)")
+        if verifyMatchingEdits { verifyBidirectionalMatching(matches) }
+        for (index, pair) in matches.enumerated() {
+            let (left, right) = pair
+            if index.isMultiple(of: 2) {
+                tap("match-right-\(right)")
+                tap("match-left-\(left)")
+            } else {
+                tap("match-left-\(left)")
+                tap("match-right-\(right)")
+            }
         }
         tap("primary-action")
+        for (left, right) in matches {
+            XCTAssertFalse(app.buttons["match-left-\(left)"].isEnabled)
+            XCTAssertFalse(app.buttons["match-right-\(right)"].isEnabled)
+        }
         tap("primary-action")
 
         revealScene(option: "challenge-option-\(challenge)")
@@ -113,8 +125,61 @@ final class LearningUITests: XCTestCase {
             challenge: "current",
             expectedXP: 30,
             expectedNextTitle: "IPv4 为什么通常写成四段？",
-            evidencePrefix: "N01-role"
+            evidencePrefix: "N01-role",
+            verifyMatchingEdits: true
         )
+    }
+
+    private func verifyBidirectionalMatching(_ pairs: [(String, String)]) {
+        let leftA = "match-left-\(pairs[0].0)"
+        let rightA = "match-right-\(pairs[0].1)"
+        let leftB = "match-left-\(pairs[1].0)"
+        let rightB = "match-right-\(pairs[1].1)"
+        func value(_ id: String) -> String { app.buttons[id].value as? String ?? "" }
+
+        // Either side can start, change its pending choice, or cancel it.
+        tap(rightA)
+        XCTAssertTrue(value(rightA).contains("已选中，接着选择左侧"))
+        tap(rightB)
+        XCTAssertEqual(value(rightA), "未连接")
+        tap(rightB)
+        XCTAssertEqual(value(rightB), "未连接")
+        tap(leftA)
+        tap(leftB)
+        XCTAssertEqual(value(leftA), "未连接")
+        tap(leftB)
+        XCTAssertEqual(value(leftB), "未连接")
+
+        tap(rightA)
+        tap(leftA)
+        XCTAssertEqual(value(leftA), "已连接到\(app.buttons[rightA].label)")
+        tap(leftB)
+        tap(rightB)
+        XCTAssertTrue(app.buttons["primary-action"].isEnabled)
+
+        // Re-pairing two occupied endpoints removes both old connections.
+        tap(rightB)
+        tap(leftA)
+        XCTAssertEqual(value(leftA), "已连接到\(app.buttons[rightB].label)")
+        XCTAssertEqual(value(leftB), "未连接")
+        XCTAssertEqual(value(rightA), "未连接")
+        XCTAssertFalse(app.buttons["primary-action"].isEnabled)
+        tap(leftB)
+        tap(rightA)
+        tap("primary-action") // Complete but incorrect: edits must remain available.
+        XCTAssertTrue(app.buttons[rightA].isEnabled)
+        tap(rightA)
+        tap(leftA)
+        tap(leftB)
+        tap(rightB)
+        XCTAssertTrue(app.buttons["primary-action"].isEnabled)
+        screenshot("N01-role-bidirectional-matching")
+
+        tap(rightA)
+        tap("clear-matches")
+        for id in [leftA, rightA, leftB, rightB] { XCTAssertEqual(value(id), "未连接") }
+        XCTAssertEqual(app.staticTexts["matching-selection-prompt"].label, "左右任一侧都可以先选")
+        XCTAssertFalse(app.buttons["primary-action"].isEnabled)
     }
 
     func testIPv4FoundationFormatBacktrackingResumeAndCompletion() {
