@@ -95,8 +95,18 @@ struct ProgressLedger: Codable, Equatable {
         }
     }
 
+    mutating func discardDraft(_ session: LessonSession) {
+        clearDraft(for: session)
+    }
+
+    mutating func discardShortDraft(_ session: ShortReviewSession) {
+        if shortReviewDrafts?[session.lessonID]?.id == session.id {
+            shortReviewDrafts?.removeValue(forKey: session.lessonID)
+        }
+    }
+
     private mutating func clearDraft(for session: LessonSession) {
-        if draft?.id == session.id { draft = nil }
+        if draft?.lessonID == session.lessonID && draft?.id == session.id { draft = nil }
         if earlierDrafts?[session.lessonID]?.id == session.id {
             earlierDrafts?.removeValue(forKey: session.lessonID)
         }

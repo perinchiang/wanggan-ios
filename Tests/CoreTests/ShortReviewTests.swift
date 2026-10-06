@@ -28,6 +28,38 @@ final class ShortReviewTests: XCTestCase {
         return session
     }
 
+    func testDiscardShortReviewPreservesSubmittedEvidenceAndOtherSessions() throws {
+        let items = try XCTUnwrap(catalog().reviewItems)
+        let gateway = try XCTUnwrap(items.first { $0.lessonID == "gateway" })
+        let dns = try XCTUnwrap(items.first { $0.lessonID == "dns" })
+        var ledger = ProgressLedger()
+        ledger.complete(completed("gateway"), now: today, calendar: calendar)
+        ledger.complete(completed("dns"), now: today, calendar: calendar)
+        let main = LessonSession(lessonID: "subnet")
+        ledger.saveDraft(main, in: ["gateway", "subnet", "dns"])
+        var session = ShortReviewSession(item: gateway)
+        let wrong = try XCTUnwrap(gateway.options.first { $0.id != gateway.correctID })
+        session.select(wrong.id, item: gateway)
+        session.submit(item: gateway, now: day(1), calendar: calendar)
+        let other = ShortReviewSession(item: dns)
+        ledger.saveShortDraft(session, items: items, calendar: calendar)
+        ledger.saveShortDraft(other, items: items, calendar: calendar)
+        let before = ledger
+        ledger.discardShortDraft(ShortReviewSession(item: gateway))
+        XCTAssertEqual(ledger.shortReviewDrafts?["gateway"], session, "A stale session cannot clear the current draft")
+        ledger.discardShortDraft(session)
+        XCTAssertNil(ledger.shortReviewDrafts?["gateway"])
+        XCTAssertEqual(ledger.shortReviewDrafts?["dns"], other)
+        XCTAssertEqual(ledger.reviewEvidence, before.reviewEvidence)
+        XCTAssertEqual(ledger.lessons, before.lessons)
+        XCTAssertEqual(ledger.draft, main)
+        XCTAssertEqual(ledger.totalXP, before.totalXP)
+        XCTAssertEqual(ledger.settledSessions, before.settledSessions)
+        let restored = try JSONDecoder().decode(ProgressLedger.self, from: JSONEncoder().encode(ledger))
+        XCTAssertNil(restored.shortReviewDrafts?["gateway"])
+        XCTAssertEqual(restored.reviewEvidence?.count, 1)
+    }
+
     func testLockedOrUnansweredReviewCannotAwardOrUnlock() throws {
         let items = try XCTUnwrap(catalog().reviewItems)
         var ledger = ProgressLedger()

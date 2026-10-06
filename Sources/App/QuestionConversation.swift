@@ -60,12 +60,20 @@ struct ConversationBubble: View {
                         .background(Theme.surface, in: .circle)
                         .padding(.top, 10)
                         .accessibilityHidden(true)
+                } else if role == "friend" {
+                    Image(systemName: "person.crop.circle.fill")
+                        .font(.system(size: 32))
+                        .padding(.top, 10)
+                        .accessibilityHidden(true)
                 } else {
                     PacketMascot(size: 34).padding(.top, 10)
                 }
             }
 
-            VStack(alignment: isUser ? .trailing : .leading, spacing: 9) {
+            VStack(alignment: .leading, spacing: 9) {
+                if role == "friend" {
+                    Text("朋友").font(.caption.weight(.semibold)).foregroundStyle(Theme.muted)
+                }
                 if let emphasis, !emphasis.isEmpty {
                     Text(emphasis)
                         .font(.caption.weight(.bold))
@@ -75,9 +83,9 @@ struct ConversationBubble: View {
                 Text(text)
                     .font(.system(size: isQuestion ? 22 : 20, weight: isQuestion ? .bold : .medium))
                     .lineSpacing(6)
-                    .multilineTextAlignment(isUser ? .trailing : .leading)
+                    .multilineTextAlignment(.leading)
             }
-            .frame(maxWidth: .infinity, alignment: isUser ? .trailing : .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(20)
             .background(isUser || isQuestion ? Theme.lime.opacity(0.24) : Theme.surface,
                         in: .rect(topLeadingRadius: isUser ? 22 : 6,

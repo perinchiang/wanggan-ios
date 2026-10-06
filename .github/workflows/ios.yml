@@ -100,6 +100,8 @@ jobs:
           scope_args=()
           if [ '${{ inputs.ui_scope }}' = 'smoke' ]; then
             # High-signal simulator smoke set for current product surfaces.
+            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testConfirmedExitRestartsLessonAndPreservesMainProgress')
+            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testShortReviewConfirmedExitStartsFreshAndPreservesXP')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testHomeTwoBoxesFlow')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4FoundationAddressRoleFlow')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testShortReviewResumesWithoutReplacingMainOrDuplicatingXP')

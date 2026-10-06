@@ -322,40 +322,36 @@
         "explanation": "光猫负责接入，路由器负责家里的组网和出口；Wi-Fi 和有线交换是家用路由器顺手集成的能力。"
       },
       "challenge": {
-        "prompt": "看到这些线索，你会怎么判断这台设备？",
+        "prompt": "你会怎么回答朋友？",
         "scene": [
           {
             "id": "friend-home",
-            "text": "后来你去朋友家玩，特意看了看他的网络：只有一台网络设备。入户光纤直接插在它上面，Wi‑Fi 也是它发出来的，电脑还能接它的 LAN 口。"
+            "text": "后来去朋友家玩，发现他们家只有一台网络设备。"
           },
           {
             "id": "friend-question",
-            "text": "你想起宽带师傅说的“两份工作”。朋友家少了一台设备吗？",
-            "speaker": "user"
+            "text": "家里的光纤就插在这台上，手机也连着它的 Wi-Fi。我想换个普通的家用路由器，能把它直接换掉吗？",
+            "speaker": "friend"
           }
         ],
         "options": [
           {
             "id": "allinone",
-            "text": "它同时承担了光猫和路由器的工作",
-            "feedback": "对。设备数量变了，但“光纤接入”和“家庭网络”两份工作仍然都有人做。"
+            "text": "先别直接换，光纤接入的功能还得保留。",
+            "feedback": "对。这台设备把光纤接入和家庭网络的功能合在了一起。普通家用路由器通常不能直接接替光纤接入；更换之前，要确认这份工作由谁继续完成。"
           },
           {
             "id": "router-only",
-            "text": "它只承担路由器的工作，光纤接入一定在别处完成",
-            "feedback": "题目已经告诉你入户光纤直接插进这台设备。它不只是普通的独立路由器。"
-          },
-          {
-            "id": "ont-only",
-            "text": "它只承担光猫的工作，路由和 Wi‑Fi 一定由别处完成",
-            "feedback": "Wi‑Fi 和 LAN 口也都由这台设备提供，说明家庭网络的那部分工作同样集成在这里。"
+            "text": "可以直接换，新路由器能发 Wi-Fi 就行。",
+            "feedback": "能发 Wi-Fi，不等于能接入光纤。拔掉原设备后，如果没有设备接替光纤接入，家里的网络就失去了上游连接。"
           }
         ],
         "correctID": "allinone",
-        "hint": "不要数设备，数功能：光纤接入和家庭网络分别由谁完成？"
+        "hint": "更换设备之前，先确认新设备能否接替旧设备承担的功能。"
       },
       "sources": [
         "https://www.imda.gov.sg/-/media/imda/files/community/consumer-education/fibre-broadband/home_networking_reference_guide_detailed.pdf",
+        "https://www.asus.com/sg/support/faq/1044897/",
         "https://www.rfc-editor.org/rfc/rfc1812"
       ],
       "matchingEnabled": false

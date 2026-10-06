@@ -9,6 +9,7 @@ struct ShortReviewPlayer: View {
     @State private var session: ShortReviewSession
     @State private var earnedXP: Int?
     @State private var showExit = false
+    @State private var discardingSession = false
 
     init(item: ReviewItem, initialSession: ShortReviewSession) {
         self.item = item
@@ -82,13 +83,21 @@ struct ShortReviewPlayer: View {
                           identifier: "short-primary") { performAction() }
                 .padding(.horizontal, 22).padding(.vertical, 12).background(Theme.paper)
         }
-        .onAppear { store.saveShortDraft(session) }
-        .onChange(of: session) { _, new in store.saveShortDraft(new) }
-        .onChange(of: scenePhase) { _, phase in if phase != .active { store.saveShortDraft(session) } }
-        .confirmationDialog("稍后再判断？", isPresented: $showExit, titleVisibility: .visible) {
-            Button("保存进度并退出") { store.saveShortDraft(session); dismiss() }
-            Button("继续复习", role: .cancel) { }
-        } message: { Text("选择、提示和作答记录都会保存在本机。") }
+        .onAppear { if !discardingSession { store.saveShortDraft(session) } }
+        .onChange(of: session) { _, new in
+            if !discardingSession { store.saveShortDraft(new) }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active && !discardingSession { store.saveShortDraft(session) }
+        }
+        .confirmationDialog("确认退出？", isPresented: $showExit, titleVisibility: .visible) {
+            Button("确定退出", role: .destructive) {
+                discardingSession = true
+                store.discardShortDraft(session)
+                dismiss()
+            }
+            Button("取消", role: .cancel) { }
+        } message: { Text("未完成的复习将从头开始，已提交的判断记录保留。") }
     }
 
     private var actionTitle: String {

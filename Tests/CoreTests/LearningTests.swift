@@ -254,6 +254,66 @@ final class LearningTests: XCTestCase {
         XCTAssertEqual(restored.recommendedLessonID(in: ids), ids[3])
     }
 
+    func testDiscardCurrentMainDraftPreservesOtherDraftsAndHistory() throws {
+        let ids = ["foundation", "gateway", "subnet", "arp", "hop"]
+        var ledger = ProgressLedger()
+        ledger.complete(finished("gateway"), now: today, calendar: calendar)
+        ledger.complete(finished("subnet"), now: today, calendar: calendar)
+        var main = LessonSession(lessonID: "arp")
+        main.stage = .explanation
+        let earlier = LessonSession(lessonID: "foundation")
+        let review = LessonSession(lessonID: "gateway")
+        ledger.saveDraft(main, in: ids)
+        ledger.saveDraft(earlier, in: ids)
+        ledger.saveDraft(review, in: ids)
+        let before = ledger
+
+        ledger.discardDraft(main)
+        XCTAssertNil(ledger.draft)
+        XCTAssertEqual(ledger.earlierDrafts, before.earlierDrafts)
+        XCTAssertEqual(ledger.reviewDrafts, before.reviewDrafts)
+        XCTAssertEqual(ledger.lessons, before.lessons)
+        XCTAssertEqual(ledger.activityDays, before.activityDays)
+        XCTAssertEqual(ledger.settledSessions, before.settledSessions)
+        XCTAssertEqual(ledger.totalXP, 60)
+        let restored = try JSONDecoder().decode(ProgressLedger.self, from: JSONEncoder().encode(ledger))
+        XCTAssertEqual(restored.session(for: "arp").stage, .question)
+        XCTAssertEqual(restored.session(for: "foundation"), earlier)
+    }
+
+    func testDiscardReviewOrEarlierDraftDoesNotDisplaceMainCourse() throws {
+        let ids = ["foundation", "gateway", "subnet", "arp", "hop"]
+        var ledger = ProgressLedger()
+        ledger.complete(finished("gateway"), now: today, calendar: calendar)
+        ledger.complete(finished("subnet"), now: today, calendar: calendar)
+        let main = LessonSession(lessonID: "arp")
+        let earlier = LessonSession(lessonID: "foundation")
+        let review = LessonSession(lessonID: "gateway")
+        let otherReview = LessonSession(lessonID: "subnet")
+        for draft in [main, earlier, review, otherReview] { ledger.saveDraft(draft, in: ids) }
+        let history = ledger.lessons
+        ledger.discardDraft(review)
+        XCTAssertNil(ledger.reviewDrafts?["gateway"])
+        XCTAssertEqual(ledger.reviewDrafts?["subnet"], otherReview)
+        XCTAssertEqual(ledger.draft, main)
+        XCTAssertEqual(ledger.earlierDrafts?["foundation"], earlier)
+        ledger.discardDraft(earlier)
+        XCTAssertNil(ledger.earlierDrafts?["foundation"])
+        XCTAssertEqual(ledger.recommendedLessonID(in: ids), "arp")
+        XCTAssertEqual(ledger.session(for: "arp"), main)
+        XCTAssertEqual(ledger.lessons, history)
+        XCTAssertEqual(ledger.totalXP, 60)
+    }
+
+    func testDiscardStaleSessionCannotRemoveNewerDraft() {
+        let stale = LessonSession(lessonID: "gateway")
+        let current = LessonSession(lessonID: "gateway")
+        var ledger = ProgressLedger()
+        ledger.saveDraft(current, in: ["gateway"])
+        ledger.discardDraft(stale)
+        XCTAssertEqual(ledger.draft, current)
+    }
+
     func testRecommendationKeepsFrontierWithoutDraftAndLastLessonAfterAllComplete() throws {
         let ids = try catalog().lessons.map(\.id)
         var ledger = ProgressLedger()

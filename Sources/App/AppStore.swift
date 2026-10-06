@@ -97,6 +97,16 @@ final class LearningStore {
         return result
     }
 
+    func discardDraft(_ session: LessonSession) {
+        ledger.discardDraft(session)
+        persist()
+    }
+
+    func discardShortDraft(_ session: ShortReviewSession) {
+        ledger.discardShortDraft(session)
+        persist()
+    }
+
     func shortSession(for lesson: Lesson) -> ShortReviewSession? {
         ledger.shortSession(for: lesson.id, items: reviewItems)
     }

@@ -15,6 +15,7 @@ struct StepLessonPlayer: View {
     @State private var session: StepSession
     @State private var earnedXP: Int?
     @State private var showExit = false
+    @State private var discardingSession = false
     @State private var showSources = false
     @State private var feedbackTick = 0
     @State private var visualHeight: CGFloat = 340
@@ -55,16 +56,25 @@ struct StepLessonPlayer: View {
         .foregroundStyle(Theme.ink)
         .safeAreaInset(edge: .bottom) { bottomBar }
         .sensoryFeedback(.selection, trigger: feedbackTick) { _, _ in store.hapticsEnabled }
-        .onChange(of: session) { _, new in store.saveDraft(new.stageSession(lesson: lesson)) }
-        .onChange(of: scenePhase) { _, phase in if phase != .active { store.saveDraft(session.stageSession(lesson: lesson)) } }
+        .onChange(of: session) { _, new in
+            if !discardingSession { store.saveDraft(new.stageSession(lesson: lesson)) }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active && !discardingSession { store.saveDraft(session.stageSession(lesson: lesson)) }
+        }
         .onAppear {
+            guard !discardingSession else { return }
             if isComplete { earnedXP = store.finish(session.stageSession(lesson: lesson)) }
             else { store.saveDraft(session.stageSession(lesson: lesson)) }
         }
-        .confirmationDialog("稍后继续？", isPresented: $showExit, titleVisibility: .visible) {
-            Button("保存进度并退出") { store.saveDraft(session.stageSession(lesson: lesson)); dismiss() }
-            Button("继续学习", role: .cancel) { }
-        } message: { Text("这次已经完成的步骤会留在本机。") }
+        .confirmationDialog("确认退出？", isPresented: $showExit, titleVisibility: .visible) {
+            Button("确定退出", role: .destructive) {
+                discardingSession = true
+                store.discardDraft(session.stageSession(lesson: lesson))
+                dismiss()
+            }
+            Button("取消", role: .cancel) { }
+        } message: { Text("退出后，这次未完成的小节将从头开始。") }
         .sheet(isPresented: $showSources) { sourcesSheet }
     }
 
@@ -129,9 +139,15 @@ struct StepLessonPlayer: View {
                 .id(lesson.topology == nil ? "concept-illustration" : "topology-anchor")
         }
         if visibleTextCount > 0 {
-            ForEach(Array(lesson.explanation.prefix(visibleTextCount)), id: \.self) { paragraph in
+            if lesson.topology != nil {
+                let paragraph = lesson.explanation[min(visibleTextCount, lesson.explanation.count) - 1]
                 ConversationBubble(text: paragraph, emphasis: topologyEmphasis(in: paragraph))
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    .accessibilityIdentifier("topology-explanation-text")
+            } else {
+                ForEach(Array(lesson.explanation.prefix(visibleTextCount)), id: \.self) { paragraph in
+                    ConversationBubble(text: paragraph, emphasis: topologyEmphasis(in: paragraph))
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                }
             }
         }
         Button { showSources = true } label: { Label("看看知识来源", systemImage: "book.closed").font(.caption).frame(minHeight: 44) }

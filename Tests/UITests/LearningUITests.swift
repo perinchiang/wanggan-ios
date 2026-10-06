@@ -42,6 +42,14 @@ final class LearningUITests: XCTestCase {
         button.tap()
     }
 
+    // Unexpected interruption restores drafts; explicit exit has separate tests below.
+    private func relaunchKeepingProgress() {
+        app.terminate()
+        app.launchArguments = ["--uitesting"]
+        app.launch()
+        XCTAssertTrue(app.buttons["start-lesson"].waitForExistence(timeout: 10))
+    }
+
     private func screenshot(_ name: String) {
         // Give short native transitions time to finish before exporting evidence.
         Thread.sleep(forTimeInterval: 1)
@@ -95,6 +103,10 @@ final class LearningUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["recommended-lesson-title"].waitForExistence(timeout: 10))
         XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "宽带师傅为什么装了两个盒子？")
         tap("start-lesson")
+        tap("primary-action")
+        tap("primary-action")
+        XCTAssertEqual(app.staticTexts["scene-progress"].label, "3 / 4 条消息")
+        screenshot("H01-user-bubble")
         revealScene(option: "question-option-split")
         XCTAssertTrue(app.descendants(matching: .any)["question-scene-you-ask"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["question-scene-technician"].exists)
@@ -107,30 +119,112 @@ final class LearningUITests: XCTestCase {
         XCTAssertTrue(topology.waitForExistence(timeout: 5))
         XCTAssertEqual(topology.value as? String, "当前显示：光纤入户")
         screenshot("H02-topology-first-node")
-        for expectedNodes in ["光纤入户、光猫", "光纤入户、光猫、路由器",
-                              "光纤入户、光猫、路由器、手机、电脑"] {
+        let diagramY = topology.frame.minY
+        let paragraphs = [
+            "先看弱电箱里的设备。入户光纤直接插进光猫（ONT）；它负责终结运营商的光纤接入，并把连接交给家里的以太网一侧。",
+            "师傅再用一根网线把光猫接到路由器。路由器负责组织家里的网络，并把这张家庭网络连接到上游。",
+            "于是手机通过 Wi‑Fi 连到路由器，电脑也可以通过网线连到它。Wi‑Fi 只是设备加入家庭网络的一种方式，不是路由器唯一的工作。",
+            "所以你家不是“多装了一台”，而是把两份工作分开做：光猫负责光纤接入，路由器负责家庭网络。两份工作也可以被做进同一台设备里。"
+        ]
+        let stages = ["光纤入户、光猫", "光纤入户、光猫、路由器",
+                      "光纤入户、光猫、路由器、手机、电脑", "光纤入户、光猫、路由器、手机、电脑"]
+        for (index, expectedNodes) in stages.enumerated() {
             tap("primary-action")
             XCTAssertEqual(topology.value as? String, "当前显示：" + expectedNodes)
-        }
-        // Capture the diagram while it is still on the explanation page.
-        for _ in 0..<5 {
-            if topology.isHittable && topology.frame.minY > 100 &&
-                topology.frame.maxY < app.buttons["primary-action"].frame.minY { break }
-            app.swipeDown()
+            let bubble = app.descendants(matching: .any)["topology-explanation-text"].firstMatch
+            XCTAssertTrue(bubble.waitForExistence(timeout: 5))
+            XCTAssertTrue(bubble.label.contains(paragraphs[index]))
+            if index > 0 {
+                XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", paragraphs[index - 1])).firstMatch.exists, "Previous explanation is replaced")
+            }
+            XCTAssertEqual(topology.frame.minY, diagramY, accuracy: 2, "Diagram stays in place without scrolling")
+            XCTAssertTrue(bubble.isHittable)
+            XCTAssertLessThan(bubble.frame.maxY, app.buttons["primary-action"].frame.minY)
+            screenshot("H02-explanation-\(index + 1)")
         }
         XCTAssertTrue(topology.isHittable)
         XCTAssertLessThan(topology.frame.maxY, app.buttons["primary-action"].frame.minY)
         screenshot("H03-topology-full")
         revealScene(option: "challenge-option-allinone")
+        XCTAssertFalse(app.descendants(matching: .any)["challenge-scene-you-recall"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["challenge-scene-friend-home"].firstMatch.label.contains("后来去朋友家玩，发现他们家只有一台网络设备。"))
         screenshot("H03-transfer-question")
         tap("challenge-option-allinone")
         tap("primary-action")
         tap("primary-action")
         XCTAssertTrue(app.staticTexts["+30 XP"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["completion-lesson-title"].label, "宽带师傅为什么装了两个盒子？")
+        XCTAssertFalse(app.staticTexts["光猫负责接入光纤网络；家用路由器连接家里的网络和上游，通常还集成 Wi-Fi 接入与有线交换。两个盒子可以分工，也可以合在一起。"].exists)
         screenshot("H04-completion")
         tap("finish-session")
         XCTAssertEqual(app.staticTexts["xp-badge"].label, "30 经验值")
         XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "IP 地址是拿来做什么的？")
+    }
+
+    func testConfirmedExitRestartsLessonAndPreservesMainProgress() {
+        app.launchArguments += ["--seed-before-ipv4-address-format"]
+        app.launch()
+        tap("start-lesson")
+        tap("primary-action")
+        XCTAssertEqual(app.staticTexts["foundation-stage"].label, "观察 2 / 4")
+        relaunchKeepingProgress()
+        tap("lesson-home-two-boxes")
+        tap("primary-action")
+        tap("primary-action")
+        XCTAssertEqual(app.staticTexts["scene-progress"].label, "3 / 4 条消息")
+        tap("exit-lesson")
+        XCTAssertTrue(app.buttons["确定退出"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["保存进度并退出"].exists)
+        screenshot("E01-exit-confirmation")
+        app.buttons["取消"].tap()
+        XCTAssertEqual(app.staticTexts["scene-progress"].label, "3 / 4 条消息")
+        tap("exit-lesson")
+        app.buttons["确定退出"].tap()
+        XCTAssertTrue(app.buttons["start-lesson"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["xp-badge"].label, "60 经验值")
+        tap("lesson-home-two-boxes")
+        XCTAssertEqual(app.staticTexts["scene-progress"].label, "1 / 4 条消息")
+        screenshot("E02-review-restarts")
+        tap("exit-lesson")
+        app.buttons["确定退出"].tap()
+        relaunchKeepingProgress()
+        tap("start-lesson")
+        XCTAssertEqual(app.staticTexts["foundation-stage"].label, "观察 2 / 4")
+        screenshot("E03-other-main-draft-preserved")
+        tap("exit-lesson")
+        app.buttons["确定退出"].tap()
+        relaunchKeepingProgress()
+        XCTAssertEqual(app.staticTexts["xp-badge"].label, "60 经验值")
+        tap("start-lesson")
+        XCTAssertEqual(app.staticTexts["foundation-stage"].label, "观察 1 / 4")
+        screenshot("E04-main-restarts")
+    }
+
+    func testShortReviewConfirmedExitStartsFreshAndPreservesXP() {
+        app.launchArguments += ["--seed-before-subnet"]
+        app.launch()
+        let startingXP = app.staticTexts["xp-badge"].label
+        app.tabBars.buttons["复习"].tap()
+        tap("short-review-gateway")
+        tap("short-option-all-fail")
+        tap("short-primary")
+        XCTAssertTrue(app.staticTexts["这里值得再想想"].waitForExistence(timeout: 5))
+        tap("exit-short-review")
+        XCTAssertTrue(app.buttons["确定退出"].waitForExistence(timeout: 5))
+        app.buttons["取消"].tap()
+        XCTAssertTrue(app.staticTexts["这里值得再想想"].exists)
+        tap("exit-short-review")
+        app.buttons["确定退出"].tap()
+        tap("short-review-gateway")
+        XCTAssertTrue(app.buttons["short-primary"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["short-primary"].isEnabled)
+        XCTAssertFalse(app.staticTexts["这里值得再想想"].exists)
+        screenshot("E05-short-review-restarts")
+        tap("exit-short-review")
+        app.buttons["确定退出"].tap()
+        app.tabBars.buttons["学习"].tap()
+        XCTAssertEqual(app.staticTexts["xp-badge"].label, startingXP)
+        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "谁才是我的邻居？")
     }
 
     func testIPv4FoundationAddressRoleFlow() {
@@ -151,11 +245,7 @@ final class LearningUITests: XCTestCase {
         tap("foundation-previous")
         XCTAssertEqual(app.staticTexts["foundation-stage"].label, "观察 2 / 4")
         screenshot("N02-format-backtrack")
-        tap("exit-lesson")
-        app.buttons["保存进度并退出"].tap()
-        app.terminate()
-        app.launchArguments = ["--uitesting"]
-        app.launch()
+        relaunchKeepingProgress()
         tap("start-lesson")
         XCTAssertEqual(app.staticTexts["foundation-stage"].label, "观察 2 / 4")
         assertObservationOnly()
@@ -227,11 +317,7 @@ final class LearningUITests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [matched], timeout: 5), .completed)
         XCTAssertTrue(value(leftA).contains("配对正确"))
         screenshot("pair-correct-green")
-        tap("exit-lesson")
-        app.buttons["保存进度并退出"].tap()
-        app.terminate()
-        app.launchArguments = ["--uitesting"]
-        app.launch()
+        relaunchKeepingProgress()
         tap("start-lesson")
         XCTAssertFalse(app.buttons[leftA].isEnabled)
         XCTAssertFalse(app.buttons[rightA].isEnabled)
@@ -274,11 +360,7 @@ final class LearningUITests: XCTestCase {
         screenshot("M02-mask-condition")
         tap("mask-previous")
         XCTAssertEqual(app.staticTexts["mask-stage"].label, "观察 2 / 4")
-        tap("exit-lesson")
-        app.buttons["保存进度并退出"].tap()
-        app.terminate()
-        app.launchArguments = ["--uitesting"]
-        app.launch()
+        relaunchKeepingProgress()
         tap("start-lesson")
         XCTAssertEqual(app.staticTexts["mask-stage"].label, "观察 2 / 4")
         XCTAssertTrue(app.buttons["primary-action"].isEnabled)
@@ -296,8 +378,7 @@ final class LearningUITests: XCTestCase {
         tap("primary-action")
         XCTAssertTrue(app.staticTexts["再数一数网络位"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["primary-action"].isEnabled)
-        tap("exit-lesson")
-        app.buttons["保存进度并退出"].tap()
+        relaunchKeepingProgress()
         app.terminate()
         app.launch()
         tap("start-lesson")
@@ -379,11 +460,7 @@ final class LearningUITests: XCTestCase {
         screenshot("G03-intro-range")
         tap("intro-previous")
         XCTAssertEqual(app.staticTexts["intro-stage"].label, "观察 2 / 4")
-        tap("exit-lesson")
-        app.buttons["保存进度并退出"].tap()
-        app.terminate()
-        app.launchArguments = ["--uitesting"]
-        app.launch()
+        relaunchKeepingProgress()
         tap("start-lesson")
         XCTAssertEqual(app.staticTexts["intro-stage"].label, "观察 2 / 4")
         tap("primary-action")
@@ -425,8 +502,7 @@ final class LearningUITests: XCTestCase {
         let startingXP = app.staticTexts["xp-badge"].label
         tap("start-lesson")
         tap("primary-action")
-        tap("exit-lesson")
-        app.buttons["保存进度并退出"].tap()
+        relaunchKeepingProgress()
         app.tabBars.buttons["复习"].tap()
         tap("short-review-gateway")
         XCTAssertTrue(app.buttons["short-primary"].waitForExistence(timeout: 10), "Short review should finish presenting before assertions")
@@ -440,11 +516,7 @@ final class LearningUITests: XCTestCase {
         XCTAssertTrue(feedback.isHittable)
         XCTAssertLessThan(feedback.frame.maxY, app.buttons["short-primary"].frame.minY)
         screenshot("F01-short-review-wrong-feedback")
-        tap("exit-short-review")
-        app.buttons["保存进度并退出"].tap()
-        app.terminate()
-        app.launchArguments = ["--uitesting"]
-        app.launch()
+        relaunchKeepingProgress()
         XCTAssertTrue(app.staticTexts["recommended-lesson-title"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "谁才是我的邻居？")
         app.tabBars.buttons["复习"].tap()
@@ -560,14 +632,12 @@ final class LearningUITests: XCTestCase {
         XCTAssertTrue(app.buttons["primary-action"].isEnabled)
         tap("primary-action")
         tap("primary-action")
-        tap("exit-lesson")
-        app.buttons["保存进度并退出"].tap()
+        relaunchKeepingProgress()
         XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "谁才是我的邻居？")
         app.tabBars.buttons["复习"].tap()
         tap("review-gateway")
         tap("primary-action")
-        tap("exit-lesson")
-        app.buttons["保存进度并退出"].tap()
+        relaunchKeepingProgress()
         app.tabBars.buttons["学习"].tap()
         XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "谁才是我的邻居？")
         screenshot("09-review-keeps-main-progress")
@@ -601,8 +671,7 @@ final class LearningUITests: XCTestCase {
         XCTAssertTrue(app.buttons["continue-learning"].waitForExistence(timeout: 5))
         tap("continue-learning")
         XCTAssertTrue(app.buttons["explanation-sources"].waitForExistence(timeout: 5))
-        tap("exit-lesson")
-        app.buttons["保存进度并退出"].tap()
+        relaunchKeepingProgress()
         app.tabBars.buttons["学习"].tap()
         XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "谁才是我的邻居？")
         tap("start-lesson")
@@ -659,12 +728,7 @@ final class LearningUITests: XCTestCase {
         revealScene(option: "question-option-\(flow.question)")
         tap("question-option-\(flow.question)")
         tap("primary-action")
-        tap("exit-lesson")
-        app.buttons["保存进度并退出"].tap()
-
-        app.terminate()
-        app.launchArguments = ["--uitesting"]
-        app.launch()
+        relaunchKeepingProgress()
         tap("start-lesson")
         XCTAssertTrue(app.buttons["question-option-\(flow.question)"].exists)
         XCTAssertEqual(app.buttons["primary-action"].label, "看看为什么")
@@ -681,11 +745,7 @@ final class LearningUITests: XCTestCase {
             tapIPv4Boundary(3)
             tap("primary-action")
             XCTAssertTrue(app.staticTexts["再数一数网络位"].exists)
-            tap("exit-lesson")
-            app.buttons["保存进度并退出"].tap()
-            app.terminate()
-            app.launchArguments = ["--uitesting"]
-            app.launch()
+            relaunchKeepingProgress()
             tap("start-lesson")
             XCTAssertEqual(app.buttons["primary-action"].label, "检查分界")
             XCTAssertTrue(app.staticTexts["再数一数网络位"].exists)
@@ -771,11 +831,7 @@ final class LearningUITests: XCTestCase {
         tap("primary-action")
         XCTAssertTrue(app.descendants(matching: .any)["question-scene-wiring"].exists)
         XCTAssertFalse(app.descendants(matching: .any)["question-scene-change"].exists)
-        tap("exit-lesson")
-        app.buttons["保存进度并退出"].tap()
-        app.terminate()
-        app.launchArguments = ["--uitesting"]
-        app.launch()
+        relaunchKeepingProgress()
         tap("start-lesson")
         XCTAssertTrue(app.descendants(matching: .any)["question-scene-wiring"].exists)
         XCTAssertFalse(app.descendants(matching: .any)["question-scene-change"].exists)

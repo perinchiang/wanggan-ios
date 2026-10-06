@@ -296,6 +296,12 @@ extension StepSession {
         challengeAnswer = stage.challengeAnswer
         challengeSubmitted = stage.challengeSubmitted
         challengeSolved = stage.challengeSolved
+        if let answer = challengeAnswer, !lesson.challenge.options.contains(where: { $0.id == answer }) {
+            // A removed choice must not leave an old draft submitted or blocked.
+            challengeAnswer = nil
+            challengeSubmitted = false
+            challengeSolved = false
+        }
         if lesson.ipv4Foundation != nil {
             // Older quiz drafts resume at the observed animation, with the same identity.
             stepIndex = ipv4FoundationProgress?.finished == true ? plan.summaryIndex : 0

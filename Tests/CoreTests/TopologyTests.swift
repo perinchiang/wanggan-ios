@@ -93,6 +93,22 @@ final class TopologyTests: XCTestCase {
         XCTAssertNotNil(ledger.lessons[lesson.id])
     }
 
+    func testRemovedHomeChallengeChoiceRestoresAsUnansweredWithSameIdentity() throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "home-two-boxes" })
+        var old = LessonSession(lessonID: lesson.id)
+        old.stage = .challenge
+        old.challengeAnswer = "ont-only"
+        old.challengeSubmitted = true
+        old.mistakes = 3
+        let restored = StepSession(lesson: lesson, from: old)
+        XCTAssertEqual(restored.id, old.id)
+        XCTAssertEqual(restored.stepIndex, LessonPlan(lesson: lesson).challengeIndex)
+        XCTAssertNil(restored.challengeAnswer)
+        XCTAssertFalse(restored.challengeSubmitted)
+        XCTAssertFalse(restored.challengeSolved)
+        XCTAssertEqual(restored.mistakes, 3)
+    }
+
     func testCatalogRejectsTopologyBeyondExplanationBudget() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let url = root.appendingPathComponent("Resources/lessons.json")

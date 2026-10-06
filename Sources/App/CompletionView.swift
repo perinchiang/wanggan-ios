@@ -23,8 +23,9 @@ struct CompletionView: View {
                 Image(systemName: "flag.fill").font(.title).foregroundStyle(Theme.ink).offset(x: 117, y: -44)
             }.frame(height: 160).padding(.top, 20).accessibilityHidden(true)
             VStack(spacing: 12) {
-                Text("你已弄懂").font(.subheadline).foregroundStyle(Theme.muted)
-                Text(lesson.takeaway).font(.title.bold()).multilineTextAlignment(.center)
+                Text("你已完成").font(.subheadline).foregroundStyle(Theme.muted)
+                Text(lesson.title).font(.title2.bold()).multilineTextAlignment(.center)
+                    .accessibilityIdentifier("completion-lesson-title")
             }
             Text(earnedXP > 0 ? "+\(earnedXP) XP" : "又巩固了一次")
                 .font(earnedXP > 0 ? .largeTitle.weight(.black).monospacedDigit() : .title2.bold())
