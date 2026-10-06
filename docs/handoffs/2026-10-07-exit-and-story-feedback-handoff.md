@@ -13,6 +13,9 @@
 - 增加 5 项 Core 回归，增加主线 / 整课重学及短复习退出 UI 测试；旧续学用例改为意外终止恢复。smoke 合并运行 5 项流程。
 - PRODUCT / ARCHITECTURE / DESIGN / COURSE_GUIDE 同步所属规则。
 
+- Pat 追加指出用户气泡右边留白偏多：0.8.1 build 22 将用户气泡水平内边距 20 → 10 pt，增加 20 pt 正文宽度。
+- Pat 明确原生交互由本人检查：AGENTS / ARCHITECTURE 同步为默认 Core / Web + package，不主动运行原生 UI / 截图。
+
 ## Decisions made / 本轮关键决策
 
 - 主动退出代表放弃本次未完成会话；既有成果不是本次草稿，不回滚。
@@ -22,7 +25,7 @@
 
 ## Not completed / 尚未完成
 
-原生 smoke 中四项退出 / 恢复 / IPv4 流程通过；故事课定位断言修正后使用 home 专项复核中。Pat 真机体验待反馈。
+0.8.1 build 22 的快速 package / IPA 核验待执行；原生交互与真机换行效果由 Pat 验收，不再自动跑。
 
 ## Known issues / 已知问题
 
@@ -33,8 +36,8 @@ Windows 无 Swift / iOS 工具链。VoiceOver、最大字号及小屏真机尚�
 本地 JSON / YAML 解析、修改文档链接和 `git diff --check` 通过；4 项 Web 回归通过。课程数据比较确认只有 home-two-boxes 内容变更，其他小节及目录 / 短复习资源保持一致。
 - [package #49 / 37508868129](https://github.com/perinchiang/wanggan-ios/actions/runs/37508868129) success，源码 `0da10edcf24047782fa9c3e819aa3a751d572d9b`；触发到完成 1 分 46 秒，67 Core / 4 Web、iPhone Release 编译与 IPA 上传通过。
 - IPA 核验：ZIP 完整、0.8.0 / 21 / 原 bundle ID、iPhoneOS arm64 可执行文件、lessons.json / 离线 HTML 与候选源码一致、Assets.car 存在。包为 799046 bytes，SHA256 `dfc4c08f2f6ca287058b51c500a6cf70aef81077aaa99cfe515ef840162e9ae4`。
-- IPA、试学清单及日志在 `C:/Users/Administrator/Documents/wanggan/outputs/WangGan-0.8.0-build21/`；[smoke 37509234078](https://github.com/perinchiang/wanggan-ios/actions/runs/37509234078) 在同一源码上执行 5 项检查，4 项通过，故事课图位断言失败：新增上 / 下两行设备扩展了可访问性包围框，minY 不等于固定容器位置。截图确认前两条气泡替换、光纤 / 光猫位置不变；测试改为比较图形中心及气泡顶部位置（不放宽原位替换要求），用 home 专项继续检查未到达的追问 / 完成页。应用源码 / 资源未再修改，不再导出内容相同的 IPA。
+- IPA、试学清单及日志在 `C:/Users/Administrator/Documents/wanggan/outputs/WangGan-0.8.0-build21/`；[smoke 37509234078](https://github.com/perinchiang/wanggan-ios/actions/runs/37509234078) 在同一源码上执行 5 项检查，4 项通过，故事课图位断言失败：新增上 / 下两行设备扩展了可访问性包围框，minY 不等于固定容器位置。截图确认前两条气泡替换、光纤 / 光猫位置不变；测试改为比较图形中心及气泡顶部位置（不放宽原位替换要求），用 [home 专项 37511441581](https://github.com/perinchiang/wanggan-ios/actions/runs/37511441581) 复核时，模拟器编译通过，测试命令连续 180 秒无输出被 watchdog 终止，没有实际故事课通过记录。Pat 随后要求不再跑原生交互，未继续尝试。0.8.0 的专项复核期间应用源码 / 资源未修改，不再导出内容相同的 IPA；随后气泡宽度改动单独提升为 0.8.1 build 22。
 
 ## Next recommended task / 推荐下一步
 
-集中运行 package 获得 IPA，再运行 smoke 与检查截图；交给 Pat 按确认退出 / 设备讲解 / 朋友换机 / 完成页清单体验。
+按 Pat 指定工作方式快速交付 0.8.1 build 22，附用户气泡宽度 / 确认退出 / 设备讲解 / 朋友换机 / 完成页清单，由 Pat 真机验收后反馈。

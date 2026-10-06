@@ -4,7 +4,9 @@
 
 ## 当前版本
 
-- 反馈修正版候选 **0.8.0（build 21）**：主动确认退出丢弃当前草稿；用户气泡文字左对齐；设备图讲解气泡逐步替换；朋友换机场景与完成页文案重做。已完成历史与 XP 保留，后台意外中断仍可恢复。[package #49](https://github.com/perinchiang/wanggan-ios/actions/runs/37508868129) 已通过（源码 `0da10ed`，1 分 46 秒，67 Core / 4 Web、iPhone Release 及安装包核验）；原生 smoke 进行中。结果见 [反馈修正交接](docs/handoffs/2026-10-07-exit-and-story-feedback-handoff.md)，不能沿用 build 20 的 CI 结果。
+- 当前试学候选 **0.8.1（build 22）**：收窄用户气泡两侧留白，沿用 0.8.0 的退出、故事题、原位替换讲解和完成页修正。按 Pat 明确要求只做 Core / Web 和快速 iPhone 打包，原生交互由 Pat 真机检查；本候选 package 结果待记录。
+
+- 反馈修正版候选 **0.8.0（build 21）**：主动确认退出丢弃当前草稿；用户气泡文字左对齐；设备图讲解气泡逐步替换；朋友换机场景与完成页文案重做。已完成历史与 XP 保留，后台意外中断仍可恢复。[package #49](https://github.com/perinchiang/wanggan-ios/actions/runs/37508868129) 已通过（源码 `0da10ed`，1 分 46 秒，67 Core / 4 Web、iPhone Release 及安装包核验）；原生 smoke 四项通过；故事课定位断言修正后的专项因模拟器无输出超时未完成。结果见 [反馈修正交接](docs/handoffs/2026-10-07-exit-and-story-feedback-handoff.md)，不能沿用 build 20 的 CI 结果。
 
 - 快速试学候选 **0.7.0（build 20）**，源码 `ab8bc71`：[手动 package 构建](https://github.com/perinchiang/wanggan-ios/actions/runs/37505413864) 已通过，触发至完成 1 分 28 秒，62 Core / 4 Web、iPhone Release 编译、IPA 上传及本地安装包核验通过。家庭网络故事课沿用 build 19 的生活对话、稳定滚动、拓扑焦点高亮和跳过配对；本轮只新增快速打包模式及提高 build 号。详见 [快速试学包交接](docs/handoffs/2026-10-07-quick-trial-ipa-handoff.md)。本次没有运行原生 UI / 模拟器截图，真机试学待 Pat 反馈。
 
@@ -26,7 +28,7 @@
 
 ## Windows → iPhone
 
-1. 手动触发 GitHub Actions 的 `Build and test iOS` 工作流。快速拿包试学选 `ui_scope=package`：运行 Core / Web 检查并构建 iPhone IPA，不启动模拟器、不运行原生 UI。阶段性完整验收选 `full`：另运行全部原生 UI 与截图。`quick` 仅编译检查，`smoke` / 专项 scope 仅运行相应 UI，都不导出 IPA。普通提交不会自动触发；验证范围由 [ARCHITECTURE.md](ARCHITECTURE.md) 维护。
+1. 手动触发 GitHub Actions 的 `Build and test iOS` 工作流。快速拿包试学选 `ui_scope=package`：运行 Core / Web 检查并构建 iPhone IPA，不启动模拟器、不运行原生 UI。当前原生交互由 Pat 真机验收，Agent 不主动运行；若 Pat 明确要求自动化完整验收，再选 `full` 运行全部原生 UI 与截图。`quick` 仅编译检查，`smoke` / 专项 scope 仅运行相应 UI，都不导出 IPA。普通提交不会自动触发；验证范围由 [ARCHITECTURE.md](ARCHITECTURE.md) 维护。
 2. 运行成功后下载 `WangGan-iPhone-unsigned` artifact，解压得到 `WangGan-unsigned.ipa`。
 3. 从 <https://sideloadly.io/> 安装 Windows 版 Sideloadly，并按官网要求准备 Apple 设备驱动。
 4. 首次用数据线连接 iPhone，解锁并信任电脑。将 IPA 放进 Sideloadly，使用自己的 Apple 账户签名安装。

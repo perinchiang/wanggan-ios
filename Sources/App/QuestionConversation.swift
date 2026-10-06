@@ -86,7 +86,8 @@ struct ConversationBubble: View {
                     .multilineTextAlignment(.leading)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(20)
+            .padding(.horizontal, isUser ? 10 : 20)
+            .padding(.vertical, 20)
             .background(isUser || isQuestion ? Theme.lime.opacity(0.24) : Theme.surface,
                         in: .rect(topLeadingRadius: isUser ? 22 : 6,
                                   bottomLeadingRadius: 22,

@@ -224,7 +224,7 @@ schemaVersion、课程内容版本、Lesson revision、Web 契约版本独立管
 | Step / Core | 门控、重试、恢复、完成、主线与复习隔离，运行 `swift test` |
 | 奖励 / Mastery / Review | 同日零奖励错误、同日多次正确、重复结算、提示与独立证据、日期 / 时区边界 |
 | 迁移 | 真实旧格式、未知版本、损坏数据、课程重排、重复迁移、恢复失败保护 |
-| UI / 动效 / 主题 | 对应原生 UI 测试，截图；大字号、VoiceOver、Reduce Motion、深浅色及关闭声音 / 触感 |
+| UI / 动效 / 主题 | 当前试学由 Pat 真机验收，附对应清单；仅 Pat 明确要求时跑原生 UI / 模拟器截图。大字号、VoiceOver、Reduce Motion 等未验收项如实记录 |
 | Web | 组件参数和计算样例、直接通信、错误与恢复、生命周期；WKWebView 内集成验收 |
 | 打包 | 真机目标编译，确认课程、图标和 Web 文件实际随包存在，离线加载 |
 
@@ -232,6 +232,6 @@ schemaVersion、课程内容版本、Lesson revision、Web 契约版本独立管
 
 当前 iOS 工作流仅通过 workflow_dispatch 手动触发，以节省 GitHub Actions 额度；日常提交先积累，在阶段性验收、较大版本交付或风险需要时运行完整构建、测试与 IPA 导出。采用 PR 协作后再评估是否增加轻量检查。Windows 上不能执行的 Swift / iOS 检查，应明确交由 macOS CI 或 Mac，报告未执行项，不能把静态检查称作模拟器或真机验证。文档变更不必为了形式重复完整 iOS 构建。
 
-2026-10-07 新增快速试学路径（Pat 已确认）：`ui_scope=package` 运行 Core / Web 测试、iPhone Release 编译、资源检查与未签名 IPA 上传，不启动模拟器、不运行原生 UI 或生成模拟器截图；包交付时附本次变更的真机试学清单并收集反馈。`full` 保留完整 UI 与 IPA，阶段性验收及与变更风险相符的自动测试门槛不变。`quick` 是不出包的编译检查，`smoke` / 专项 scope 是不出包的对应 UI 检查。快速包的“构建成功”不等于 UI 已验收；每份交付按实际 commit 记录已执行 / 未执行项，不沿用旧提交的测试结果。
+2026-10-07 新增快速试学路径（Pat 已确认）：`ui_scope=package` 运行 Core / Web 测试、iPhone Release 编译、资源检查与未签名 IPA 上传，不启动模拟器、不运行原生 UI 或生成模拟器截图；包交付时附本次变更的真机试学清单并收集反馈。Pat 随后明确要求原生交互由本人验收：Agent 默认使用 package 交包，不主动运行原生 UI / 模拟器截图。`full` 保留完整 UI 与 IPA，原生自动化仅在 Pat 明确要求时使用；Core / Web 与真实 iPhone 编译检查继续执行。`quick` 是不出包的编译检查，`smoke` / 专项 scope 是不出包的对应 UI 检查。快速包的“构建成功”不等于 UI 已验收；每份交付按实际 commit 记录已执行 / 未执行项，不沿用旧提交的测试结果。
 
 故事课反馈的专项 `home` scope 只运行 `testHomeTwoBoxesFlow`，不导出 IPA；可在其他 smoke 流程已通过、仅修正本课 UI 断言时复核故事课，避免重复全部流程。运行范围必须随交付结果注明。
