@@ -157,7 +157,7 @@ final class LearningUITests: XCTestCase {
         tap("challenge-option-allinone")
         tap("primary-action")
         tap("primary-action")
-        for pageID in ["integrated-ports", "router-ports", "fttr-rooms"] {
+        for pageID in ["integrated-ports", "router-ports", "fttr-rooms", "fttr-reveal"] {
             XCTAssertTrue(app.descendants(matching: .any)["answer-explanation-\(pageID)"].waitForExistence(timeout: 5))
             XCTAssertFalse(app.staticTexts["+30 XP"].exists)
             tap("primary-action")

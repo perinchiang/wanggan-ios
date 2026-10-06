@@ -32,9 +32,47 @@ struct DevicePortsSpec: Codable, Equatable {
 struct AnswerExplanation: Codable, Equatable, Identifiable {
     let id: String
     let text: String
-    let diagram: DevicePortsSpec
+    let diagram: DevicePortsSpec?
+    let homeNetwork: HomeNetworkSpec?
+    let termIntroduction: TermIntroduction?
 
-    var isValid: Bool { !id.isEmpty && !text.isEmpty && diagram.isValid }
+    var isValid: Bool {
+        !id.isEmpty && !text.isEmpty &&
+        (diagram != nil || homeNetwork != nil || termIntroduction != nil) &&
+        (diagram?.isValid ?? true) &&
+        (homeNetwork?.isValid ?? true) && (termIntroduction?.isValid ?? true)
+    }
+}
+
+struct TermIntroduction: Codable, Equatable {
+    let name: String
+    let englishName: String
+    let chineseName: String
+
+    var isValid: Bool {
+        [name, englishName, chineseName].allSatisfy { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    }
+}
+
+/// A simplified home plan: one gateway and up to three room endpoints.
+/// Optical distribution is intentionally collapsed into a labelled junction.
+struct HomeNetworkSpec: Codable, Equatable {
+    let title: String
+    let uplink: PortMedium
+    let uplinkLabel: String
+    let gatewayLabel: String
+    let roomMedium: PortMedium
+    let rooms: [String]
+    let roomDeviceLabel: String
+    let note: String
+
+    var isValid: Bool {
+        uplink != .power && roomMedium != .power &&
+        !title.isEmpty && !uplinkLabel.isEmpty && !gatewayLabel.isEmpty &&
+        !roomDeviceLabel.isEmpty && !note.isEmpty &&
+        (1...3).contains(rooms.count) && Set(rooms).count == rooms.count &&
+        rooms.allSatisfy { !$0.isEmpty }
+    }
 }
 
 /// A node in a teaching topology: one device or medium shown as a native symbol.

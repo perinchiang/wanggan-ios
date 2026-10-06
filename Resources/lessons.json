@@ -351,7 +351,7 @@
         "answerExplanation": [
           {
             "id": "integrated-ports",
-            "text": "先看朋友说的这台设备。光纤接进 PON 光纤口，说明它承担光猫的接入工作；它还能组网、发 WiFi，所以是光猫路由一体机。LAN 网口用网线连电脑、电视，也可以接墙内通往各房间的网线。电源口只负责供电。",
+            "text": "朋友这台设备把两份工作装在了一起：接住入户光纤，也负责家里的组网和 WiFi。房间里的电脑、客厅的电视，可以通过网线接到它。换成普通路由器之前，得先有人继续完成光纤接入这份工作。",
             "diagram": {
               "title": "光猫路由一体机 · 接口示意",
               "ports": [
@@ -387,11 +387,25 @@
                 }
               ],
               "note": "接口数量与排列只是示例；三个房间在这里通过网线连接。"
+            },
+            "homeNetwork": {
+              "title": "光纤到家，再用网线进房间",
+              "uplink": "fiber",
+              "uplinkLabel": "入户光纤",
+              "gatewayLabel": "光猫路由一体机",
+              "roomMedium": "ethernet",
+              "rooms": [
+                "房间一",
+                "房间二",
+                "客厅"
+              ],
+              "roomDeviceLabel": "有线设备",
+              "note": "实线是入户光纤，虚线是房间网线；接口细节可在下方展开。"
             }
           },
           {
             "id": "router-ports",
-            "text": "普通家用路由器也有电源口和 LAN 网口，但通常通过 WAN 网口、用网线接上游光猫，而不是直接接运营商的入户光纤。它负责家里的组网和 WiFi，没有替光猫完成光纤接入。因此，能发 WiFi 并不代表可以直接换掉朋友的设备。",
+            "text": "普通路由器接过的是光猫交出来的网线，再把网络连到家里的设备。一个盒子做两份工作，或两个盒子分开做，外表不一样，接入光纤和家庭组网这两份工作都还在。",
             "diagram": {
               "title": "普通家用路由器 · 接口示意",
               "ports": [
@@ -427,11 +441,25 @@
                 }
               ],
               "note": "示例采用独立 WAN / LAN 网口；部分型号支持自动识别或切换。"
+            },
+            "homeNetwork": {
+              "title": "普通路由器接的是光猫交来的网线",
+              "uplink": "ethernet",
+              "uplinkLabel": "来自上游光猫",
+              "gatewayLabel": "普通路由器",
+              "roomMedium": "ethernet",
+              "rooms": [
+                "房间一",
+                "房间二",
+                "客厅"
+              ],
+              "roomDeviceLabel": "有线设备",
+              "note": "光纤先接上游光猫；这里画的是光猫之后的网线连接。"
             }
           },
           {
             "id": "fttr-rooms",
-            "text": "那 FTTR 又是什么？它是“光纤到房间”：主设备通过下行光口，把光纤继续铺到各房间的子设备，再由子设备提供 WiFi 和 LAN 网口。图中通过分光器连接三个房间。只有一台带光纤口的设备，不能说明家里已经用了 FTTR；要看房间之间怎样连接。",
+            "text": "后来你去另一位朋友家，发现卧室里也放着一台发 WiFi 的小设备。接在它背后的不是常见的粗网线，而是一条很细的线。朋友说：“这也是光纤，师傅从主设备那边一路铺进来的。”",
             "diagram": {
               "title": "FTTR 主设备 → 各房间子设备",
               "ports": [
@@ -466,6 +494,29 @@
                 "房间二",
                 "客厅"
               ]
+            },
+            "homeNetwork": {
+              "title": "咦，光纤怎么也进了房间？",
+              "uplink": "fiber",
+              "uplinkLabel": "入户光纤",
+              "gatewayLabel": "家中主设备",
+              "roomMedium": "fiber",
+              "rooms": [
+                "房间一",
+                "房间二",
+                "客厅"
+              ],
+              "roomDeviceLabel": "房间里的 WiFi 设备",
+              "note": "图中光纤分配部分已简化；光纤可能是黄色或透明，颜色不是判断依据。"
+            }
+          },
+          {
+            "id": "fttr-reveal",
+            "text": "原来，光纤不只到家门口，还能继续铺进各个房间。这种把光纤延伸到房间、再由房间里的设备提供 WiFi 的做法，就叫 FTTR。它说的是房间之间怎样连接，不是某一台路由器的名字。",
+            "termIntroduction": {
+              "name": "FTTR",
+              "englishName": "Fiber to the Room",
+              "chineseName": "光纤到房间"
             }
           }
         ]
@@ -476,7 +527,8 @@
         "https://www.rfc-editor.org/rfc/rfc1812",
         "https://carrier.huawei.com/en/products/fixed-network/sub-solution-access/fttr-to-home",
         "https://consumer.huawei.com/en/support/content/en-us15806327/",
-        "https://e.huawei.com/marketingcloud/pep/asset/20000001/Material/0edddd77253d499986308fa6cde66e7f/M3T1A669N1231359291496624209/How%20to%20Configure%20Huawei%20FTTR%20-%20OptiXstar%20F50%20_Fiber%20Uplink_.pdf"
+        "https://e.huawei.com/marketingcloud/pep/asset/20000001/Material/0edddd77253d499986308fa6cde66e7f/M3T1A669N1231359291496624209/How%20to%20Configure%20Huawei%20FTTR%20-%20OptiXstar%20F50%20_Fiber%20Uplink_.pdf",
+        "https://e.huawei.com/cn/solutions/enterprise-optical-network/ftth/fttr-home"
       ],
       "matchingEnabled": false
     },

@@ -98,8 +98,22 @@ struct StepLessonPlayer: View {
             case .diagram, .text:
                 if let page = plan.answerExplanation(at: session.stepIndex) {
                     VStack(alignment: .leading, spacing: 18) {
-                        DevicePortsDiagram(spec: page.diagram)
+                        if let term = page.termIntroduction {
+                            TermIntroductionCard(term: term)
+                        } else if let network = page.homeNetwork {
+                            HomeNetworkDiagram(spec: network)
+                        } else if let diagram = page.diagram {
+                            DevicePortsDiagram(spec: diagram)
+                        }
                         ConversationBubble(text: page.text, highlightedTerms: ["光猫", "路由器", "光纤", "FTTR", "WAN", "LAN"])
+                        if let diagram = page.diagram, page.homeNetwork != nil || page.termIntroduction != nil {
+                            DisclosureGroup("看看设备接口") {
+                                DevicePortsDiagram(spec: diagram).padding(.top, 10)
+                            }
+                            .id(page.id)
+                            .font(.subheadline).tint(Theme.ink)
+                            .accessibilityIdentifier("device-ports-details")
+                        }
                     }
                     .id("answer-explanation-anchor")
                     .accessibilityIdentifier("answer-explanation-\(page.id)")

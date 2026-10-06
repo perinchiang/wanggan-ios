@@ -109,4 +109,31 @@ final class AnswerExplanationTests: XCTestCase {
         XCTAssertFalse(DevicePortsSpec(title: "一体机", ports: [power, power, fiber], fiberRooms: nil, note: "示意").isValid)
         XCTAssertFalse(DevicePortsSpec(title: "FTTR", ports: [power, fiber], fiberRooms: ["房间一"], note: "示意").isValid)
     }
+
+    func testTermOnlyPageIsValidWithoutDevicePortsAndRejectsMissingName() throws {
+        let term = TermIntroduction(name: "FTTR", englishName: "Fiber to the Room", chineseName: "光纤到房间")
+        let page = AnswerExplanation(id: "reveal", text: "故事之后揭晓名称", diagram: nil,
+                                     homeNetwork: nil, termIntroduction: term)
+        XCTAssertTrue(page.isValid)
+        XCTAssertEqual(try JSONDecoder().decode(AnswerExplanation.self, from: JSONEncoder().encode(page)), page)
+        XCTAssertFalse(TermIntroduction(name: "FTTR", englishName: " ", chineseName: "光纤到房间").isValid)
+        XCTAssertFalse(AnswerExplanation(id: "empty", text: "没有图或卡片", diagram: nil,
+                                        homeNetwork: nil, termIntroduction: nil).isValid)
+    }
+
+    func testRoomDiagramRejectsPowerAsNetworkCableAndSupportsOldPortOnlyContent() throws {
+        let invalid = HomeNetworkSpec(title: "家", uplink: .fiber, uplinkLabel: "入户光纤",
+                                      gatewayLabel: "主设备", roomMedium: .power, rooms: ["房间一"],
+                                      roomDeviceLabel: "电脑", note: "示意")
+        XCTAssertFalse(invalid.isValid)
+        let lesson = try homeLesson()
+        let page = try XCTUnwrap(lesson.challenge.answerExplanation?.first)
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(page)) as? [String: Any])
+        json.removeValue(forKey: "homeNetwork")
+        json.removeValue(forKey: "termIntroduction")
+        let old = try JSONDecoder().decode(AnswerExplanation.self, from: JSONSerialization.data(withJSONObject: json))
+        XCTAssertNil(old.homeNetwork)
+        XCTAssertNil(old.termIntroduction)
+        XCTAssertTrue(old.isValid)
+    }
 }

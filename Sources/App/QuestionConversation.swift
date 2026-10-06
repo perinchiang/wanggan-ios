@@ -66,30 +66,29 @@ struct ConversationBubble: View {
                 } else if role == "friend" {
                     Image(systemName: "person.crop.circle.fill")
                         .font(.system(size: 32))
-                        .padding(.top, 10)
+                        .padding(.top, 30)
                         .accessibilityHidden(true)
                 } else {
                     PacketMascot(size: 34).padding(.top, 10)
                 }
             }
 
-            VStack(alignment: .leading, spacing: 9) {
+            VStack(alignment: .leading, spacing: 6) {
                 if role == "friend" {
                     Text("朋友").font(.caption.weight(.semibold)).foregroundStyle(Theme.muted)
                 }
                 ConversationText(text: text, terms: highlightedTerms,
                                  fontSize: isQuestion ? questionFontSize : bodyFontSize,
                                  fontWeight: isQuestion ? .bold : .medium)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 20)
+                    .background(isUser || isQuestion ? Theme.lime.opacity(0.24) : Theme.surface,
+                                in: .rect(topLeadingRadius: isUser ? 22 : 6,
+                                          bottomLeadingRadius: 22,
+                                          bottomTrailingRadius: 22,
+                                          topTrailingRadius: isUser ? 6 : 22))
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 20)
-            .background(isUser || isQuestion ? Theme.lime.opacity(0.24) : Theme.surface,
-                        in: .rect(topLeadingRadius: isUser ? 22 : 6,
-                                  bottomLeadingRadius: 22,
-                                  bottomTrailingRadius: 22,
-                                  topTrailingRadius: isUser ? 6 : 22))
+            .layoutPriority(1)
 
             if isUser {
                 Image(systemName: "person.crop.circle.fill")
@@ -97,14 +96,17 @@ struct ConversationBubble: View {
                     .foregroundStyle(Theme.ink)
                     .padding(.top, 10)
                     .accessibilityHidden(true)
+            } else {
+                Spacer(minLength: 0)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
     }
 }
 
-/// Measure every paragraph at the full bubble width; avoid balanced short lines
-/// leaving a wider blank strip on the right. Also renders inline marker backgrounds.
+/// Wrap at the available width, then fit the bubble to the longest rendered line.
+/// Short prompts no longer stretch their background across the whole row.
 private struct ConversationText: UIViewRepresentable {
     let text: String
     let terms: [String]
@@ -151,7 +153,9 @@ private struct ConversationText: UIViewRepresentable {
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: UILabel, context: Context) -> CGSize? {
         guard let width = proposal.width, width.isFinite, width > 0 else { return nil }
         let measured = uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
-        return CGSize(width: width, height: ceil(measured.height))
+        let fittedWidth = min(width, ceil(measured.width) + 1)
+        let fitted = uiView.sizeThatFits(CGSize(width: fittedWidth, height: .greatestFiniteMagnitude))
+        return CGSize(width: fittedWidth, height: ceil(fitted.height))
     }
 }
 

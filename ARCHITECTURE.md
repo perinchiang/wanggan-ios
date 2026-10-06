@@ -188,9 +188,9 @@ schemaVersion、课程内容版本、Lesson revision、Web 契约版本独立管
 
 迁移至少保护 XP、完成日期、学习日期、复习日期、有效会话和奖励幂等依据。备份不能在重复启动时被新的空进度覆盖。历史结算记录的增长以后按安全策略处理，裁剪前保证不会重新发奖；不因担心未来规模先建事件仓库。
 
-### 答后接口图解（0.10.0 候选）
+### 答后图解与术语揭晓（0.11.0 候选）
 
-Challenge 可附加可选 `answerExplanation` 图解页，包含稳定页 ID、正文与 `DevicePortsSpec` 接口数据。Core 将其放在 Challenge 与 summary 之间；正确作答后逐页推进，读完再完成与结算。SwiftUI 复用 `DevicePortsDiagram` 显示电源、光纤、以太网连接及可选房间子设备，不按 Lesson ID 分派。旧课程缺省此字段时路径不变。
+Challenge 可附加可选 `answerExplanation` 图解页，包含稳定页 ID、正文与可选 `DevicePortsSpec` 接口数据、`HomeNetworkSpec` 房间连接图或 `TermIntroduction` 名称卡片。至少有一种呈现，存在的内容均通过 Core 校验；旧接口页可缺省新增字段。Core 将其放在 Challenge 与 summary 之间；正确作答后逐页推进，读完再完成与结算。SwiftUI 复用 `HomeNetworkDiagram` / `TermIntroductionCard`，有接口数据时用默认折叠的 `DevicePortsDiagram` 作为详情；不按 Lesson ID 分派。名称卡片独立可复用，数据包含 name / englishName / chineseName，卡片统一加英文括号。旧课程缺省此字段时路径不变。
 
 `LessonSession.challengeExplanationID` 是可缺省的当前页标识；stage 仍为 challenge，转换器用稳定页 ID 恢复。旧已答草稿停留在原答题位置，旧 complete 直接映射新 summary，不重开课程、不重复奖励；未知 / 删除页 ID 回到已答题位置。存储键与 ledger 格式不变。主动退出仍丢弃当前草稿，后台中断保存该页。新增 Core 用例保护读完前不发奖、页恢复、旧 JSON、已完成记录与错误答案门控。
 
