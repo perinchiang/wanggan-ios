@@ -49,8 +49,13 @@ jobs:
           swift scripts/generate_icon.swift
           xcodegen generate
 
-      # Daily/agent runs do not need an iphoneos build or IPA. The simulator
-      # build below still catches normal compile errors. Full is the release gate.
+      # Quick still compiles the real SwiftUI app, but does not boot a simulator.
+      - name: Compile app quickly
+        if: inputs.ui_scope == 'quick'
+        run: |
+          xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build/quick CODE_SIGNING_ALLOWED=NO build
+
+      # Full additionally produces a device build and IPA.
       - name: Build device app and package IPA
         if: inputs.ui_scope == 'full'
         run: |
