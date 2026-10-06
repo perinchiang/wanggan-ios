@@ -96,6 +96,8 @@ final class LearningUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "宽带师傅为什么装了两个盒子？")
         tap("start-lesson")
         revealScene(option: "question-option-split")
+        XCTAssertTrue(app.descendants(matching: .any)["question-scene-you-ask"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["question-scene-technician"].exists)
         screenshot("H01-question-options")
         tap("question-option-split")
         tap("primary-action") // submit the prediction and read the feedback
@@ -119,19 +121,8 @@ final class LearningUITests: XCTestCase {
         XCTAssertTrue(topology.isHittable)
         XCTAssertLessThan(topology.frame.maxY, app.buttons["primary-action"].frame.minY)
         screenshot("H03-topology-full")
-        for _ in 0..<4 {
-            if app.buttons["match-left-fiber-in"].exists { break }
-            tap("primary-action")
-        }
-        XCTAssertTrue(app.buttons["match-left-fiber-in"].exists, "Matching appears after the explanation")
-        screenshot("H03-matching")
-        tap("match-left-fiber-in")
-        tap("match-right-ont")
-        tap("match-left-home-net")
-        tap("match-right-router")
-        XCTAssertTrue(app.buttons["primary-action"].isEnabled)
-        tap("primary-action")
         revealScene(option: "challenge-option-allinone")
+        screenshot("H03-transfer-question")
         tap("challenge-option-allinone")
         tap("primary-action")
         tap("primary-action")
@@ -608,13 +599,13 @@ final class LearningUITests: XCTestCase {
         tap("primary-action")
         XCTAssertTrue(app.buttons["continue-learning"].waitForExistence(timeout: 5))
         tap("continue-learning")
-        XCTAssertTrue(app.staticTexts["沿着数据走一遍，就清楚了。"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["explanation-phase"].waitForExistence(timeout: 5))
         tap("exit-lesson")
         app.buttons["保存进度并退出"].tap()
         app.tabBars.buttons["学习"].tap()
         XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "谁才是我的邻居？")
         tap("start-lesson")
-        XCTAssertTrue(app.staticTexts["沿着数据走一遍，就清楚了。"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["explanation-phase"].waitForExistence(timeout: 5))
     }
 
     func testWrongChoiceTeachesInsteadOfBlockingProgress() {
@@ -637,7 +628,7 @@ final class LearningUITests: XCTestCase {
         XCTAssertTrue(feedback.isHittable, "Answer feedback should be on screen without a manual swipe")
         screenshot("10-wrong-answer-feedback")
         tap("primary-action")
-        XCTAssertTrue(app.staticTexts["沿着数据走一遍，就清楚了。"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["explanation-phase"].exists)
     }
 
     func testSubnetResumesAndCompletesOnStepPlayer() {

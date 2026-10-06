@@ -75,12 +75,9 @@ final class TopologyTests: XCTestCase {
         plan.submitAnswer(lesson.question.correctID, in: &session)
         plan.advance(&session) // diagram step shows stage-1 nodes
         for _ in 0..<lesson.explanation.count { plan.advance(&session) }
-        plan.advance(&session) // enter the matching step
-        XCTAssertEqual(session.stepIndex, plan.matchingIndex)
-        for (left, right) in lesson.matching.solution { plan.connect(left, to: right, in: &session) }
-        plan.submitMatching(in: &session)
-        XCTAssertTrue(session.matchingSolved)
-        plan.advance(&session) // leave matching toward the challenge scene
+        plan.advance(&session) // go straight into the transfer scene
+        XCTAssertFalse(lesson.usesMatching)
+        XCTAssertEqual(session.stepIndex, plan.matchingIndex + 1)
         for _ in 0..<plan.challengeSceneCount { plan.advance(&session) }
         XCTAssertEqual(session.stepIndex, plan.challengeIndex)
         plan.submitChallenge(lesson.challenge.correctID, in: &session)

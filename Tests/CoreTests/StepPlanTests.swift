@@ -68,7 +68,7 @@ final class StepPlanTests: XCTestCase {
             XCTAssertEqual(plan.steps.filter { $0.kind == .question }.count, 2)
             XCTAssertEqual(plan.steps.filter { $0.kind == .diagram }.count, 1)
             XCTAssertEqual(plan.steps.filter { $0.kind == .text }.count, lesson.explanation.count)
-            XCTAssertEqual(plan.steps.filter { $0.kind == .matching }.count, 1)
+            XCTAssertEqual(plan.steps.filter { $0.kind == .matching }.count, lesson.usesMatching ? 1 : 0)
             XCTAssertEqual(plan.steps.first?.kind, .conversation)
             XCTAssertEqual(plan.steps.last?.kind, .summary)
             XCTAssertLessThan(plan.questionIndex, plan.matchingIndex)
@@ -96,11 +96,14 @@ final class StepPlanTests: XCTestCase {
         plan.advance(&session)
         for _ in 0..<lesson.explanation.count { plan.advance(&session) }
         plan.advance(&session)
-        XCTAssertEqual(session.stepIndex, plan.matchingIndex)
-
-        for (left, right) in lesson.matching.solution { plan.connect(left, to: right, in: &session) }
-        plan.submitMatching(in: &session)
-        plan.advance(&session)
+        if lesson.usesMatching {
+            XCTAssertEqual(session.stepIndex, plan.matchingIndex)
+            for (left, right) in lesson.matching.solution { plan.connect(left, to: right, in: &session) }
+            plan.submitMatching(in: &session)
+            plan.advance(&session)
+        } else {
+            XCTAssertEqual(session.stepIndex, plan.matchingIndex + 1)
+        }
         for _ in 0..<plan.challengeSceneCount { plan.advance(&session) }
         XCTAssertEqual(session.stepIndex, plan.challengeIndex)
 
