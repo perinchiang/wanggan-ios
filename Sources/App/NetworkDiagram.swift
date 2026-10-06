@@ -76,8 +76,12 @@ private struct TravelingPacket: Shape {
 struct ConceptIllustration: View {
     let lesson: Lesson
     var animated = false
+    /// 1-based topology reveal stage; defaults to showing the full diagram.
+    var stage = Int.max
     var body: some View {
-        if lesson.diagram == "subnet", let devices = lesson.question.devices {
+        if let topology = lesson.topology {
+            TopologyDiagram(spec: topology, stage: stage, animated: animated)
+        } else if lesson.diagram == "subnet", let devices = lesson.question.devices {
             AddressComparison(devices: devices, identifier: "explanation-addresses")
         } else if lesson.diagram == "gateway" || lesson.diagram == "arp" {
             NetworkDiagram(animated: animated, kind: lesson.diagram)

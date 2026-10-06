@@ -18,8 +18,9 @@
 | `Sources/App/StepLessonPlayer.swift` | 五个现有 Lesson 均走 `StepLessonPlayer`（LessonPlan / StepSession）；旧原生播放器与按 Lesson ID 分派的入口已移除 |
 | `Sources/Core/IPv4AddressVisual.swift` / `Sources/App/IPv4AddressVisualWebView.swift` / `Resources/ipv4-address-visual.html` | 子网课 IPv4 地址与前缀校验、网络地址计算、一个本地 Web 图示与练习；当前为待验收候选版，不影响其他四课 |
 | `Sources/App/AppStore.swift` | 加载课程、UserDefaults 编解码、解锁与推荐、保存及重置 |
+| `Sources/Core/Topology.swift` / `Sources/App/TopologyDiagram.swift` | 数据驱动拓扑示意图：TopologySpec（nodes / links / flow / accessibilitySummary）在 Core 校验（id 唯一、引用完整、flow ≥ 2、maxStage ≤ explanation 段数 + 1），App 层按 stage 分阶段渲染节点、连线与数据包流动画；Lesson 可选 `topology` 字段，替代插画位图路线 |
 | `Sources/App` 其余文件 | SwiftUI 导航、页面、原生题型和图示 |
-| `Resources/lessons.json` | 当前五课内容与来源 |
+| `Resources/lessons.json` | 当前九课内容与来源（另有两课已归档） |
 | `Package.swift` / `Tests` | 独立 Core 测试和 iOS 原生 UI 测试 |
 | `project.yml` / `.github/workflows/ios.yml` | XcodeGen、macOS 构建、测试、截图和 IPA 导出 |
 

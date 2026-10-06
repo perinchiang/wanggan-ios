@@ -53,6 +53,7 @@ struct Lesson: Codable, Equatable, Identifiable {
     let takeaway: String
     let nextCuriosity: String
     let diagram: String
+    let topology: TopologySpec?
     let ipv4Foundation: IPv4Foundation?
     let ipv4Visual: IPv4VisualLesson?
     let ipv4Introduction: IPv4Introduction?
@@ -128,11 +129,24 @@ struct LessonCatalog: Codable {
             }
         }
         for lesson in lessons {
+            if let topology = lesson.topology {
+                // The topology reveals one stage per explanation paragraph (stage 1
+                // anchors the diagram step), so stages must fit the text budget and
+                // stay exclusive from the other visual mechanisms.
+                guard topology.isValid,
+                      lesson.ipv4Foundation == nil, lesson.ipv4Visual == nil,
+                      lesson.ipv4Introduction == nil, lesson.subnetMaskIntroduction == nil,
+                      !lesson.explanation.isEmpty,
+                      topology.maxStage <= lesson.explanation.count + 1 else {
+                    throw ContentError.invalid("\(lesson.id) 的拓扑图参数无效")
+                }
+            }
             if let foundation = lesson.ipv4Foundation {
                 guard foundation.isValid,
                       lesson.ipv4Introduction == nil,
                       lesson.subnetMaskIntroduction == nil,
                       lesson.ipv4Visual == nil,
+                      lesson.topology == nil,
                       lesson.explanation.isEmpty else {
                     throw ContentError.invalid("\(lesson.id) 的 IPv4 基础课参数无效")
                 }
@@ -140,18 +154,20 @@ struct LessonCatalog: Codable {
             if let mask = lesson.subnetMaskIntroduction {
                 guard mask.isValid, lesson.ipv4Foundation == nil,
                       lesson.ipv4Introduction == nil, lesson.ipv4Visual == nil,
+                      lesson.topology == nil,
                       lesson.explanation.isEmpty else {
                     throw ContentError.invalid("\(lesson.id) 的掩码入门参数无效")
                 }
             }
             if let introduction = lesson.ipv4Introduction {
                 guard IPv4AddressValue(ip: introduction.ip, prefix: 32) != nil,
-                      lesson.ipv4Foundation == nil, lesson.ipv4Visual == nil else {
+                      lesson.ipv4Foundation == nil, lesson.ipv4Visual == nil,
+                      lesson.topology == nil else {
                     throw ContentError.invalid("\(lesson.id) 的 IPv4 入门参数无效")
                 }
             }
             if let visual = lesson.ipv4Visual {
-                guard lesson.ipv4Foundation == nil,
+                guard lesson.ipv4Foundation == nil, lesson.topology == nil,
                       visual.examples.count == 2,
                       visual.examples[0].mode == .explain,
                       visual.examples[1].mode == .practice,

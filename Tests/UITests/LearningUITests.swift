@@ -89,9 +89,44 @@ final class LearningUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, expectedNextTitle)
     }
 
-    func testIPv4FoundationAddressRoleFlow() {
+    func testHomeTwoBoxesFlow() {
         app.launch()
-        completeFoundationLesson(expectedTitle: "IP 地址是拿来做什么的？", stages: 4, expectedXP: 30,
+        XCTAssertTrue(app.staticTexts["recommended-lesson-title"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "宽带师傅为什么装了两个盒子？")
+        tap("start-lesson")
+        revealScene(option: "question-option-split")
+        screenshot("H01-question-options")
+        tap("question-option-split")
+        tap("primary-action") // submit the prediction and read the feedback
+        tap("primary-action") // advance to the diagram step (stage 1: the fiber node)
+        screenshot("H02-topology-first-node")
+        for _ in 0..<8 {
+            if app.buttons["match-left-fiber-in"].exists { break }
+            tap("primary-action")
+        }
+        XCTAssertTrue(app.buttons["match-left-fiber-in"].exists, "Matching appears after the explanation")
+        screenshot("H03-topology-full-and-matching")
+        tap("match-left-fiber-in")
+        tap("match-right-ont")
+        tap("match-left-home-net")
+        tap("match-right-router")
+        XCTAssertTrue(app.buttons["primary-action"].isEnabled)
+        tap("primary-action")
+        revealScene(option: "challenge-option-allinone")
+        tap("challenge-option-allinone")
+        tap("primary-action")
+        tap("primary-action")
+        XCTAssertTrue(app.staticTexts["+30 XP"].waitForExistence(timeout: 5))
+        screenshot("H04-completion")
+        tap("finish-session")
+        XCTAssertEqual(app.staticTexts["xp-badge"].label, "30 经验值")
+        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "IP 地址是拿来做什么的？")
+    }
+
+    func testIPv4FoundationAddressRoleFlow() {
+        app.launchArguments += ["--seed-before-ipv4-address-role"]
+        app.launch()
+        completeFoundationLesson(expectedTitle: "IP 地址是拿来做什么的？", stages: 4, expectedXP: 60,
                                  expectedNextTitle: "这串地址，电脑怎么看？", evidencePrefix: "N01-role")
     }
 
@@ -121,14 +156,14 @@ final class LearningUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["+30 XP"].waitForExistence(timeout: 5))
         screenshot("N02-format-complete")
         tap("finish-session")
-        XCTAssertEqual(app.staticTexts["xp-badge"].label, "60 经验值")
+        XCTAssertEqual(app.staticTexts["xp-badge"].label, "90 经验值")
         XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "八个开关，能装下多大的数？")
     }
 
     func testIPv4FoundationOctetBinaryFlow() {
         app.launchArguments += ["--seed-before-ipv4-octet-binary"]
         app.launch()
-        completeFoundationLesson(expectedTitle: "八个开关，能装下多大的数？", stages: 6, expectedXP: 90,
+        completeFoundationLesson(expectedTitle: "八个开关，能装下多大的数？", stages: 6, expectedXP: 120,
                                  expectedNextTitle: "网关填错会怎样？", evidencePrefix: "N03-binary")
     }
 
@@ -448,7 +483,7 @@ final class LearningUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["short-evidence"].label, "独立答对过")
         tap("short-primary")
         app.tabBars.buttons["学习"].tap()
-        XCTAssertEqual(app.staticTexts["xp-badge"].label, "240 经验值")
+        XCTAssertEqual(app.staticTexts["xp-badge"].label, "270 经验值")
     }
 
     func testFullLessonPersistenceAndResume() {
@@ -588,22 +623,22 @@ final class LearningUITests: XCTestCase {
 
     func testSubnetResumesAndCompletesOnStepPlayer() {
         verifyFlow(LessonFlow(id: "subnet", question: "different", challenge: "yes",
-                              matches: [("24", "three"), ("16", "two")], expectedXP: 150))
+                              matches: [("24", "three"), ("16", "two")], expectedXP: 180))
     }
 
     func testARPResumesAndCompletesOnStepPlayer() {
         verifyFlow(LessonFlow(id: "arp", question: "gateway", challenge: "no",
-                              matches: [("local", "nasip"), ("remote", "gwip")], expectedXP: 180))
+                              matches: [("local", "nasip"), ("remote", "gwip")], expectedXP: 210))
     }
 
     func testHopResumesAndCompletesOnStepPlayer() {
         verifyFlow(LessonFlow(id: "hop", question: "frame", challenge: "no",
-                              matches: [("ip", "final"), ("mac", "next")], expectedXP: 210))
+                              matches: [("ip", "final"), ("mac", "next")], expectedXP: 240))
     }
 
     func testDNSResumesAndCompletesOnStepPlayer() {
         verifyFlow(LessonFlow(id: "dns", question: "dns", challenge: "no",
-                              matches: [("name", "resolve"), ("service", "connect")], expectedXP: 240))
+                              matches: [("name", "resolve"), ("service", "connect")], expectedXP: 270))
     }
 
     private func verifyFlow(_ flow: LessonFlow) {

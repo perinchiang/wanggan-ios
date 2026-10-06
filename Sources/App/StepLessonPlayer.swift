@@ -128,7 +128,7 @@ struct StepLessonPlayer: View {
             ipv4VisualPanel(visual)
         } else {
             TutorBubble(text: "沿着数据走一遍，就清楚了。")
-            ConceptIllustration(lesson: lesson, animated: true)
+            ConceptIllustration(lesson: lesson, animated: true, stage: visibleTextCount + 1)
         }
         if visibleTextCount > 0 {
             ForEach(Array(lesson.explanation.prefix(visibleTextCount)), id: \.self) { paragraph in

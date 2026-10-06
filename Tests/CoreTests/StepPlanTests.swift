@@ -78,7 +78,7 @@ final class StepPlanTests: XCTestCase {
     }
 
     func testMigratedLessonsPlayThroughToCompletion() throws {
-        for lessonID in ["gateway", "subnet", "arp", "hop", "dns"] {
+        for lessonID in ["home-two-boxes", "gateway", "subnet", "arp", "hop", "dns"] {
             try assertLessonPlaysThroughToCompletion(lessonID)
         }
     }

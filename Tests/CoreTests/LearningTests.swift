@@ -30,7 +30,7 @@ final class LearningTests: XCTestCase {
         let catalog = try catalog()
         try catalog.validate()
         XCTAssertTrue(Set([
-            "ipv4-address-role", "ipv4-address-format", "ipv4-octet-binary",
+            "home-two-boxes", "ipv4-address-role", "ipv4-address-format", "ipv4-octet-binary",
             "gateway", "subnet", "arp", "hop", "dns"
         ]).isSubset(of: Set(catalog.lessons.map(\.id))))
         for lesson in catalog.lessons {
