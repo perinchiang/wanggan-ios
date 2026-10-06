@@ -3,10 +3,11 @@ on:
   workflow_dispatch:
     inputs:
       ui_scope:
-        description: Native UI verification scope
+        description: Verification scope (quick for daily work, full for release/IPA)
         type: choice
-        default: full
+        default: quick
         options:
+          - quick
           - full
           - ipv4
           - review
@@ -21,22 +22,36 @@ jobs:
   ios:
     runs-on: macos-15
     timeout-minutes: 35
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: 1
     steps:
       - uses: actions/checkout@v4
+
       - name: Toolchain
         run: |
           xcodebuild -version
           swift --version
-          brew install xcodegen
+          if command -v xcodegen >/dev/null 2>&1; then
+            xcodegen --version
+          else
+            brew install xcodegen
+          fi
+
       - name: Core behavior tests
         run: swift test
+
       - name: Local IPv4 visual tests
         run: node --test scripts/test_ipv4_visual.cjs
+
       - name: Generate Xcode project
         run: |
           swift scripts/generate_icon.swift
           xcodegen generate
-      - name: Build device app without signing
+
+      # Daily/agent runs do not need an iphoneos build or IPA. The simulator
+      # build below still catches normal compile errors. Full is the release gate.
+      - name: Build device app and package IPA
+        if: inputs.ui_scope == 'full'
         run: |
           set -o pipefail
           xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/device CODE_SIGNING_ALLOWED=NO build > build-device.log 2>&1 || { tail -100 build-device.log; exit 1; }
@@ -47,10 +62,12 @@ jobs:
           cp -R build/device/Build/Products/Release-iphoneos/WangGan.app build/package/Payload/
           cd build/package
           zip -qry ../WangGan-unsigned.ipa Payload
+
       - name: Select iPhone simulator
         id: simulator
         run: |
           python3 scripts/select_simulator.py >> "$GITHUB_OUTPUT"
+
       - name: Run native UI tests
         run: |
           xcrun simctl boot '${{ steps.simulator.outputs.id }}' || true
@@ -59,14 +76,26 @@ jobs:
           python3 scripts/prepare_simulator_webkit.py --device '${{ steps.simulator.outputs.id }}' --products build/simulator/Build/Products/Debug-iphonesimulator
           mkdir -p build/screenshots
           xcrun simctl install '${{ steps.simulator.outputs.id }}' build/simulator/Build/Products/Debug-iphonesimulator/WangGan.app
-          SIMCTL_CHILD_DYLD_LIBRARY_PATH="$PWD/build/simulator/Build/Products/Debug-iphonesimulator" xcrun simctl launch '${{ steps.simulator.outputs.id }}' com.perinchiang.wanggan --uitesting --reset-progress --seed-before-subnet | tee launch-simulator.log
-          sleep 15
-          xcrun simctl io '${{ steps.simulator.outputs.id }}' screenshot build/screenshots/before-ui-tests.png
-          xcrun simctl spawn '${{ steps.simulator.outputs.id }}' launchctl list | grep -i wanggan >> launch-simulator.log || true
-          xcrun simctl spawn '${{ steps.simulator.outputs.id }}' log show --last 2m --style compact --predicate 'process == "WangGan"' >> launch-simulator.log || true
-          xcrun simctl terminate '${{ steps.simulator.outputs.id }}' com.perinchiang.wanggan || true
+
+          # The 15-second launch/log preflight is useful release evidence, but
+          # it is pure overhead for the common quick path.
+          if [ '${{ inputs.ui_scope }}' = 'full' ]; then
+            SIMCTL_CHILD_DYLD_LIBRARY_PATH="$PWD/build/simulator/Build/Products/Debug-iphonesimulator" xcrun simctl launch '${{ steps.simulator.outputs.id }}' com.perinchiang.wanggan --uitesting --reset-progress --seed-before-subnet | tee launch-simulator.log
+            sleep 15
+            xcrun simctl io '${{ steps.simulator.outputs.id }}' screenshot build/screenshots/before-ui-tests.png
+            xcrun simctl spawn '${{ steps.simulator.outputs.id }}' launchctl list | grep -i wanggan >> launch-simulator.log || true
+            xcrun simctl spawn '${{ steps.simulator.outputs.id }}' log show --last 2m --style compact --predicate 'process == "WangGan"' >> launch-simulator.log || true
+            xcrun simctl terminate '${{ steps.simulator.outputs.id }}' com.perinchiang.wanggan || true
+          fi
+
           scope_args=()
-          if [ '${{ inputs.ui_scope }}' = 'ipv4' ]; then
+          if [ '${{ inputs.ui_scope }}' = 'quick' ]; then
+            # High-signal smoke set: newest story lesson, foundation flow,
+            # and short-review persistence. Keep this intentionally small.
+            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testHomeTwoBoxesFlow')
+            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4FoundationAddressRoleFlow')
+            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testShortReviewResumesWithoutReplacingMainOrDuplicatingXP')
+          elif [ '${{ inputs.ui_scope }}' = 'ipv4' ]; then
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testSubnetResumesAndCompletesOnStepPlayer')
           elif [ -z '${{ inputs.ui_scope }}' ] || [ '${{ inputs.ui_scope }}' = 'foundation' ]; then
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4FoundationAddressRoleFlow')
@@ -86,7 +115,9 @@ jobs:
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testDNSShortReviewHintAndNextScenario')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testFullLessonPersistenceAndResume')
           fi
+
           python3 scripts/run_command_with_timeout.py --log build-ui.log --idle-timeout 180 --wall-timeout 1200 -- xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Debug -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.id }}' -parallel-testing-enabled NO -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 -derivedDataPath build/simulator -resultBundlePath build/UITests.xcresult "${scope_args[@]}" CODE_SIGNING_ALLOWED=NO test-without-building
+
       - name: Export simulator screenshots
         if: always()
         run: |
@@ -97,13 +128,15 @@ jobs:
           if [ -d build/UITests.xcresult ]; then
             xcrun xcresulttool export attachments --path build/UITests.xcresult --output-path build/screenshots || true
           fi
+
       - name: Upload iPhone installation package
         uses: actions/upload-artifact@v4
-        if: success()
+        if: success() && inputs.ui_scope == 'full'
         with:
           name: WangGan-iPhone-unsigned
           path: build/WangGan-unsigned.ipa
           retention-days: 14
+
       - name: Upload evidence and logs
         uses: actions/upload-artifact@v4
         if: always()
@@ -115,4 +148,5 @@ jobs:
             build-ui.log
             build-simulator.log
             launch-simulator.log
+          if-no-files-found: ignore
           retention-days: 7
