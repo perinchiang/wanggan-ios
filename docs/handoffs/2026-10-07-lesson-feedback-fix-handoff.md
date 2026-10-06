@@ -15,13 +15,13 @@
 保留卡片底色，连线测量可见边界；不以盖住线路模拟端点。姓名、设备与线路按真实布局测量，不强制压缩大字号。FTTR 例子仍限定为支持房间光纤组网的光猫，不推广为所有光猫。
 
 ## Not completed / 尚未完成
-集中 Core / Web / iPhone package 检查及 IPA 核验待本轮运行。原生 UI、模拟器截图和真机体验未执行；按已确认流程由 Pat 验收交互。
+Core / Web / iPhone package 检查与 IPA 核验已完成。原生 UI、模拟器截图、VoiceOver、大字号与真机体验未执行；按已确认流程由 Pat 验收交互。
 
 ## Known issues / 已知问题
 Windows 无本地 Swift / iOS 工具链；源码改动不能代表真机布局已通过。大字号、VoiceOver 与小屏仍需验收。
 
 ## Verification / 已做验证
-本地 4 项 Web 测试通过；JSON 与相邻课程、场景原句、选项原句、稳定 ID、正确答案、配对映射及 31 个文档链接检查通过，git diff --check 通过。按实际顺序独立通读提示、反馈和答后讲解。主工作区六项文件已记录哈希，内容保持原状。Core 与 iPhone 编译等待本候选的 macOS 验证，不沿用 build 26 的结果。
+本地 4 项 Web 测试通过；JSON 与相邻课程、场景原句、选项原句、稳定 ID、正确答案、配对映射及 31 个文档链接检查通过，git diff --check 通过。按实际顺序独立通读提示、反馈和答后讲解。主工作区六项文件已记录哈希，内容保持原状。手动 [package / 37544603801](https://github.com/perinchiang/wanggan-ios/actions/runs/37544603801) success，实际源码提交 06d8097bda075b9e1dfcd6f2011461cd4b6559db：77 Core、4 Web、iPhone Release 编译与包上传通过；原生 UI / 模拟器截图步骤实际 skipped。IPA ZIP 完整，0.12.0 / 27 / com.perinchiang.wanggan，iPhoneOS arm64；课程与 HTML 逐字节匹配该提交，Assets.car 存在。IPA 909928 bytes，SHA256 6788ebf0d0d9228be2a79af6075efe9689d3c9dc5b0120ef9beff8ebf4f997af。安装包、日志、核验记录与真机清单位于主工作区 artifacts/WangGan-0.12.0-build27。后续记录提交仅改文档，不将其当作 IPA 源码。
 
 ## Next recommended task / 推荐下一步
 验收第 12 步头像姓名、第 14–16 步线条边界及第 14–17 步阅读与答案一致性，再决定后续课程迭代。

@@ -4,7 +4,7 @@
 
 ## 当前版本
 
-- 当前修正候选 **0.12.0（build 27）**：修正朋友头像 / 姓名对齐、房间线路端点、补画普通路由器前的光猫，并改为直接的设备与接线讲解。集中运行验证及安装包核验待本轮进行，真机阅读效果待 Pat 验收。见 [反馈修复交接](docs/handoffs/2026-10-07-lesson-feedback-fix-handoff.md)。
+- 当前修正候选 **0.12.0（build 27）**：修正朋友头像 / 姓名对齐、房间线路端点、补画普通路由器前的光猫，并改为直接的设备与接线讲解。[package 构建](https://github.com/perinchiang/wanggan-ios/actions/runs/37544603801) 与安装包核验已通过（源码 06d8097，77 Core / 4 Web、iPhone Release）；原生 UI 与模拟器截图未运行，真机阅读效果待 Pat 验收。见 [反馈修复交接](docs/handoffs/2026-10-07-lesson-feedback-fix-handoff.md)。
 
 - 上一试学候选 **0.11.0（build 26）**：朋友名移到气泡上方，短气泡按正文收拢；答后以房间连线替代接口清单主图，从房间细线故事逐步引出 FTTR，最后用独立名称卡显示 FTTR / (Fiber to the Room) / 光纤到房间。接口详情默认折叠。[package 构建](https://github.com/perinchiang/wanggan-ios/actions/runs/37520749808) 已通过（源码 `eafe403`，1 分 55 秒，74 Core / 4 Web、iPhone Release 与安装包核验）；原生 UI / 模拟器截图明确跳过，交互由 Pat 真机验收。见 [故事揭晓交接](docs/handoffs/2026-10-07-fttr-story-reveal-handoff.md)。
 
