@@ -28,8 +28,12 @@ Windows 无本地 Swift / iOS 工具链；大字号、小屏、VoiceOver 尚未�
 
 ## Verification / 已做验证
 
-待本次 package CI；本地将检查相邻课程与稳定 ID、文档链接、JSON / YAML 与 diff。Core 补充卡片独立页、缺省字段与非法电源链路校验。
+本地相邻课程与稳定 ID、前三页不提前出现 FTTR 名称、原句保留、文档链接、JSON / YAML 与 diff 检查通过；原工作区六项未提交修改保持原状。Core 补充卡片独立页、缺省字段与非法电源链路校验。
+
+- [package / 37520749808](https://github.com/perinchiang/wanggan-ios/actions/runs/37520749808) success，IPA 源码 `eafe40378707c069c8e1e1d7e6abb6a8e934c258`，1 分 55 秒。74 Core / 4 Web、iPhone Release 与上传通过；原生 UI / 模拟器截图实际 skipped。
+- IPA ZIP 完整，0.11.0 / 26 / 原 bundle ID，iPhoneOS arm64；课程 / HTML 与候选源码一致，Assets.car 存在。895618 bytes，SHA256 `34a157b9c74f43d0ce2bd3ed9eba92afccc4e717d23462120ca6d447508b89ac`。
+- IPA、试学清单、日志和核验记录位于 `C:/Users/Administrator/Documents/wanggan/outputs/WangGan-0.11.0-build26/`。以下仅补记文档，不将文档 commit 当作 IPA 源码。
 
 ## Next recommended task / 推荐下一步
 
-快速 package 并核验 IPA，交付留白 / 故事节奏 / FTTR 名称卡试学清单，由 Pat 真机反馈。
+交付已核验 IPA 与留白 / 故事节奏 / FTTR 名称卡试学清单，由 Pat 真机反馈；根据实际阅读结果继续小范围调整。
