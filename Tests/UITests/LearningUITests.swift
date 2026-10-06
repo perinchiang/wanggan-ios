@@ -429,6 +429,7 @@ final class LearningUITests: XCTestCase {
         app.buttons["保存进度并退出"].tap()
         app.tabBars.buttons["复习"].tap()
         tap("short-review-gateway")
+        XCTAssertTrue(app.buttons["short-primary"].waitForExistence(timeout: 10), "Short review should finish presenting before assertions")
         XCTAssertFalse(app.buttons["short-primary"].isEnabled)
         tap("short-option-all-fail")
         tap("short-primary")
@@ -599,13 +600,13 @@ final class LearningUITests: XCTestCase {
         tap("primary-action")
         XCTAssertTrue(app.buttons["continue-learning"].waitForExistence(timeout: 5))
         tap("continue-learning")
-        XCTAssertTrue(app.descendants(matching: .any)["explanation-phase"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["explanation-sources"].waitForExistence(timeout: 5))
         tap("exit-lesson")
         app.buttons["保存进度并退出"].tap()
         app.tabBars.buttons["学习"].tap()
         XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "谁才是我的邻居？")
         tap("start-lesson")
-        XCTAssertTrue(app.descendants(matching: .any)["explanation-phase"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["explanation-sources"].waitForExistence(timeout: 5))
     }
 
     func testWrongChoiceTeachesInsteadOfBlockingProgress() {
@@ -628,7 +629,7 @@ final class LearningUITests: XCTestCase {
         XCTAssertTrue(feedback.isHittable, "Answer feedback should be on screen without a manual swipe")
         screenshot("10-wrong-answer-feedback")
         tap("primary-action")
-        XCTAssertTrue(app.descendants(matching: .any)["explanation-phase"].exists)
+        XCTAssertTrue(app.buttons["explanation-sources"].exists)
     }
 
     func testSubnetResumesAndCompletesOnStepPlayer() {

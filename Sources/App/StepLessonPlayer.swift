@@ -107,7 +107,6 @@ struct StepLessonPlayer: View {
     }
 
     @ViewBuilder private var explanationPhase: some View {
-        Color.clear.frame(height: 0).accessibilityIdentifier("explanation-phase")
         if let foundation = lesson.ipv4Foundation {
             IPv4FoundationPanel(configuration: foundation, usesStaticPresentation: usesStaticPresentation, progress: Binding(
                 get: { session.ipv4FoundationProgress ?? IPv4FoundationProgress() },
@@ -127,7 +126,6 @@ struct StepLessonPlayer: View {
             ipv4VisualPanel(visual)
         } else {
             ConceptIllustration(lesson: lesson, animated: true, stage: visibleTextCount + 1)
-                .accessibilityIdentifier("concept-illustration")
                 .id(lesson.topology == nil ? "concept-illustration" : "topology-anchor")
         }
         if visibleTextCount > 0 {
@@ -137,7 +135,9 @@ struct StepLessonPlayer: View {
             }
         }
         Button { showSources = true } label: { Label("看看知识来源", systemImage: "book.closed").font(.caption).frame(minHeight: 44) }
-            .foregroundStyle(Theme.muted).id("explanation-bottom")
+            .foregroundStyle(Theme.muted)
+            .accessibilityIdentifier("explanation-sources")
+            .id("explanation-bottom")
     }
 
     @ViewBuilder private func ipv4VisualPanel(_ visual: IPv4VisualLesson) -> some View {

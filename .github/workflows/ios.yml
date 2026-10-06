@@ -3,11 +3,12 @@ on:
   workflow_dispatch:
     inputs:
       ui_scope:
-        description: Verification scope (quick for daily work, full for release/IPA)
+        description: Verification scope (quick = no simulator, smoke = key UI, full = release/IPA)
         type: choice
         default: quick
         options:
           - quick
+          - smoke
           - full
           - ipv4
           - review
@@ -64,11 +65,13 @@ jobs:
           zip -qry ../WangGan-unsigned.ipa Payload
 
       - name: Select iPhone simulator
+        if: inputs.ui_scope != 'quick'
         id: simulator
         run: |
           python3 scripts/select_simulator.py >> "$GITHUB_OUTPUT"
 
       - name: Run native UI tests
+        if: inputs.ui_scope != 'quick'
         run: |
           xcrun simctl boot '${{ steps.simulator.outputs.id }}' || true
           xcrun simctl bootstatus '${{ steps.simulator.outputs.id }}' -b
@@ -89,9 +92,8 @@ jobs:
           fi
 
           scope_args=()
-          if [ '${{ inputs.ui_scope }}' = 'quick' ]; then
-            # High-signal smoke set: newest story lesson, foundation flow,
-            # and short-review persistence. Keep this intentionally small.
+          if [ '${{ inputs.ui_scope }}' = 'smoke' ]; then
+            # High-signal simulator smoke set for current product surfaces.
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testHomeTwoBoxesFlow')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4FoundationAddressRoleFlow')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testShortReviewResumesWithoutReplacingMainOrDuplicatingXP')
@@ -119,7 +121,7 @@ jobs:
           python3 scripts/run_command_with_timeout.py --log build-ui.log --idle-timeout 180 --wall-timeout 1200 -- xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Debug -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.id }}' -parallel-testing-enabled NO -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 -derivedDataPath build/simulator -resultBundlePath build/UITests.xcresult "${scope_args[@]}" CODE_SIGNING_ALLOWED=NO test-without-building
 
       - name: Export simulator screenshots
-        if: always()
+        if: always() && inputs.ui_scope != 'quick'
         run: |
           mkdir -p build/screenshots
           xcrun simctl io '${{ steps.simulator.outputs.id }}' screenshot build/screenshots/final-simulator.png || true
