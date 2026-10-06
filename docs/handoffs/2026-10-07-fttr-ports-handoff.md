@@ -27,8 +27,13 @@ Windows 无 Swift / iOS 工具链；大字号、小屏与 VoiceOver 尚未真机
 
 ## Verification / 已做验证
 
-本地 JSON / YAML 解析、文案精确比对、相邻课程与稳定 ID 比较、diff 检查通过；Core / Web 与 iPhone 编译、IPA 核验待本次 package CI。
+本地 JSON / YAML 解析、文案精确比对、相邻课程与稳定 ID 比较、文档链接、diff 检查通过；原工作区六项未提交修改保持原状。
+
+- 首次 package `37517654029` 的新增五项 Core 用例及其他回归通过；一处旧讲解数断言仍假设仅有答题前四段而失败。修正为分别检查前后讲解，不调整产品代码，不交付失败候选。
+- [package / 37517976435](https://github.com/perinchiang/wanggan-ios/actions/runs/37517976435) success，IPA 源码 `da1406c98eb1d5acdf6b22fb7322220b4cdd9d30`，2 分 18 秒。72 项 Core / 4 项 Web、iPhone Release 编译、上传通过；原生 UI / 模拟器截图明确 skipped。
+- IPA ZIP 完整，0.10.0 / 25 / 原 bundle ID，iPhoneOS arm64 可执行文件；lessons.json / 离线 HTML 与候选源码一致，Assets.car 存在。853959 bytes，SHA256 `b850bd5907f98c5d1b394e30089693fe6cde0099d0e95e2878d55b1eddcb150e`。
+- IPA、试学清单、完整日志与核验记录位于 `C:/Users/Administrator/Documents/wanggan/outputs/WangGan-0.10.0-build25/`。以下仅补记文档，不把文档 commit 当作 IPA 源码。
 
 ## Next recommended task / 推荐下一步
 
-仅运行一次 package，交付 IPA 与三页图解 / 留白的真机清单，收集 Pat 反馈。
+交付已核验的 IPA 与三页图解 / 留白的真机清单，由 Pat 验收换行、接口连线、原位替换与中断恢复。
