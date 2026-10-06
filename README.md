@@ -6,6 +6,8 @@
 
 - 当前试学候选 **0.11.0（build 26）**：朋友名移到气泡上方，短气泡按正文收拢；答后以房间连线替代接口清单主图，从房间细线故事逐步引出 FTTR，最后用独立名称卡显示 FTTR / (Fiber to the Room) / 光纤到房间。接口详情默认折叠。[package 构建](https://github.com/perinchiang/wanggan-ios/actions/runs/37520749808) 已通过（源码 `eafe403`，1 分 55 秒，74 Core / 4 Web、iPhone Release 与安装包核验）；原生 UI / 模拟器截图明确跳过，交互由 Pat 真机验收。见 [故事揭晓交接](docs/handoffs/2026-10-07-fttr-story-reveal-handoff.md)。
 
+- **本轮试学反馈审核（仅文档修正）**：Pat 指出朋友头像对齐错误、线条被底色遮挡、普通路由器图缺少光猫，以及答后文案反复使用模糊比喻。已查明源码与提交来源，修正 COURSE_GUIDE / DESIGN 并整理替换文案；App 正文和图示尚未修改，没有新构建或 IPA。见 [审核与待实施方案](docs/handoffs/2026-10-07-home-network-copy-audit-handoff.md)。
+
 - 上一候选 **0.8.1（build 22）**：收窄用户气泡两侧留白，沿用 0.8.0 的退出、故事题、原位替换讲解和完成页修正。按 Pat 明确要求只做 Core / Web 和快速 iPhone 打包，原生交互由 Pat 真机检查；[package 构建](https://github.com/perinchiang/wanggan-ios/actions/runs/37513241703) 通过（源码 `1b4f169`，1 分 56 秒，67 Core / 4 Web、iPhone Release 与安装包核验）；未跑原生 UI。
 
 - 反馈修正版候选 **0.8.0（build 21）**：主动确认退出丢弃当前草稿；用户气泡文字左对齐；设备图讲解气泡逐步替换；朋友换机场景与完成页文案重做。已完成历史与 XP 保留，后台意外中断仍可恢复。[package #49](https://github.com/perinchiang/wanggan-ios/actions/runs/37508868129) 已通过（源码 `0da10ed`，1 分 46 秒，67 Core / 4 Web、iPhone Release 及安装包核验）；原生 smoke 四项通过；故事课定位断言修正后的专项因模拟器无输出超时未完成。结果见 [反馈修正交接](docs/handoffs/2026-10-07-exit-and-story-feedback-handoff.md)，不能沿用 build 20 的 CI 结果。
