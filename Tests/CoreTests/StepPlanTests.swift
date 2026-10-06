@@ -67,7 +67,10 @@ final class StepPlanTests: XCTestCase {
                            lesson.question.scene.count + lesson.challenge.scene.count)
             XCTAssertEqual(plan.steps.filter { $0.kind == .question }.count, 2)
             XCTAssertEqual(plan.steps.filter { $0.kind == .diagram }.count, 1)
-            XCTAssertEqual(plan.steps.filter { $0.kind == .text }.count, lesson.explanation.count)
+            XCTAssertEqual(plan.steps[..<plan.challengeIndex].filter { $0.kind == .text }.count, lesson.explanation.count)
+            let answerPages = plan.steps[(plan.challengeIndex + 1)..<plan.summaryIndex]
+            XCTAssertEqual(answerPages.count, lesson.challenge.answerExplanation?.count ?? 0)
+            XCTAssertTrue(answerPages.allSatisfy { $0.kind == .text })
             XCTAssertEqual(plan.steps.filter { $0.kind == .matching }.count, lesson.usesMatching ? 1 : 0)
             XCTAssertEqual(plan.steps.first?.kind, .conversation)
             XCTAssertEqual(plan.steps.last?.kind, .summary)
