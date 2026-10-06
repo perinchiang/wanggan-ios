@@ -427,7 +427,7 @@ final class LearningUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["short-evidence"].label, "独立答对过")
         tap("short-primary")
         app.tabBars.buttons["学习"].tap()
-        XCTAssertEqual(app.staticTexts["xp-badge"].label, "210 经验值")
+        XCTAssertEqual(app.staticTexts["xp-badge"].label, "240 经验值")
     }
 
     func testFullLessonPersistenceAndResume() {
@@ -568,22 +568,22 @@ final class LearningUITests: XCTestCase {
 
     func testSubnetResumesAndCompletesOnStepPlayer() {
         verifyFlow(LessonFlow(id: "subnet", question: "different", challenge: "yes",
-                              matches: [("24", "three"), ("16", "two")], expectedXP: 120))
+                              matches: [("24", "three"), ("16", "two")], expectedXP: 150))
     }
 
     func testARPResumesAndCompletesOnStepPlayer() {
         verifyFlow(LessonFlow(id: "arp", question: "gateway", challenge: "no",
-                              matches: [("local", "nasip"), ("remote", "gwip")], expectedXP: 150))
+                              matches: [("local", "nasip"), ("remote", "gwip")], expectedXP: 180))
     }
 
     func testHopResumesAndCompletesOnStepPlayer() {
         verifyFlow(LessonFlow(id: "hop", question: "frame", challenge: "no",
-                              matches: [("ip", "final"), ("mac", "next")], expectedXP: 180))
+                              matches: [("ip", "final"), ("mac", "next")], expectedXP: 210))
     }
 
     func testDNSResumesAndCompletesOnStepPlayer() {
         verifyFlow(LessonFlow(id: "dns", question: "dns", challenge: "no",
-                              matches: [("name", "resolve"), ("service", "connect")], expectedXP: 210))
+                              matches: [("name", "resolve"), ("service", "connect")], expectedXP: 240))
     }
 
     private func verifyFlow(_ flow: LessonFlow) {
