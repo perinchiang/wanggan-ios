@@ -22,6 +22,7 @@ struct LessonSession: Codable, Equatable, Identifiable {
     var challengeSolved = false
     var mistakes = 0
     var earnedXP: Int?
+    var observationCompleted: Bool?
     // Optional to keep drafts from earlier app versions decodable.
     var ipv4VisualPhase: Int?
     var ipv4SelectedOctet: Int?

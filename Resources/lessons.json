@@ -158,7 +158,7 @@
       "title": "IP 地址是拿来做什么的？",
       "subtitle": "先知道这串数字解决什么问题",
       "takeaway": "IP 地址让网络通信有明确的目标。",
-      "nextCuriosity": "IPv4 为什么总写成四段数字？",
+      "nextCuriosity": "电脑眼里的地址，也长这样吗？",
       "diagram": "ipv4-foundation-role",
       "ipv4Foundation": {
         "kind": "addressRole",
@@ -260,7 +260,7 @@
     },
     {
       "id": "ipv4-address-format",
-      "title": "IPv4 为什么通常写成四段？",
+      "title": "这串地址，电脑怎么看？",
       "subtitle": "看懂点分十进制的结构",
       "takeaway": "IPv4 常把 32 位按 8 位分成四组，再写成四段十进制。",
       "nextCuriosity": "每一段为什么最大只能写到 255？",
@@ -381,7 +381,7 @@
     },
     {
       "id": "ipv4-octet-binary",
-      "title": "每一段为什么只能是 0～255？",
+      "title": "八个开关，能装下多大的数？",
       "subtitle": "8 个二进制位能表示多大的数",
       "takeaway": "一个八位组只有 8 位，因此范围是 0～255。",
       "nextCuriosity": "知道位数之后，IP 后面的 /24 又是在数什么？",
@@ -389,7 +389,7 @@
       "ipv4Foundation": {
         "kind": "octetBinary",
         "ip": "10.20.30.40",
-        "focusOctet": 10
+        "focusOctet": 13
       },
       "question": {
         "scene": [
@@ -1151,7 +1151,7 @@
       },
       "explanation": [],
       "matching": {
-        "prompt": "把每种表示，与它的含义连起来。",
+        "prompt": "把每种表示，与它的含义配对。",
         "left": [
           {
             "id": "bit",

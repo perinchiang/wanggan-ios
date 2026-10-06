@@ -58,57 +58,30 @@ final class LearningUITests: XCTestCase {
         XCTAssertTrue(app.buttons[option].exists, "Choices appear after the conversation")
     }
 
-    private func completeFoundationLesson(
-        expectedTitle: String,
-        answer: String,
-        matches: [(String, String)],
-        challenge: String,
-        expectedXP: Int,
-        expectedNextTitle: String,
-        evidencePrefix: String,
-        verifyMatchingEdits: Bool = false
-    ) {
+    private func assertObservationOnly() {
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'question-option-' OR identifier BEGINSWITH 'match-' OR identifier BEGINSWITH 'challenge-option-' ")).firstMatch.exists)
+    }
+
+    private func completeFoundationLesson(expectedTitle: String, stages: Int, expectedXP: Int,
+                                          expectedNextTitle: String, evidencePrefix: String) {
         XCTAssertTrue(app.staticTexts["recommended-lesson-title"].waitForExistence(timeout: 10))
         XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, expectedTitle)
         tap("start-lesson")
-
-        revealScene(option: "question-option-\(answer)")
-        tap("question-option-\(answer)")
-        tap("primary-action")
-        tap("primary-action")
-
-        XCTAssertEqual(app.staticTexts["foundation-stage"].label, "观察 1 / 4")
+        XCTAssertEqual(app.staticTexts["foundation-stage"].label, "观察 1 / \(stages)")
+        assertObservationOnly()
         screenshot("\(evidencePrefix)-01-start")
-        for stage in 2...4 {
+        for stage in 2...stages {
             tap("primary-action")
-            XCTAssertEqual(app.staticTexts["foundation-stage"].label, "观察 \(stage) / 4")
-        }
-        screenshot("\(evidencePrefix)-02-final-stage")
-        tap("primary-action")
-
-        if verifyMatchingEdits { verifyBidirectionalMatching(matches) }
-        for (index, pair) in matches.enumerated() {
-            let (left, right) = pair
-            if index.isMultiple(of: 2) {
-                tap("match-right-\(right)")
-                tap("match-left-\(left)")
-            } else {
-                tap("match-left-\(left)")
-                tap("match-right-\(right)")
+            XCTAssertEqual(app.staticTexts["foundation-stage"].label, "观察 \(stage) / \(stages)")
+            assertObservationOnly()
+            if stages == 6 && stage == 4 {
+                XCTAssertEqual(app.staticTexts["foundation-bit-equation"].label, "8 + 4 + 1 = 13")
+                screenshot("N03-binary-13-demonstration")
             }
         }
+        screenshot("\(evidencePrefix)-02-final-stage")
+        XCTAssertEqual(app.buttons["primary-action"].label, "完成探索")
         tap("primary-action")
-        for (left, right) in matches {
-            XCTAssertFalse(app.buttons["match-left-\(left)"].isEnabled)
-            XCTAssertFalse(app.buttons["match-right-\(right)"].isEnabled)
-        }
-        tap("primary-action")
-
-        revealScene(option: "challenge-option-\(challenge)")
-        tap("challenge-option-\(challenge)")
-        tap("primary-action")
-        tap("primary-action")
-
         XCTAssertTrue(app.staticTexts["+30 XP"].waitForExistence(timeout: 5))
         screenshot("\(evidencePrefix)-03-complete")
         tap("finish-session")
@@ -118,88 +91,21 @@ final class LearningUITests: XCTestCase {
 
     func testIPv4FoundationAddressRoleFlow() {
         app.launch()
-        completeFoundationLesson(
-            expectedTitle: "IP 地址是拿来做什么的？",
-            answer: "target",
-            matches: [("friend", "23"), ("xiaolin", "31")],
-            challenge: "current",
-            expectedXP: 30,
-            expectedNextTitle: "IPv4 为什么通常写成四段？",
-            evidencePrefix: "N01-role",
-            verifyMatchingEdits: true
-        )
-    }
-
-    private func verifyBidirectionalMatching(_ pairs: [(String, String)]) {
-        let leftA = "match-left-\(pairs[0].0)"
-        let rightA = "match-right-\(pairs[0].1)"
-        let leftB = "match-left-\(pairs[1].0)"
-        let rightB = "match-right-\(pairs[1].1)"
-        func value(_ id: String) -> String { app.buttons[id].value as? String ?? "" }
-
-        // Either side can start, change its pending choice, or cancel it.
-        tap(rightA)
-        XCTAssertTrue(value(rightA).contains("已选中，接着选择左侧"))
-        tap(rightB)
-        XCTAssertEqual(value(rightA), "未连接")
-        tap(rightB)
-        XCTAssertEqual(value(rightB), "未连接")
-        tap(leftA)
-        tap(leftB)
-        XCTAssertEqual(value(leftA), "未连接")
-        tap(leftB)
-        XCTAssertEqual(value(leftB), "未连接")
-
-        tap(rightA)
-        tap(leftA)
-        XCTAssertEqual(value(leftA), "已连接到\(app.buttons[rightA].label)")
-        tap(leftB)
-        tap(rightB)
-        XCTAssertTrue(app.buttons["primary-action"].isEnabled)
-
-        // Re-pairing two occupied endpoints removes both old connections.
-        tap(rightB)
-        tap(leftA)
-        XCTAssertEqual(value(leftA), "已连接到\(app.buttons[rightB].label)")
-        XCTAssertEqual(value(leftB), "未连接")
-        XCTAssertEqual(value(rightA), "未连接")
-        XCTAssertFalse(app.buttons["primary-action"].isEnabled)
-        tap(leftB)
-        tap(rightA)
-        tap("primary-action") // Complete but incorrect: edits must remain available.
-        XCTAssertTrue(app.buttons[rightA].isEnabled)
-        tap(rightA)
-        tap(leftA)
-        tap(leftB)
-        tap(rightB)
-        XCTAssertTrue(app.buttons["primary-action"].isEnabled)
-        screenshot("N01-role-bidirectional-matching")
-
-        tap(rightA)
-        tap("clear-matches")
-        for id in [leftA, rightA, leftB, rightB] { XCTAssertEqual(value(id), "未连接") }
-        XCTAssertEqual(app.staticTexts["matching-selection-prompt"].label, "左右任一侧都可以先选")
-        XCTAssertFalse(app.buttons["primary-action"].isEnabled)
+        completeFoundationLesson(expectedTitle: "IP 地址是拿来做什么的？", stages: 4, expectedXP: 30,
+                                 expectedNextTitle: "这串地址，电脑怎么看？", evidencePrefix: "N01-role")
     }
 
     func testIPv4FoundationFormatBacktrackingResumeAndCompletion() {
         app.launchArguments += ["--seed-before-ipv4-address-format"]
         app.launch()
-        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "IPv4 为什么通常写成四段？")
         tap("start-lesson")
-        revealScene(option: "question-option-four")
-        tap("question-option-four")
-        tap("primary-action")
-        tap("primary-action")
-
-        XCTAssertEqual(app.staticTexts["foundation-stage"].label, "观察 1 / 4")
+        assertObservationOnly()
         tap("primary-action")
         tap("primary-action")
         XCTAssertEqual(app.staticTexts["foundation-stage"].label, "观察 3 / 4")
         tap("foundation-previous")
         XCTAssertEqual(app.staticTexts["foundation-stage"].label, "观察 2 / 4")
         screenshot("N02-format-backtrack")
-
         tap("exit-lesson")
         app.buttons["保存进度并退出"].tap()
         app.terminate()
@@ -207,40 +113,90 @@ final class LearningUITests: XCTestCase {
         app.launch()
         tap("start-lesson")
         XCTAssertEqual(app.staticTexts["foundation-stage"].label, "观察 2 / 4")
-
+        assertObservationOnly()
         tap("primary-action")
         tap("primary-action")
         XCTAssertEqual(app.staticTexts["foundation-stage"].label, "观察 4 / 4")
-        tap("primary-action")
-        for (left, right) in [("octet", "segment"), ("address", "four-octets"), ("dot", "separator")] {
-            tap("match-left-\(left)")
-            tap("match-right-\(right)")
-        }
-        tap("primary-action")
-        tap("primary-action")
-        revealScene(option: "challenge-option-valid")
-        tap("challenge-option-valid")
-        tap("primary-action")
         tap("primary-action")
         XCTAssertTrue(app.staticTexts["+30 XP"].waitForExistence(timeout: 5))
         screenshot("N02-format-complete")
         tap("finish-session")
         XCTAssertEqual(app.staticTexts["xp-badge"].label, "60 经验值")
-        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "每一段为什么只能是 0～255？")
+        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "八个开关，能装下多大的数？")
     }
 
     func testIPv4FoundationOctetBinaryFlow() {
         app.launchArguments += ["--seed-before-ipv4-octet-binary"]
         app.launch()
-        completeFoundationLesson(
-            expectedTitle: "每一段为什么只能是 0～255？",
-            answer: "ninth",
-            matches: [("zero", "d0"), ("ten", "d10"), ("max", "d255")],
-            challenge: "192",
-            expectedXP: 90,
-            expectedNextTitle: "网关填错会怎样？",
-            evidencePrefix: "N03-binary"
-        )
+        completeFoundationLesson(expectedTitle: "八个开关，能装下多大的数？", stages: 6, expectedXP: 90,
+                                 expectedNextTitle: "网关填错会怎样？", evidencePrefix: "N03-binary")
+    }
+
+    func testFoundationBinaryLargestTextStaticPresentation() {
+        app.launchArguments += ["--seed-before-ipv4-octet-binary", "--test-mask-accessibility"]
+        app.launch()
+        tap("start-lesson")
+        for _ in 0..<3 { tap("primary-action") }
+        let equation = app.staticTexts["foundation-bit-equation"]
+        XCTAssertEqual(equation.label, "8 + 4 + 1 = 13")
+        for _ in 0..<5 {
+            if equation.isHittable && equation.frame.maxY < app.buttons["primary-action"].frame.minY { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(equation.isHittable)
+        XCTAssertLessThan(equation.frame.maxY, app.buttons["primary-action"].frame.minY)
+        screenshot("N03-largest-text-static-13")
+        tap("primary-action")
+        tap("primary-action")
+        tap("primary-action")
+        XCTAssertTrue(app.staticTexts["+30 XP"].waitForExistence(timeout: 5))
+    }
+
+    private func verifyImmediateMatching(_ pairs: [(String, String)]) {
+        let leftA = "match-left-\(pairs[0].0)"
+        let rightA = "match-right-\(pairs[0].1)"
+        let leftB = "match-left-\(pairs[1].0)"
+        let rightB = "match-right-\(pairs[1].1)"
+        func value(_ id: String) -> String { app.buttons[id].value as? String ?? "" }
+        XCTAssertFalse(app.buttons["clear-matches"].exists)
+        XCTAssertFalse(app.buttons["primary-action"].isEnabled)
+        tap(rightA)
+        XCTAssertTrue(value(rightA).contains("已选中"))
+        screenshot("pair-right-selected-dark")
+        tap(rightA)
+        XCTAssertEqual(value(rightA), "未选择")
+        tap(leftA)
+        tap(rightB) // Wrong: no check or reset button is needed.
+        XCTAssertTrue(app.buttons[leftA].isEnabled)
+        XCTAssertTrue(app.buttons[rightB].isEnabled)
+        XCTAssertFalse(app.buttons["primary-action"].isEnabled)
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "pair-mismatch-feedback"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        let reset = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "未选择"), object: app.buttons[leftA])
+        XCTAssertEqual(XCTWaiter.wait(for: [reset], timeout: 5), .completed)
+        tap(rightA)
+        tap(leftA) // Right-first succeeds immediately.
+        let matched = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == false"), object: app.buttons[leftA])
+        XCTAssertEqual(XCTWaiter.wait(for: [matched], timeout: 5), .completed)
+        XCTAssertTrue(value(leftA).contains("配对正确"))
+        screenshot("pair-correct-green")
+        tap("exit-lesson")
+        app.buttons["保存进度并退出"].tap()
+        app.terminate()
+        app.launchArguments = ["--uitesting"]
+        app.launch()
+        tap("start-lesson")
+        XCTAssertFalse(app.buttons[leftA].isEnabled)
+        XCTAssertFalse(app.buttons[rightA].isEnabled)
+        tap(leftB)
+        tap(rightB) // Left-first also succeeds; prior success stays locked.
+        let completed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: app.buttons["primary-action"])
+        XCTAssertEqual(XCTWaiter.wait(for: [completed], timeout: 5), .completed)
+        XCTAssertFalse(app.buttons[leftB].isEnabled)
+        XCTAssertFalse(app.buttons[rightB].isEnabled)
+        screenshot("pair-all-correct-no-lines")
     }
 
     func testSubnetMaskObservationRetryBacktrackingResumeAndCompletion() throws {
@@ -592,7 +548,6 @@ final class LearningUITests: XCTestCase {
         tap("match-left-internet")
         tap("match-right-router")
         tap("primary-action")
-        tap("primary-action")
         revealScene(option: "challenge-option-yes")
         tap("challenge-option-yes")
         tap("primary-action")
@@ -700,11 +655,14 @@ final class LearningUITests: XCTestCase {
             tap("primary-action")
         }
         XCTAssertTrue(app.buttons["match-left-\(flow.matches[0].0)"].exists)
-        for (left, right) in flow.matches {
-            tap("match-left-\(left)")
-            tap("match-right-\(right)")
+        if flow.id == "hop" {
+            verifyImmediateMatching(flow.matches)
+        } else {
+            for (left, right) in flow.matches {
+                tap("match-left-\(left)")
+                tap("match-right-\(right)")
+            }
         }
-        tap("primary-action")
         tap("primary-action")
         revealScene(option: "challenge-option-\(flow.challenge)")
         tap("challenge-option-\(flow.challenge)")

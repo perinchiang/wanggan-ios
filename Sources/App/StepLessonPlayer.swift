@@ -60,7 +60,10 @@ struct StepLessonPlayer: View {
         .sensoryFeedback(.selection, trigger: feedbackTick) { _, _ in store.hapticsEnabled }
         .onChange(of: session) { _, new in store.saveDraft(new.stageSession(lesson: lesson)) }
         .onChange(of: scenePhase) { _, phase in if phase != .active { store.saveDraft(session.stageSession(lesson: lesson)) } }
-        .onAppear { store.saveDraft(session.stageSession(lesson: lesson)) }
+        .onAppear {
+            if isComplete { earnedXP = store.finish(session.stageSession(lesson: lesson)) }
+            else { store.saveDraft(session.stageSession(lesson: lesson)) }
+        }
         .confirmationDialog("稍后继续？", isPresented: $showExit, titleVisibility: .visible) {
             Button("保存进度并退出") { store.saveDraft(session.stageSession(lesson: lesson)); dismiss() }
             Button("继续学习", role: .cancel) { }
@@ -88,14 +91,14 @@ struct StepLessonPlayer: View {
             case .diagram, .text:
                 explanationPhase
             case .matching:
-                TutorBubble(text: "换个方式，试着连一连。")
+                TutorBubble(text: "找找哪些意思对应。")
                 Text(lesson.matching.prompt).font(.body).foregroundStyle(Theme.muted)
-                MatchingView(exercise: lesson.matching, matches: $session.matches,
-                             matchingSubmitted: $session.matchingSubmitted, matchingSolved: $session.matchingSolved)
-                if session.matchingSubmitted {
-                    feedbackCard(title: session.matchingSolved ? "连起来了" : "再想一小步",
-                                 text: session.matchingSolved ? lesson.matching.explanation : "还有连线不符合刚才的机制。重新选择左、右两项就能修改；每项只能连接一次。",
-                                 correct: session.matchingSolved)
+                MatchingView(exercise: lesson.matching, matches: session.matches, onPair: { left, right in
+                    plan.matchPair(left, to: right, in: &session)
+                }, usesStaticPresentation: usesStaticPresentation)
+                .id(step.id)
+                if session.matchingSolved {
+                    feedbackCard(title: "配对完成", text: lesson.matching.explanation, correct: true)
                 }
             case .summary:
                 ConversationBubble(text: lesson.takeaway)
@@ -106,7 +109,7 @@ struct StepLessonPlayer: View {
 
     @ViewBuilder private var explanationPhase: some View {
         if let foundation = lesson.ipv4Foundation {
-            IPv4FoundationPanel(configuration: foundation, progress: Binding(
+            IPv4FoundationPanel(configuration: foundation, usesStaticPresentation: usesStaticPresentation, progress: Binding(
                 get: { session.ipv4FoundationProgress ?? IPv4FoundationProgress() },
                 set: { session.ipv4FoundationProgress = $0 }
             ))
@@ -375,7 +378,7 @@ struct StepLessonPlayer: View {
         case .diagram:
             if lesson.ipv4Foundation != nil {
                 let progress = session.ipv4FoundationProgress ?? IPv4FoundationProgress()
-                if progress.stage >= (lesson.ipv4Foundation?.stageCount ?? 4) - 1 { return "试着用一用" }
+                if progress.stage >= (lesson.ipv4Foundation?.stageCount ?? 4) - 1 { return "完成探索" }
                 return "下一步"
             }
             if lesson.subnetMaskIntroduction != nil {
@@ -384,7 +387,7 @@ struct StepLessonPlayer: View {
                 case 0: return "看看掩码怎么标记"
                 case 1: return "只换掩码看看"
                 case 2: return "自己选一次分界"
-                default: return progress.boundarySolved ? "试着连一连" : "检查分界"
+                default: return progress.boundarySolved ? "找找对应关系" : "检查分界"
                 }
             }
             if lesson.ipv4Introduction != nil {
@@ -392,18 +395,18 @@ struct StepLessonPlayer: View {
                 case 0: return "拆开这一段"
                 case 1: return "看看取值范围"
                 case 2: return "拼回完整地址"
-                default: return "试着连一连"
+                default: return "找找对应关系"
                 }
             }
             if lesson.ipv4Visual != nil {
                 if (session.ipv4VisualPhase ?? 0) == 0 { return "换一条试试" }
                 return session.ipv4VisualSolved == true ? "继续看一小步" : "检查分界"
             }
-            return lesson.explanation.isEmpty ? "试着连一连" : "继续看一小步"
+            return lesson.explanation.isEmpty ? "找找对应关系" : "继续看一小步"
         case .text:
-            return plan.step(at: session.stepIndex + 1)?.kind == .matching ? "试着连一连" : "继续看一小步"
+            return plan.step(at: session.stepIndex + 1)?.kind == .matching ? "找找对应关系" : "继续看一小步"
         case .matching:
-            return session.matchingSolved ? "挑战一个新场景" : "检查连线"
+            return "继续"
         case .summary:
             return nextLesson == nil ? "回到学习路线" : "继续探索"
         }
@@ -433,7 +436,7 @@ struct StepLessonPlayer: View {
             if session.stepIndex == plan.challengeIndex { return session.challengeAnswer != nil }
             return session.selectedAnswer != nil
         case .matching:
-            return session.matches.count == lesson.matching.left.count && (!session.matchingSubmitted || session.matchingSolved)
+            return session.matchingSolved
         }
     }
 
@@ -480,7 +483,10 @@ struct StepLessonPlayer: View {
                 let isLastStage = progress.stage >= foundation.stageCount - 1
                 progress.advance(stageCount: foundation.stageCount)
                 session.ipv4FoundationProgress = progress
-                if isLastStage { plan.advance(&session) }
+                if isLastStage {
+                    plan.advance(&session)
+                    if plan.isComplete(session) { earnedXP = store.finish(session.stageSession(lesson: lesson)) }
+                }
                 return
             }
             if let configuration = lesson.subnetMaskIntroduction {
@@ -524,7 +530,6 @@ struct StepLessonPlayer: View {
         case .matching:
             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) {
                 if session.matchingSolved { plan.advance(&session) }
-                else { plan.submitMatching(in: &session) }
             }
         case .summary:
             if let nextLesson { onNext(nextLesson) } else { dismiss() }

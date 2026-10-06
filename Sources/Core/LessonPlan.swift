@@ -84,6 +84,12 @@ struct LessonStep: Codable, Equatable, Identifiable {
 
 extension Lesson {
     var steps: [LessonStep] {
+        if ipv4Foundation != nil {
+            return [
+                LessonStep(id: "\(id).diagram", payload: .diagram(diagram)),
+                LessonStep(id: "\(id).summary", payload: .summary(takeaway))
+            ]
+        }
         var result: [LessonStep] = []
         for message in question.scene {
             result.append(LessonStep(id: "\(id).question.scene.\(message.id)", payload: .conversation(message)))
@@ -146,10 +152,10 @@ struct LessonPlan {
         self.lesson = lesson
         self.steps = steps
         questionSceneCount = lesson.question.scene.count
-        questionIndex = steps.firstIndex { $0.id == "\(lesson.id).question" }!
-        matchingIndex = steps.firstIndex { $0.id == "\(lesson.id).matching" }!
+        questionIndex = steps.firstIndex { $0.id == "\(lesson.id).question" } ?? steps.count
+        matchingIndex = steps.firstIndex { $0.id == "\(lesson.id).matching" } ?? steps.count
         challengeSceneCount = lesson.challenge.scene.count
-        challengeIndex = steps.firstIndex { $0.id == "\(lesson.id).challenge" }!
+        challengeIndex = steps.firstIndex { $0.id == "\(lesson.id).challenge" } ?? steps.count
         summaryIndex = steps.firstIndex { $0.id == "\(lesson.id).summary" }!
     }
 
@@ -171,7 +177,10 @@ struct LessonPlan {
     }
 
     func isComplete(_ session: StepSession) -> Bool {
-        session.challengeSolved && session.stepIndex >= summaryIndex
+        if lesson.ipv4Foundation != nil {
+            return session.ipv4FoundationProgress?.finished == true && session.stepIndex == summaryIndex
+        }
+        return session.challengeSolved && session.stepIndex >= summaryIndex
     }
 
     func canAdvance(_ session: StepSession) -> Bool {
@@ -214,6 +223,22 @@ struct LessonPlan {
         session.matches = session.matches.filter { $0.key == left || $0.value != right }
         session.matches[left] = right
         session.matchingSubmitted = false
+    }
+
+    // A mismatch is transient feedback, never a saved answer or a penalty.
+    @discardableResult
+    func matchPair(_ left: String, to right: String, in session: inout StepSession) -> Bool {
+        guard session.stepIndex == matchingIndex,
+              let exercise = matching(at: matchingIndex), !session.matchingSolved,
+              exercise.left.contains(where: { $0.id == left }),
+              exercise.right.contains(where: { $0.id == right }) else { return false }
+        session.matches = session.matches.filter { exercise.solution[$0.key] == $0.value }
+        guard session.matches[left] == nil, !session.matches.values.contains(right),
+              exercise.solution[left] == right else { return false }
+        session.matches[left] = right
+        session.matchingSolved = exercise.isCorrect(session.matches)
+        session.matchingSubmitted = session.matchingSolved
+        return true
     }
 
     func submitMatching(in session: inout StepSession) {
@@ -262,6 +287,16 @@ extension StepSession {
         challengeAnswer = stage.challengeAnswer
         challengeSubmitted = stage.challengeSubmitted
         challengeSolved = stage.challengeSolved
+        if lesson.ipv4Foundation != nil {
+            // Older quiz drafts resume at the observed animation, with the same identity.
+            stepIndex = ipv4FoundationProgress?.finished == true ? plan.summaryIndex : 0
+            return
+        }
+        if stage.stage == .matching {
+            matches = matches.filter { lesson.matching.solution[$0.key] == $0.value }
+            matchingSolved = lesson.matching.isCorrect(matches)
+            matchingSubmitted = matchingSolved
+        }
         switch stage.stage {
         case .question:
             stepIndex = min(stage.sceneStep(for: lesson.question, challenge: false), plan.questionSceneCount)
@@ -302,6 +337,11 @@ extension StepSession {
         result.challengeAnswer = challengeAnswer
         result.challengeSubmitted = challengeSubmitted
         result.challengeSolved = challengeSolved
+        if lesson.ipv4Foundation != nil {
+            result.stage = plan.isComplete(self) ? .complete : .explanation
+            result.observationCompleted = plan.isComplete(self)
+            return result
+        }
         if stepIndex < plan.questionIndex {
             result.stage = .question
             result.questionSceneStep = stepIndex

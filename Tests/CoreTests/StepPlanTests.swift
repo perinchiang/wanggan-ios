@@ -59,6 +59,10 @@ final class StepPlanTests: XCTestCase {
         for lesson in lessons {
             let plan = LessonPlan(lesson: lesson)
             XCTAssertEqual(Set(plan.steps.map(\.id)).count, plan.steps.count)
+            if lesson.ipv4Foundation != nil {
+                XCTAssertEqual(plan.steps.map(\.kind), [.diagram, .summary])
+                continue
+            }
             XCTAssertEqual(plan.steps.filter { $0.kind == .conversation }.count,
                            lesson.question.scene.count + lesson.challenge.scene.count)
             XCTAssertEqual(plan.steps.filter { $0.kind == .question }.count, 2)
@@ -105,6 +109,47 @@ final class StepPlanTests: XCTestCase {
         plan.advance(&session)
         XCTAssertTrue(plan.isComplete(session))
         XCTAssertEqual(session.mistakes, 0)
+    }
+
+    func testImmediatePairsKeepCorrectAnswersAndNeverPenalizeMismatch() throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "hop" })
+        let plan = LessonPlan(lesson: lesson)
+        var session = StepSession(lessonID: lesson.id)
+        XCTAssertFalse(plan.matchPair("ip", to: "final", in: &session), "Cannot answer a future step")
+        session.stepIndex = plan.matchingIndex
+        XCTAssertFalse(plan.matchPair("ip", to: "next", in: &session))
+        XCTAssertTrue(session.matches.isEmpty)
+        XCTAssertEqual(session.mistakes, 0)
+        XCTAssertFalse(plan.canAdvance(session))
+        XCTAssertTrue(plan.matchPair("ip", to: "final", in: &session))
+        XCTAssertFalse(plan.matchPair("mac", to: "final", in: &session))
+        XCTAssertFalse(plan.matchPair("unknown", to: "next", in: &session))
+        XCTAssertEqual(session.matches, ["ip": "final"])
+        XCTAssertEqual(session.mistakes, 0)
+        XCTAssertFalse(session.matchingSolved)
+        let restored = StepSession(lesson: lesson, from: session.stageSession(lesson: lesson))
+        XCTAssertEqual(restored.matches, session.matches)
+        XCTAssertTrue(plan.matchPair("mac", to: "next", in: &session))
+        XCTAssertTrue(plan.canAdvance(session))
+        XCTAssertTrue(session.matchingSolved)
+        XCTAssertTrue(session.matchingSubmitted)
+        XCTAssertFalse(plan.matchPair("ip", to: "next", in: &session))
+        XCTAssertEqual(session.matches, lesson.matching.solution)
+        XCTAssertEqual(session.mistakes, 0)
+    }
+
+    func testLegacyWrongMatchingDraftKeepsOnlyCorrectPairsWithoutClearingHistory() throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "hop" })
+        var old = LessonSession(lessonID: lesson.id)
+        old.stage = .matching
+        old.matches = ["ip": "next", "mac": "next"]
+        old.matchingSubmitted = true
+        old.mistakes = 2
+        let restored = StepSession(lesson: lesson, from: old)
+        XCTAssertEqual(restored.id, old.id)
+        XCTAssertEqual(restored.matches, ["mac": "next"])
+        XCTAssertFalse(restored.matchingSubmitted)
+        XCTAssertEqual(restored.mistakes, 2)
     }
 
     func testWrongChallengeRequiresRetryAndCountsMistake() throws {

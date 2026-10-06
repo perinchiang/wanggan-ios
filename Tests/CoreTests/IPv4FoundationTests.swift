@@ -17,12 +17,6 @@ final class IPv4FoundationTests: XCTestCase {
         let plan = LessonPlan(lesson: lesson)
         var session = StepSession(lessonID: lesson.id)
 
-        for _ in 0..<plan.questionSceneCount {
-            plan.advance(&session)
-        }
-        plan.submitAnswer(lesson.question.correctID, in: &session)
-        plan.advance(&session)
-
         if let foundation = lesson.ipv4Foundation {
             var progress = IPv4FoundationProgress()
             for _ in 0..<foundation.stageCount {
@@ -30,18 +24,6 @@ final class IPv4FoundationTests: XCTestCase {
             }
             session.ipv4FoundationProgress = progress
         }
-        plan.advance(&session)
-
-        for (left, right) in lesson.matching.solution {
-            plan.connect(left, to: right, in: &session)
-        }
-        plan.submitMatching(in: &session)
-        plan.advance(&session)
-
-        for _ in 0..<plan.challengeSceneCount {
-            plan.advance(&session)
-        }
-        plan.submitChallenge(lesson.challenge.correctID, in: &session)
         plan.advance(&session)
 
         return session.stageSession(lesson: lesson)
@@ -97,12 +79,6 @@ final class IPv4FoundationTests: XCTestCase {
         let plan = LessonPlan(lesson: lesson)
         var step = StepSession(lessonID: lesson.id)
 
-        for _ in 0..<plan.questionSceneCount {
-            plan.advance(&step)
-        }
-        plan.submitAnswer(lesson.question.correctID, in: &step)
-        plan.advance(&step)
-
         var progress = IPv4FoundationProgress()
         progress.advance()
         progress.advance()
@@ -121,6 +97,50 @@ final class IPv4FoundationTests: XCTestCase {
         XCTAssertEqual(ledger.complete(completed), 30)
         XCTAssertTrue(ledger.isUnlocked("ipv4-address-format", in: content.orderedLessonIDs))
         XCTAssertFalse(ledger.isUnlocked("ipv4-octet-binary", in: content.orderedLessonIDs))
+    }
+
+    func testObservationCompletionNeedsFinishedProgressAndRewardsExactlyOnce() throws {
+        let content = try catalog()
+        for id in content.orderedLessonIDs.prefix(3) {
+            let lesson = try XCTUnwrap(content.lessons.first { $0.id == id })
+            let plan = LessonPlan(lesson: lesson)
+            XCTAssertEqual(plan.steps.map(\.kind), [.diagram, .summary])
+            var fresh = StepSession(lessonID: id)
+            plan.advance(&fresh)
+            XCTAssertEqual(fresh.stepIndex, 0)
+            fresh.stepIndex = plan.summaryIndex
+            XCTAssertFalse(plan.isComplete(fresh))
+            var ledger = ProgressLedger()
+            var incomplete = fresh.stageSession(lesson: lesson)
+            incomplete.stage = .complete
+            incomplete.observationCompleted = true
+            XCTAssertEqual(ledger.complete(incomplete), 0)
+            let completed = complete(lesson)
+            XCTAssertTrue(completed.observationCompleted == true)
+            XCTAssertFalse(completed.matchingSolved)
+            XCTAssertFalse(completed.challengeSolved)
+            XCTAssertEqual(ledger.complete(completed), 30)
+            XCTAssertEqual(ledger.complete(completed), 30)
+            XCTAssertEqual(ledger.totalXP, 30)
+            let decoded = try JSONDecoder().decode(LessonSession.self, from: JSONEncoder().encode(completed))
+            XCTAssertTrue(plan.isComplete(StepSession(lesson: lesson, from: decoded)))
+        }
+    }
+
+    func testLegacyFoundationQuestionAndMatchingDraftsResumeObservationWithoutLosingIdentity() throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "ipv4-address-role" })
+        var old = LessonSession(lessonID: lesson.id)
+        let fresh = StepSession(lesson: lesson, from: old)
+        XCTAssertEqual(fresh.stepIndex, 0)
+        old.stage = .matching
+        var progress = IPv4FoundationProgress()
+        for _ in 0..<4 { progress.advance() }
+        old.ipv4FoundationProgress = progress
+        let restored = StepSession(lesson: lesson, from: old)
+        XCTAssertEqual(restored.id, old.id)
+        XCTAssertTrue(LessonPlan(lesson: lesson).isComplete(restored))
+        XCTAssertFalse(restored.challengeSolved)
+        XCTAssertFalse(restored.matchingSolved)
     }
 
     func testArchivedDraftCanCoexistWithNewActiveDraft() throws {

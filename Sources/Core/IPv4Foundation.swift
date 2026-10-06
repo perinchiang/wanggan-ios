@@ -13,7 +13,7 @@ struct IPv4Foundation: Codable, Equatable {
     let samples: [String]?
     let focusOctet: Int?
 
-    var stageCount: Int { 4 }
+    var stageCount: Int { kind == .octetBinary ? 6 : 4 }
 
     var isValid: Bool {
         guard IPv4AddressValue(ip: ip, prefix: 32) != nil else { return false }

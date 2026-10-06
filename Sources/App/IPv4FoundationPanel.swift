@@ -2,7 +2,9 @@ import SwiftUI
 
 struct IPv4FoundationPanel: View {
     let configuration: IPv4Foundation
+    var usesStaticPresentation = false
     @Binding var progress: IPv4FoundationProgress
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AccessibilityFocusState private var headingFocused: Bool
 
     private var stage: Int {
@@ -21,16 +23,18 @@ struct IPv4FoundationPanel: View {
         case .addressFormat:
             return [
                 "先看看 IPv4 长什么样",
-                "点号把它分成四段",
-                "四段一共是 32 位",
-                "点号是分组边界"
+                "把长串数字切成四小块",
+                "每一小块有八个位置",
+                "拼回去，还是同一个地址"
             ][stage]
         case .octetBinary:
             return [
-                "一段里面只有 8 位",
-                "每一位都有自己的位值",
-                "8 位的范围是 0～255",
-                "256 已经装不进 8 位"
+                "八个开关，先全部关上",
+                "亮起一个，得到 8",
+                "再亮一个，得到 12",
+                "再加上 1，就得到 13",
+                "关掉 4，13 变成 9",
+                "全部亮起，最多是 255"
             ][stage]
         }
     }
@@ -39,7 +43,7 @@ struct IPv4FoundationPanel: View {
         switch configuration.kind {
         case .addressRole:
             return [
-                "这里的 IPv4 地址不是游戏房间号。它标在一台具体电脑旁边，先把“地址属于谁”看清楚。",
+                "你想和朋友联机。朋友发来电脑当前的 IP 地址，下图把地址标在他的电脑旁边。先看看：这条消息要发给谁？",
                 "发送数据时，请求会带着目标 IP。网络据此知道这份数据最终要交给哪个网络层目标。",
                 "回应也需要明确目标。你的电脑同样有自己当前使用的 IP 地址。",
                 "IP 更像当前网络里的地址。设备换到别的网络后，地址可能改变，所以它不是设备永久不变的身份证。"
@@ -53,10 +57,12 @@ struct IPv4FoundationPanel: View {
             ][stage]
         case .octetBinary:
             return [
-                "一个八位组有 8 个二进制位，每一位只能是 0 或 1。先看一个具体数怎样放进这 8 个位置。",
-                "从左到右，8 个位置的位值依次是 128、64、32、16、8、4、2、1。某一位是 1，就把对应位值加起来。",
-                "8 位全是 0 时得到 0；8 位全是 1 时得到 255。这就是一个八位组能表示的完整范围。",
-                "255 再加 1 会变成 1 00000000，需要第 9 位。因此 256 不能放进一个 IPv4 八位组。"
+                "把每一位想成一个开关：关是 0，开是 1。开关下面的数字，是它亮起来时贡献的数值。我们一起看它们怎样拼出 13。",
+                "先亮起标着 8 的开关。其他都关着，所以现在是 8。",
+                "再亮起标着 4 的开关。8 + 4，现在是 12。",
+                "最后亮起标着 1 的开关。8 + 4 + 1 = 13。电脑用 00001101 记住这个数，不需要你背下来。",
+                "现在把 4 关掉，8 和 1 还亮着，数就变成 9。每个位置的开关，都会影响最终的数。",
+                "八个开关全亮，是 255；全关，是 0。再大一点的 256 要多出第九个位置，这一小块已经放不下了。"
             ][stage]
         }
     }
@@ -78,7 +84,7 @@ struct IPv4FoundationPanel: View {
             }
 
             visual
-                .animation(.easeInOut(duration: 0.22), value: stage)
+                .animation(reduceMotion || usesStaticPresentation ? nil : .easeInOut(duration: 0.22), value: stage)
 
             Button {
                 progress.previous()
@@ -238,39 +244,20 @@ struct IPv4FoundationPanel: View {
     }
 
     private var octetBinaryVisual: some View {
-        let value = configuration.focusOctet ?? 10
-        let bits = binaryString(value)
+        let values = [0, 8, 12, 13, 9, 255]
+        let value = values[stage]
         return Surface {
             VStack(alignment: .leading, spacing: 16) {
-                if stage <= 1 {
-                    bitCells(bits: bits, highlights: stage == 1)
-                    if stage == 1 {
-                        Text(bitEquation(for: value))
-                            .font(.subheadline.monospaced().weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                    }
-                } else if stage == 2 {
-                    VStack(spacing: 12) {
-                        binaryRangeRow(binary: "00000000", decimal: "0", label: "最小")
-                        binaryRangeRow(binary: "11111111", decimal: "255", label: "最大")
-                    }
-                } else {
-                    VStack(spacing: 12) {
-                        Text("255 + 1")
-                            .font(.headline.monospaced())
-                        HStack(spacing: 8) {
-                            Text("1")
-                                .font(.title3.monospaced().bold())
-                                .padding(8)
-                                .background(Theme.lime.opacity(0.45), in: .rect(cornerRadius: 8))
-                            bitCells(bits: "00000000", highlights: false)
-                        }
-                        .frame(maxWidth: .infinity)
-                        Text("↑ 第 9 位")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Theme.muted)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
+                bitCells(bits: binaryString(value), highlights: true)
+                Text(bitEquation(for: value))
+                    .font(.subheadline.monospaced().weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .accessibilityIdentifier("foundation-bit-equation")
+                if stage == 5 {
+                    Text("256 = 1 00000000 → 需要第 9 位")
+                        .font(.subheadline.monospaced())
+                        .foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

@@ -73,6 +73,7 @@ jobs:
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4FoundationFormatBacktrackingResumeAndCompletion')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4FoundationOctetBinaryFlow')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testHopResumesAndCompletesOnStepPlayer')
+            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testFoundationBinaryLargestTextStaticPresentation')
           elif [ '${{ inputs.ui_scope }}' = 'mask' ]; then
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4FoundationAddressRoleFlow')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4FoundationFormatBacktrackingResumeAndCompletion')
