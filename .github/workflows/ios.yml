@@ -3,11 +3,12 @@ on:
   workflow_dispatch:
     inputs:
       ui_scope:
-        description: Verification scope (quick = no simulator, smoke = key UI, full = release/IPA)
+        description: quick = compile check, package = trial IPA without UI tests, smoke = key UI, full = full tests and IPA
         type: choice
         default: quick
         options:
           - quick
+          - package
           - smoke
           - full
           - ipv4
@@ -55,9 +56,9 @@ jobs:
         run: |
           xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build/quick CODE_SIGNING_ALLOWED=NO build
 
-      # Full additionally produces a device build and IPA.
+      # Package produces a trial IPA; full also runs the complete UI suite.
       - name: Build device app and package IPA
-        if: inputs.ui_scope == 'full'
+        if: inputs.ui_scope == 'full' || inputs.ui_scope == 'package'
         run: |
           set -o pipefail
           xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/device CODE_SIGNING_ALLOWED=NO build > build-device.log 2>&1 || { tail -100 build-device.log; exit 1; }
@@ -70,13 +71,13 @@ jobs:
           zip -qry ../WangGan-unsigned.ipa Payload
 
       - name: Select iPhone simulator
-        if: inputs.ui_scope != 'quick'
+        if: inputs.ui_scope != 'quick' && inputs.ui_scope != 'package'
         id: simulator
         run: |
           python3 scripts/select_simulator.py >> "$GITHUB_OUTPUT"
 
       - name: Run native UI tests
-        if: inputs.ui_scope != 'quick'
+        if: inputs.ui_scope != 'quick' && inputs.ui_scope != 'package'
         run: |
           xcrun simctl boot '${{ steps.simulator.outputs.id }}' || true
           xcrun simctl bootstatus '${{ steps.simulator.outputs.id }}' -b
@@ -126,7 +127,7 @@ jobs:
           python3 scripts/run_command_with_timeout.py --log build-ui.log --idle-timeout 180 --wall-timeout 1200 -- xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Debug -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.id }}' -parallel-testing-enabled NO -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 -derivedDataPath build/simulator -resultBundlePath build/UITests.xcresult "${scope_args[@]}" CODE_SIGNING_ALLOWED=NO test-without-building
 
       - name: Export simulator screenshots
-        if: always() && inputs.ui_scope != 'quick'
+        if: always() && inputs.ui_scope != 'quick' && inputs.ui_scope != 'package'
         run: |
           mkdir -p build/screenshots
           xcrun simctl io '${{ steps.simulator.outputs.id }}' screenshot build/screenshots/final-simulator.png || true
@@ -138,11 +139,22 @@ jobs:
 
       - name: Upload iPhone installation package
         uses: actions/upload-artifact@v4
-        if: success() && inputs.ui_scope == 'full'
+        if: success() && (inputs.ui_scope == 'full' || inputs.ui_scope == 'package')
         with:
           name: WangGan-iPhone-unsigned
           path: build/WangGan-unsigned.ipa
+          if-no-files-found: error
           retention-days: 14
+
+      - name: Record trial verification scope
+        if: success() && inputs.ui_scope == 'package'
+        run: |
+          {
+            echo '## Trial IPA'
+            echo 'Core and Web tests passed; the iPhone Release app was built and packaged.'
+            echo 'Native UI tests and simulator screenshots were not run. Physical-device trial is pending.'
+            echo "Source commit: $GITHUB_SHA"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload evidence and logs
         uses: actions/upload-artifact@v4
