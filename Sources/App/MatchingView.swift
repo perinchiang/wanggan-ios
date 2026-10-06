@@ -91,7 +91,7 @@ struct MatchingView: View {
                 Text(item.text).font(.subheadline.weight(.semibold))
                     .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
             }
-            .foregroundStyle(chosen ? Theme.paper : wrong ? Color.red : paired ? Color.green : Theme.ink)
+            .foregroundStyle(chosen ? Theme.paper : wrong ? Color.red : Theme.ink)
             .frame(maxWidth: .infinity, minHeight: 96).padding(.horizontal, 10).padding(.vertical, 12)
             .background(chosen ? Theme.ink : wrong ? Color.red.opacity(0.12) : paired ? Color.green.opacity(0.12) : Theme.surface,
                         in: .rect(cornerRadius: 19))

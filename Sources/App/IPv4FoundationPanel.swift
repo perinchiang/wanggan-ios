@@ -262,7 +262,6 @@ struct IPv4FoundationPanel: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .accessibilityIdentifier("foundation-octet-binary")
     }
 
     private func bitCells(bits: String, highlights: Bool) -> some View {
