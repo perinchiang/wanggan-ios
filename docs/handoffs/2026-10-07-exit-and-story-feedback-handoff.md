@@ -29,7 +29,7 @@
 
 ## Not completed / 尚未完成
 
-0.9.1 build 24 的快速 package / IPA 核验待执行；原生交互与真机换行效果由 Pat 验收，不再自动跑。
+原生交互、真机换行与荧光底色效果由 Pat 验收；本候选不运行原生自动化。
 
 ## Known issues / 已知问题
 
@@ -44,6 +44,10 @@ Windows 无 Swift / iOS 工具链。VoiceOver、最大字号及小屏真机尚�
 
 - [0.8.1 build 22 package / 37513241703](https://github.com/perinchiang/wanggan-ios/actions/runs/37513241703) success，源码 `1b4f1694d1525104fc1036baf3518e73b66c2112`，1 分 56 秒；67 Core / 4 Web，iPhone Release 与 IPA 核验通过，原生 UI / 截图明确跳过。该包 799047 bytes，SHA256 `b64c1d0e39b8ef421fd22f3bafc1c81159bc6792b7ea4342483a0b5ab61fc6ef`，输出在 `outputs/WangGan-0.8.1-build22/`。
 
+- [0.9.1 build 24 package / 37514639035](https://github.com/perinchiang/wanggan-ios/actions/runs/37514639035) success，源码 `c93fb72d8b52c2fc2cbf4d0aa7c462cf7feaf8e0`，2 分 24 秒；67 Core / 4 Web、iPhone Release（包含 UILabel 高亮组件）编译与上传通过。实际跳过原生 UI / 模拟器截图，不能沿用 build 21 的交互结果称作本版验收。
+- IPA：806980 bytes，SHA256 `0123148745e07cd6e70a330165463e3af4ad920ec5420f42ba3a16990ba08c07`；ZIP 完整、0.9.1 / 24 / 原 bundle ID、iPhoneOS arm64、lessons.json / HTML 与候选一致、Assets.car 随包存在。IPA、日志、核验记录、试学清单保存在 `C:/Users/Administrator/Documents/wanggan/outputs/WangGan-0.9.1-build24/`。
+- 最后只补记文档，不将文档提交冒称为 IPA 源码 commit；原工作区未提交修改保留。
+
 ## Next recommended task / 推荐下一步
 
-按 Pat 指定工作方式快速交付 0.9.1 build 24，附用户气泡宽度 / 确认退出 / 设备讲解 / 朋友换机 / 完成页清单，由 Pat 真机验收后反馈。
+交付已核验的 0.9.1 build 24，附用户气泡宽度 / 确认退出 / 设备讲解 / 朋友换机 / 完成页清单，由 Pat 真机验收后反馈。
