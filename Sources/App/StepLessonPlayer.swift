@@ -283,12 +283,13 @@ struct StepLessonPlayer: View {
                         else { session.selectedAnswer = option.id }
                         feedbackTick += 1
                     } label: {
-                        HStack(alignment: .center, spacing: 12) {
+                        HStack(alignment: .center, spacing: 10) {
                             Image(systemName: selected == option.id ? "checkmark.circle.fill" : "circle")
                                 .font(.title3).foregroundStyle(selected == option.id ? Theme.ink : Theme.muted)
                             Text(option.text).font(.body.weight(.medium)).multilineTextAlignment(.leading)
-                            Spacer(minLength: 0)
-                        }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }.padding(.horizontal, 12).padding(.vertical, 18)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .background(selected == option.id ? Theme.lime.opacity(0.22) : Theme.surface, in: .rect(cornerRadius: 17))
                             .overlay(RoundedRectangle(cornerRadius: 17).strokeBorder(selected == option.id ? Theme.ink : Theme.line, lineWidth: selected == option.id ? 1.5 : 1))
                     }

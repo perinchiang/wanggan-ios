@@ -37,11 +37,11 @@ struct ShortReviewPlayer: View {
                             Text(item.prompt).font(.title3.bold())
                             ForEach(item.options) { option in
                                 Button { session.select(option.id, item: item) } label: {
-                                    HStack(alignment: .top, spacing: 12) {
+                                    HStack(alignment: .top, spacing: 10) {
                                         Image(systemName: session.selectedAnswer == option.id ? "checkmark.circle.fill" : "circle")
                                         Text(option.text).frame(maxWidth: .infinity, alignment: .leading)
                                     }
-                                    .font(.body).padding(18)
+                                    .font(.body).padding(.horizontal, 12).padding(.vertical, 18)
                                     .background(session.selectedAnswer == option.id ? Theme.lime.opacity(0.35) : Theme.surface,
                                                 in: .rect(cornerRadius: 18))
                                     .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(Theme.line))
