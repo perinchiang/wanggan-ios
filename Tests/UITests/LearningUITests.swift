@@ -18,6 +18,34 @@ final class LearningUITests: XCTestCase {
         app.launchArguments = ["--uitesting", "--reset-progress"]
     }
 
+    func testComicRevealsPanelsResumesAndCompletes() {
+        app.launch()
+        tap("start-lesson")
+        XCTAssertTrue(app.staticTexts["comic-title-arrival"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["comic-title-room"].exists)
+        screenshot("comic-01-first-panel")
+        tap("primary-action")
+        XCTAssertTrue(app.staticTexts["comic-title-room"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["comic-title-arrival"].exists)
+        screenshot("comic-02-second-panel")
+        tap("exit-lesson")
+        app.buttons["保存进度并退出"].tap()
+        app.terminate()
+        app.launchArguments = ["--uitesting"]
+        app.launch()
+        tap("start-lesson")
+        XCTAssertTrue(app.staticTexts["comic-title-room"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["lesson-progress"].label, "2 / 10")
+        for _ in 0..<8 { tap("primary-action") }
+        XCTAssertTrue(app.staticTexts["comic-title-next"].waitForExistence(timeout: 5))
+        screenshot("comic-03-final-panel")
+        tap("primary-action")
+        XCTAssertTrue(app.staticTexts["+30 XP"].waitForExistence(timeout: 5))
+        screenshot("comic-04-completion")
+        tap("finish-session")
+        XCTAssertEqual(app.staticTexts["xp-badge"].label, "30 经验值")
+    }
+
     private func tap(_ id: String) {
         let button = app.buttons[id]
         XCTAssertTrue(button.waitForExistence(timeout: 10), "Missing \(id)")

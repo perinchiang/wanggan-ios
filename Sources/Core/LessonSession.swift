@@ -29,6 +29,7 @@ struct LessonSession: Codable, Equatable, Identifiable {
     var ipv4VisualSubmitted: Bool?
     var ipv4VisualSolved: Bool?
     var ipv4VisualFinished: Bool?
+    var comicProgress: ComicProgress?
     var ipv4FoundationProgress: IPv4FoundationProgress?
     var ipv4IntroductionProgress: IPv4IntroductionProgress?
     var subnetMaskProgress: SubnetMaskProgress?

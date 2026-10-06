@@ -59,7 +59,7 @@ final class StepPlanTests: XCTestCase {
         for lesson in lessons {
             let plan = LessonPlan(lesson: lesson)
             XCTAssertEqual(Set(plan.steps.map(\.id)).count, plan.steps.count)
-            if lesson.ipv4Foundation != nil {
+            if lesson.ipv4Foundation != nil || lesson.comicStory != nil {
                 XCTAssertEqual(plan.steps.map(\.kind), [.diagram, .summary])
                 continue
             }

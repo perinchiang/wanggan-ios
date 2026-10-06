@@ -53,6 +53,7 @@ struct Lesson: Codable, Equatable, Identifiable {
     let takeaway: String
     let nextCuriosity: String
     let diagram: String
+    let comicStory: ComicStory?
     let ipv4Foundation: IPv4Foundation?
     let ipv4Visual: IPv4VisualLesson?
     let ipv4Introduction: IPv4Introduction?
@@ -128,6 +129,14 @@ struct LessonCatalog: Codable {
             }
         }
         for lesson in lessons {
+            if let story = lesson.comicStory {
+                guard story.isValid, lesson.ipv4Foundation == nil, lesson.ipv4Visual == nil,
+                      lesson.ipv4Introduction == nil, lesson.subnetMaskIntroduction == nil,
+                      !lesson.sources.isEmpty else {
+                    throw ContentError.invalid("\(lesson.id) 的漫画故事不完整")
+                }
+                continue
+            }
             if let foundation = lesson.ipv4Foundation {
                 guard foundation.isValid,
                       lesson.ipv4Introduction == nil,

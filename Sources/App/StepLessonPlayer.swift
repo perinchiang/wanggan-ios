@@ -48,7 +48,7 @@ struct StepLessonPlayer: View {
                     do { try await Task.sleep(for: .milliseconds(reduceMotion ? 80 : 400)) }
                     catch { return }
                     withAnimation(reduceMotion ? nil : .easeOut(duration: 0.24)) {
-                        proxy.scrollTo(feedbackScrollTarget ?? conversationScrollTarget ?? "lesson-top",
+                        proxy.scrollTo(comicScrollTarget ?? feedbackScrollTarget ?? conversationScrollTarget ?? "lesson-top",
                                        anchor: feedbackScrollTarget == nil ? .top : .bottom)
                     }
                 }
@@ -75,8 +75,8 @@ struct StepLessonPlayer: View {
         HStack(spacing: 20) {
             Button { showExit = true } label: { Image(systemName: "xmark").font(.title3).frame(width: 44, height: 44) }
                 .accessibilityLabel("退出小节").accessibilityIdentifier("exit-lesson")
-            ThinProgress(value: Double(min(session.stepIndex + 1, plan.steps.count)) / Double(plan.steps.count))
-            Text("\(min(session.stepIndex + 1, plan.steps.count)) / \(plan.steps.count)").font(.caption.monospacedDigit())
+            ThinProgress(value: Double(displayedStep) / Double(displayedStepCount))
+            Text("\(displayedStep) / \(displayedStepCount)").font(.caption.monospacedDigit()).accessibilityIdentifier("lesson-progress")
         }.padding(.horizontal, 14).padding(.vertical, 10)
     }
 
@@ -108,7 +108,9 @@ struct StepLessonPlayer: View {
     }
 
     @ViewBuilder private var explanationPhase: some View {
-        if let foundation = lesson.ipv4Foundation {
+        if let story = lesson.comicStory {
+            ComicStoryPanel(story: story, progress: session.comicProgress ?? ComicProgress())
+        } else if let foundation = lesson.ipv4Foundation {
             IPv4FoundationPanel(configuration: foundation, usesStaticPresentation: usesStaticPresentation, progress: Binding(
                 get: { session.ipv4FoundationProgress ?? IPv4FoundationProgress() },
                 set: { session.ipv4FoundationProgress = $0 }
@@ -327,7 +329,20 @@ struct StepLessonPlayer: View {
         return submitted ? "answer-feedback" : nil
     }
 
+    private var comicScrollTarget: String? {
+        guard !isComplete, let story = lesson.comicStory else { return nil }
+        let index = min(max(session.comicProgress?.index ?? 0, 0), story.panels.count - 1)
+        return "comic-panel-" + story.panels[index].id
+    }
+
+    private var displayedStep: Int {
+        lesson.comicStory.map { min((session.comicProgress?.index ?? 0) + 1, $0.panels.count) }
+            ?? min(session.stepIndex + 1, plan.steps.count)
+    }
+    private var displayedStepCount: Int { lesson.comicStory?.panels.count ?? plan.steps.count }
+
     private var scrollRequest: String {
+        if lesson.comicStory != nil { return "comic-\(session.comicProgress?.index ?? 0)-\(isComplete)" }
         if lesson.ipv4Foundation != nil, plan.step(at: session.stepIndex)?.kind == .diagram {
             return "foundation-\(session.ipv4FoundationProgress?.stage ?? 0)"
         }
@@ -376,6 +391,10 @@ struct StepLessonPlayer: View {
             }
             return session.answerSubmitted ? "看看为什么" : "确认答案"
         case .diagram:
+            if let story = lesson.comicStory {
+                let index = min(session.comicProgress?.index ?? 0, story.panels.count - 1)
+                return story.panels[index].action
+            }
             if lesson.ipv4Foundation != nil {
                 let progress = session.ipv4FoundationProgress ?? IPv4FoundationProgress()
                 if progress.stage >= (lesson.ipv4Foundation?.stageCount ?? 4) - 1 { return "完成本课" }
@@ -418,6 +437,7 @@ struct StepLessonPlayer: View {
         case .conversation, .text, .summary:
             return true
         case .diagram:
+            if lesson.comicStory != nil { return true }
             if lesson.ipv4Foundation != nil {
                 return session.ipv4FoundationProgress?.canAdvance ?? true
             }
@@ -478,6 +498,16 @@ struct StepLessonPlayer: View {
                 }
             }
         case .diagram:
+            if let story = lesson.comicStory {
+                var progress = session.comicProgress ?? ComicProgress()
+                progress.advance(count: story.panels.count)
+                session.comicProgress = progress
+                if progress.finished {
+                    plan.advance(&session)
+                    earnedXP = store.finish(session.stageSession(lesson: lesson))
+                }
+                return
+            }
             if let foundation = lesson.ipv4Foundation {
                 var progress = session.ipv4FoundationProgress ?? IPv4FoundationProgress()
                 let isLastStage = progress.stage >= foundation.stageCount - 1

@@ -84,7 +84,7 @@ struct LessonStep: Codable, Equatable, Identifiable {
 
 extension Lesson {
     var steps: [LessonStep] {
-        if ipv4Foundation != nil {
+        if ipv4Foundation != nil || comicStory != nil {
             return [
                 LessonStep(id: "\(id).diagram", payload: .diagram(diagram)),
                 LessonStep(id: "\(id).summary", payload: .summary(takeaway))
@@ -127,6 +127,7 @@ struct StepSession: Codable, Equatable {
     var ipv4VisualSubmitted: Bool?
     var ipv4VisualSolved: Bool?
     var ipv4VisualFinished: Bool?
+    var comicProgress: ComicProgress?
     var ipv4FoundationProgress: IPv4FoundationProgress?
     var ipv4IntroductionProgress: IPv4IntroductionProgress?
     var subnetMaskProgress: SubnetMaskProgress?
@@ -177,6 +178,9 @@ struct LessonPlan {
     }
 
     func isComplete(_ session: StepSession) -> Bool {
+        if lesson.comicStory != nil {
+            return session.comicProgress?.finished == true && session.stepIndex == summaryIndex
+        }
         if lesson.ipv4Foundation != nil {
             return session.ipv4FoundationProgress?.finished == true && session.stepIndex == summaryIndex
         }
@@ -187,6 +191,7 @@ struct LessonPlan {
         guard let step = step(at: session.stepIndex) else { return false }
         switch step.kind {
         case .diagram:
+            if lesson.comicStory != nil { return session.comicProgress?.finished == true }
             if lesson.ipv4Foundation != nil { return session.ipv4FoundationProgress?.finished == true }
             if lesson.subnetMaskIntroduction != nil { return session.subnetMaskProgress?.finished == true }
             return lesson.ipv4Introduction == nil || session.ipv4IntroductionProgress?.finished == true
@@ -276,6 +281,7 @@ extension StepSession {
         ipv4VisualSubmitted = stage.ipv4VisualSubmitted
         ipv4VisualSolved = stage.ipv4VisualSolved
         ipv4VisualFinished = stage.ipv4VisualFinished
+        comicProgress = stage.comicProgress
         ipv4FoundationProgress = stage.ipv4FoundationProgress
         ipv4IntroductionProgress = stage.ipv4IntroductionProgress
         subnetMaskProgress = stage.subnetMaskProgress
@@ -287,6 +293,10 @@ extension StepSession {
         challengeAnswer = stage.challengeAnswer
         challengeSubmitted = stage.challengeSubmitted
         challengeSolved = stage.challengeSolved
+        if lesson.comicStory != nil {
+            stepIndex = comicProgress?.finished == true ? plan.summaryIndex : 0
+            return
+        }
         if lesson.ipv4Foundation != nil {
             // Older quiz drafts resume at the observed animation, with the same identity.
             stepIndex = ipv4FoundationProgress?.finished == true ? plan.summaryIndex : 0
@@ -326,6 +336,7 @@ extension StepSession {
         result.ipv4VisualSubmitted = ipv4VisualSubmitted
         result.ipv4VisualSolved = ipv4VisualSolved
         result.ipv4VisualFinished = ipv4VisualFinished
+        result.comicProgress = comicProgress
         result.ipv4FoundationProgress = ipv4FoundationProgress
         result.ipv4IntroductionProgress = ipv4IntroductionProgress
         result.subnetMaskProgress = subnetMaskProgress
@@ -337,7 +348,7 @@ extension StepSession {
         result.challengeAnswer = challengeAnswer
         result.challengeSubmitted = challengeSubmitted
         result.challengeSolved = challengeSolved
-        if lesson.ipv4Foundation != nil {
+        if lesson.ipv4Foundation != nil || lesson.comicStory != nil {
             result.stage = plan.isComplete(self) ? .complete : .explanation
             result.observationCompleted = plan.isComplete(self)
             return result

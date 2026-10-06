@@ -223,3 +223,9 @@ schemaVersion、课程内容版本、Lesson revision、Web 契约版本独立管
 现有五课必须继续存在，但新增内容后不再将课程总数固定为 5；不得改为断言 Draft 总数 42。未来缺失或循环先修引用应在内容校验中发现。
 
 当前 iOS 工作流仅通过 workflow_dispatch 手动触发，以节省 GitHub Actions 额度；日常提交先积累，在阶段性验收、较大版本交付或风险需要时运行完整构建、测试与 IPA 导出。采用 PR 协作后再评估是否增加轻量检查。Windows 上不能执行的 Swift / iOS 检查，应明确交由 macOS CI 或 Mac，报告未执行项，不能把静态检查称作模拟器或真机验证。文档变更不必为了形式重复完整 iOS 构建。
+
+## 2026-10-06 漫画故事候选
+
+`Lesson.comicStory` 为可选参数，`ComicStory` 保存有稳定 ID 的分镜、对白、场景图片名和设备引用。播放器仍使用既有 Step 引擎的 diagram → summary 路径，`ComicProgress` 经可选字段在两种会话结构之间往返保存。Core 完成标记经既有 ledger 结算，不把阅读完成写成答题证据。
+
+新增 `home-two-boxes` 为首课，原课程、ID、完成记录及草稿保持；较远主线草稿继续优先推荐。首课先独立交付，后续故事地图并未全部重写。存储键、schemaVersion、bundle identifier 不变。新增 Core 测试覆盖未读完不结算、恢复与奖励幂等、旧主线草稿保护、图片文件存在性；新增 UI 测试覆盖逐格出现、历史画格保留、重新启动后续读及结算。

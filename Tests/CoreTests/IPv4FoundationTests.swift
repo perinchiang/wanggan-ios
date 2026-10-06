@@ -62,12 +62,12 @@ final class IPv4FoundationTests: XCTestCase {
         try content.validate()
 
         XCTAssertEqual(
-            Array(content.orderedLessonIDs.prefix(3)),
+            Array(content.orderedLessonIDs.filter { $0 != "home-two-boxes" }.prefix(3)),
             ["ipv4-address-role", "ipv4-address-format", "ipv4-octet-binary"]
         )
         XCTAssertEqual(content.archivedLessonIDs, ["ipv4-address", "subnet-mask"])
 
-        let foundations = content.orderedLessonIDs.prefix(3).compactMap { id in
+        let foundations = content.orderedLessonIDs.filter { $0 != "home-two-boxes" }.prefix(3).compactMap { id in
             content.lessons.first { $0.id == id }?.ipv4Foundation?.kind
         }
         XCTAssertEqual(foundations, [.addressRole, .addressFormat, .octetBinary])
@@ -101,7 +101,7 @@ final class IPv4FoundationTests: XCTestCase {
 
     func testObservationCompletionNeedsFinishedProgressAndRewardsExactlyOnce() throws {
         let content = try catalog()
-        for id in content.orderedLessonIDs.prefix(3) {
+        for id in content.orderedLessonIDs.filter({ $0 != "home-two-boxes" }).prefix(3) {
             let lesson = try XCTUnwrap(content.lessons.first { $0.id == id })
             let plan = LessonPlan(lesson: lesson)
             XCTAssertEqual(plan.steps.map(\.kind), [.diagram, .summary])

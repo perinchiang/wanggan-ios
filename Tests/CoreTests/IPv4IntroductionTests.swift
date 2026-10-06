@@ -89,7 +89,7 @@ final class IPv4IntroductionTests: XCTestCase {
         XCTAssertEqual(ledger.complete(completed), 30)
         ledger.complete(completed)
         XCTAssertEqual(ledger.totalXP, 30)
-        XCTAssertEqual(ledger.recommendedLessonID(in: content.orderedLessonIDs), "ipv4-address-role")
+        XCTAssertEqual(ledger.recommendedLessonID(in: content.orderedLessonIDs), "home-two-boxes")
     }
 
     func testInsertedLessonKeepsOldMainAndIndependentEarlierDraftAfterRelaunch() throws {
@@ -148,6 +148,6 @@ final class IPv4IntroductionTests: XCTestCase {
         XCTAssertTrue(ledger.isUnlocked("gateway", in: try catalog().orderedLessonIDs))
         XCTAssertNil(ledger.earlierDrafts)
         XCTAssertNil(ledger.draft?.ipv4IntroductionProgress)
-        XCTAssertEqual(ProgressLedger().recommendedLessonID(in: try catalog().orderedLessonIDs), "ipv4-address-role")
+        XCTAssertEqual(ProgressLedger().recommendedLessonID(in: try catalog().orderedLessonIDs), "home-two-boxes")
     }
 }

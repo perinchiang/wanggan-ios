@@ -119,7 +119,8 @@ struct ProgressLedger: Codable, Equatable {
 
     @discardableResult
     mutating func complete(_ session: LessonSession, now: Date = Date(), calendar: Calendar = .current) -> Int {
-        let observed = session.observationCompleted == true && session.ipv4FoundationProgress?.finished == true
+        let observed = session.observationCompleted == true &&
+            (session.ipv4FoundationProgress?.finished == true || session.comicProgress?.finished == true)
         guard session.stage == .complete, observed || (session.challengeSolved && session.matchingSolved) else { return 0 }
         clearDraft(for: session)
         return settle(sessionID: session.id, lessonID: session.lessonID, mistakes: session.mistakes,

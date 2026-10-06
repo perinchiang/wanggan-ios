@@ -12,6 +12,7 @@ on:
           - review
           - foundation
           - mask
+          - comic
 permissions:
   contents: read
 concurrency:
@@ -66,7 +67,9 @@ jobs:
           xcrun simctl spawn '${{ steps.simulator.outputs.id }}' log show --last 2m --style compact --predicate 'process == "WangGan"' >> launch-simulator.log || true
           xcrun simctl terminate '${{ steps.simulator.outputs.id }}' com.perinchiang.wanggan || true
           scope_args=()
-          if [ '${{ inputs.ui_scope }}' = 'ipv4' ]; then
+          if [ '${{ inputs.ui_scope }}' = 'comic' ]; then
+            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testComicRevealsPanelsResumesAndCompletes')
+          elif [ '${{ inputs.ui_scope }}' = 'ipv4' ]; then
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testSubnetResumesAndCompletesOnStepPlayer')
           elif [ -z '${{ inputs.ui_scope }}' ] || [ '${{ inputs.ui_scope }}' = 'foundation' ]; then
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4FoundationAddressRoleFlow')

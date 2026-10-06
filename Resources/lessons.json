@@ -1,9 +1,16 @@
 {
   "course": {
     "id": "wanggan-network-intuition",
-    "revision": 4,
+    "revision": 5,
     "title": "网感",
     "chapters": [
+      {
+        "id": "home-network",
+        "title": "故事 · 家里的网络从哪里来",
+        "orderedLessonIDs": [
+          "home-two-boxes"
+        ]
+      },
       {
         "id": "address-basics",
         "title": "基础 · 看懂 IPv4 地址",
@@ -1339,6 +1346,279 @@
         "https://www.rfc-editor.org/rfc/rfc4632#section-3.1",
         "https://www.rfc-editor.org/rfc/rfc950#section-2.2"
       ]
+    },
+    {
+      "id": "home-two-boxes",
+      "title": "宽带师傅为什么装了两个盒子？",
+      "subtitle": "从家门口的一根光纤开始",
+      "takeaway": "光猫负责接入光纤网络；家用路由器连接家里的网络和上游，通常还集成 Wi-Fi 接入与有线交换。两个盒子可以分工，也可以合在一起。",
+      "nextCuriosity": "手机和电脑出去上网，外面看到的是谁？",
+      "diagram": "home",
+      "question": {
+        "scene": [
+          {
+            "id": "lan-game",
+            "text": "你和朋友准备在局域网里联机。游戏让你填写朋友电脑的地址，朋友发来：192.168.1.23。"
+          }
+        ],
+        "prompt": "这串数字在这里最主要是在告诉网络什么？",
+        "options": [
+          {
+            "id": "target",
+            "text": "要联系的是哪台电脑",
+            "feedback": "对。这里最重要的是先把通信目标说清楚。"
+          },
+          {
+            "id": "speed",
+            "text": "这台电脑的网络速度",
+            "feedback": "IP 地址不表示网速。它首先承担的是网络层地址角色。"
+          },
+          {
+            "id": "room",
+            "text": "这局游戏的房间编号",
+            "feedback": "游戏可以有自己的房间编号，但这里朋友发来的是电脑当前使用的 IP 地址。"
+          }
+        ],
+        "correctID": "target",
+        "hint": "先看这串数字标在谁旁边，又被填进了什么位置。"
+      },
+      "explanation": [],
+      "matching": {
+        "prompt": "现在换两台电脑。要联系谁，就选它旁边的地址。",
+        "left": [
+          {
+            "id": "friend",
+            "text": "联系朋友的电脑",
+            "symbol": "desktopcomputer"
+          },
+          {
+            "id": "xiaolin",
+            "text": "联系小林的电脑",
+            "symbol": "laptopcomputer"
+          }
+        ],
+        "right": [
+          {
+            "id": "23",
+            "text": "192.168.1.23",
+            "symbol": "number"
+          },
+          {
+            "id": "31",
+            "text": "192.168.1.31",
+            "symbol": "number"
+          }
+        ],
+        "solution": {
+          "friend": "23",
+          "xiaolin": "31"
+        },
+        "explanation": "地址的价值就在这里：不同目标可以用不同的网络地址区分。"
+      },
+      "challenge": {
+        "scene": [
+          {
+            "id": "new-network",
+            "text": "后来朋友把电脑带到另一个网络，系统里看到的 IP 地址变了。电脑还是同一台。"
+          }
+        ],
+        "prompt": "哪种理解更准确？",
+        "options": [
+          {
+            "id": "current",
+            "text": "IP 是当前网络里的地址，可能随网络变化",
+            "feedback": "对。IP 地址不是设备永久不变的身份证。"
+          },
+          {
+            "id": "identity",
+            "text": "IP 是电脑永久身份证，理论上不该变化",
+            "feedback": "同一台电脑换到别的网络后，IP 地址完全可能改变。"
+          },
+          {
+            "id": "model",
+            "text": "IP 主要用来表示电脑型号",
+            "feedback": "设备型号和 IP 地址没有这种对应关系。"
+          }
+        ],
+        "correctID": "current",
+        "hint": "题目里电脑没换，但网络环境换了。"
+      },
+      "sources": [
+        "https://www.openreach.com/help-and-support/full-fibre-broadband-setup",
+        "https://www.imda.gov.sg/-/media/imda/files/community/consumer-education/fibre-broadband/home_networking_reference_guide_detailed.pdf",
+        "https://www.rfc-editor.org/rfc/rfc1812"
+      ],
+      "comicStory": {
+        "panels": [
+          {
+            "id": "arrival",
+            "title": "先在门口，装一个盒子",
+            "speaker": "宽带师傅",
+            "dialogue": "“光纤从这里进家，我先把这个盒子接好。”\n\n师傅打开入户处的弱电箱，接上细细的光纤。",
+            "action": "下一步",
+            "assets": [],
+            "scene": "comic-installation",
+            "sceneDescription": "穿蓝色工装的宽带师傅，在打开的弱电箱前连接光纤和光猫。"
+          },
+          {
+            "id": "room",
+            "title": "到了房间，又装一个？",
+            "speaker": "我",
+            "dialogue": "师傅又来到房间，把另一个带天线的盒子放在桌上，接上网线。\n\n“师傅，为什么要装两个？它们不是一样的吗？”",
+            "scene": "comic-router-installation",
+            "sceneDescription": "同一位工装师傅蹲在房间桌边，把网线接入桌上的家用路由器。",
+            "assets": [],
+            "action": "下一步"
+          },
+          {
+            "id": "fiber",
+            "title": "网络，先从这根线进家",
+            "speaker": "师傅",
+            "dialogue": "“先别看盒子。你家接的是光纤宽带，这根细细的光纤，把运营商的线路接到了家里。”",
+            "action": "下一步",
+            "assets": [
+              {
+                "id": "fiber",
+                "name": "光纤插座与光纤",
+                "caption": "运营商线路进入家里的接入位置"
+              }
+            ]
+          },
+          {
+            "id": "ont",
+            "title": "第一个盒子：接住光纤",
+            "speaker": "师傅",
+            "dialogue": "“光纤先接进这个盒子，叫光猫，也叫 ONT。它负责接入光纤网络，再通过网口等接口，把连接交给家里的设备。”",
+            "action": "下一步",
+            "assets": [
+              {
+                "id": "ont",
+                "name": "光猫 / ONT",
+                "caption": "接入运营商的光纤网络"
+              }
+            ]
+          },
+          {
+            "id": "router",
+            "title": "第二个盒子：接起家里的网",
+            "speaker": "师傅",
+            "dialogue": "“这次安装，我用网线把光猫接到家用路由器。路由器把家里的网络和上游连接起来。”\n\n这里先记住谁连着谁，数据怎样转交，后面再拆开看。",
+            "action": "下一步",
+            "assets": [
+              {
+                "id": "ont",
+                "name": "光猫 / ONT",
+                "caption": "接入运营商的光纤网络"
+              },
+              {
+                "id": "router",
+                "name": "家用路由器",
+                "caption": "连接家庭网络与上游"
+              }
+            ]
+          },
+          {
+            "id": "wireless",
+            "title": "手机不用再拖一根线",
+            "speaker": "师傅",
+            "dialogue": "“这台家用路由器还带着 Wi-Fi 接入功能。手机、平板可以用无线方式加入家里的网络。”\n\nWi-Fi 是这一段无线连接，并不等于整条互联网连接。",
+            "action": "下一步",
+            "assets": [
+              {
+                "id": "router",
+                "name": "家用路由器",
+                "caption": "连接家庭网络与上游"
+              },
+              {
+                "id": "wifi",
+                "name": "Wi-Fi 接入",
+                "caption": "让设备用无线方式加入网络"
+              },
+              {
+                "id": "phone",
+                "name": "手机",
+                "caption": "无线连接家里的网络"
+              }
+            ]
+          },
+          {
+            "id": "wired",
+            "title": "插网线，也是在加入这张网",
+            "speaker": "师傅",
+            "dialogue": "“电脑也可以用网线连接路由器的 LAN 网口。常见家用路由器还集成了交换功能，把家里的多台有线设备接在一起。”\n\n所以，一个家用路由器里，往往有路由、交换和 Wi-Fi 接入这几份工作。",
+            "action": "下一步",
+            "assets": [
+              {
+                "id": "computer",
+                "name": "电脑",
+                "caption": "可以用 Wi-Fi，也可以插网线"
+              }
+            ]
+          },
+          {
+            "id": "roles",
+            "title": "名字像，工作却不完全一样",
+            "speaker": "我",
+            "dialogue": "“我明白了：光猫负责光纤接入；家用路由器把家里的网络接向上游，通常还兼顾 Wi-Fi 和有线交换。”\n\n看设备时，要看它承担哪些功能，不能只数盒子或天线。",
+            "action": "下一步",
+            "assets": [
+              {
+                "id": "ont",
+                "name": "光猫 / ONT",
+                "caption": "接入运营商的光纤网络"
+              },
+              {
+                "id": "router",
+                "name": "家用路由器",
+                "caption": "连接家庭网络与上游"
+              }
+            ]
+          },
+          {
+            "id": "combined",
+            "title": "一个盒子，也可能全包",
+            "speaker": "师傅",
+            "dialogue": "“没错，有些光猫同时集成路由、Wi-Fi 和交换功能，一个盒子就能承担多份工作。所以不是每个家庭都必须装两个。”\n\n分开的两个盒子，是这次安装选择的分工方式。",
+            "action": "下一步",
+            "assets": [
+              {
+                "id": "ont",
+                "name": "光猫 / ONT",
+                "caption": "接入运营商的光纤网络"
+              },
+              {
+                "id": "wifi",
+                "name": "Wi-Fi 接入",
+                "caption": "让设备用无线方式加入网络"
+              }
+            ]
+          },
+          {
+            "id": "next",
+            "title": "它们各自上网，外面看到谁？",
+            "speaker": "我",
+            "dialogue": "一根光纤接进家，光猫负责光纤接入，家用路由器把家庭网络连向上游。手机和电脑再用 Wi-Fi 或网线加入这张网。\n\n先记住这些分工，后面的故事再看看：这些设备上网时，外面看到的是谁。",
+            "action": "完成本课",
+            "assets": [
+              {
+                "id": "phone",
+                "name": "手机",
+                "caption": "无线连接家里的网络"
+              },
+              {
+                "id": "computer",
+                "name": "电脑",
+                "caption": "可以用 Wi-Fi，也可以插网线"
+              },
+              {
+                "id": "router",
+                "name": "家用路由器",
+                "caption": "连接家庭网络与上游"
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }
