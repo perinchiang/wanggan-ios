@@ -17,7 +17,7 @@
   - Known issues / 已知问题
   - Verification / 已做验证
   - Next recommended task / 推荐下一步
-- handoff 不重复 `PRODUCT.md`、`DESIGN.md`、`COURSE_GUIDE.md`、`ARCHITECTURE.md` 中的长期规范；长期产品和架构决策仍以这些正式项目文档为准。
+- handoff 不重复 `PRODUCT.md`、`DESIGN.md`、`COURSE_GUIDE.md`、`ARCHITECTURE.md` 中的长期规范；长期产品和架构决策仍以这些正式项目文档为准。历史方案及已实现文案不自动成为写作范本，内容选例与语言验收遵守 COURSE_GUIDE。
 - Git diff / commit 用于确认实际改动；handoff 用于说明上下文、未完成事项和下一步。
 - 小型文案、样式或独立 bug 修复不强制创建 handoff。
 

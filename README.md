@@ -4,9 +4,11 @@
 
 ## 当前版本
 
-- 当前试学候选 **0.11.0（build 26）**：朋友名移到气泡上方，短气泡按正文收拢；答后以房间连线替代接口清单主图，从房间细线故事逐步引出 FTTR，最后用独立名称卡显示 FTTR / (Fiber to the Room) / 光纤到房间。接口详情默认折叠。[package 构建](https://github.com/perinchiang/wanggan-ios/actions/runs/37520749808) 已通过（源码 `eafe403`，1 分 55 秒，74 Core / 4 Web、iPhone Release 与安装包核验）；原生 UI / 模拟器截图明确跳过，交互由 Pat 真机验收。见 [故事揭晓交接](docs/handoffs/2026-10-07-fttr-story-reveal-handoff.md)。
+- 当前修正候选 **0.12.0（build 27）**：修正朋友头像 / 姓名对齐、房间线路端点、补画普通路由器前的光猫，并改为直接的设备与接线讲解。集中运行验证及安装包核验待本轮进行，真机阅读效果待 Pat 验收。见 [反馈修复交接](docs/handoffs/2026-10-07-lesson-feedback-fix-handoff.md)。
 
-- **本轮试学反馈审核（仅文档修正）**：Pat 指出朋友头像对齐错误、线条被底色遮挡、普通路由器图缺少光猫，以及答后文案反复使用模糊比喻。已查明源码与提交来源，修正 COURSE_GUIDE / DESIGN 并整理替换文案；App 正文和图示尚未修改，没有新构建或 IPA。见 [审核与待实施方案](docs/handoffs/2026-10-07-home-network-copy-audit-handoff.md)。
+- 上一试学候选 **0.11.0（build 26）**：朋友名移到气泡上方，短气泡按正文收拢；答后以房间连线替代接口清单主图，从房间细线故事逐步引出 FTTR，最后用独立名称卡显示 FTTR / (Fiber to the Room) / 光纤到房间。接口详情默认折叠。[package 构建](https://github.com/perinchiang/wanggan-ios/actions/runs/37520749808) 已通过（源码 `eafe403`，1 分 55 秒，74 Core / 4 Web、iPhone Release 与安装包核验）；原生 UI / 模拟器截图明确跳过，交互由 Pat 真机验收。见 [故事揭晓交接](docs/handoffs/2026-10-07-fttr-story-reveal-handoff.md)。
+
+- **此前试学反馈审核（历史记录）**：Pat 指出朋友头像对齐错误、线条被底色遮挡、普通路由器图缺少光猫，以及答后文案反复使用模糊比喻。已查明源码与提交来源，修正 COURSE_GUIDE / DESIGN 并整理替换文案；当时仅审核；后续源码修复与验证范围以上方 0.12.0 交接为准。见 [审核与待实施方案](docs/handoffs/2026-10-07-home-network-copy-audit-handoff.md)。
 
 - 上一候选 **0.8.1（build 22）**：收窄用户气泡两侧留白，沿用 0.8.0 的退出、故事题、原位替换讲解和完成页修正。按 Pat 明确要求只做 Core / Web 和快速 iPhone 打包，原生交互由 Pat 真机检查；[package 构建](https://github.com/perinchiang/wanggan-ios/actions/runs/37513241703) 通过（源码 `1b4f169`，1 分 56 秒，67 Core / 4 Web、iPhone Release 与安装包核验）；未跑原生 UI。
 

@@ -66,7 +66,6 @@ struct ConversationBubble: View {
                 } else if role == "friend" {
                     Image(systemName: "person.crop.circle.fill")
                         .font(.system(size: 32))
-                        .padding(.top, 30)
                         .accessibilityHidden(true)
                 } else {
                     PacketMascot(size: 34).padding(.top, 10)
@@ -76,6 +75,7 @@ struct ConversationBubble: View {
             VStack(alignment: .leading, spacing: 6) {
                 if role == "friend" {
                     Text("朋友").font(.caption.weight(.semibold)).foregroundStyle(Theme.muted)
+                        .frame(minHeight: 32, alignment: .leading)
                 }
                 ConversationText(text: text, terms: highlightedTerms,
                                  fontSize: isQuestion ? questionFontSize : bodyFontSize,

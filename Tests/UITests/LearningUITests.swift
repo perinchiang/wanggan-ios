@@ -123,10 +123,10 @@ final class LearningUITests: XCTestCase {
         let diagramCenterY = topology.frame.midY
         var explanationY: CGFloat?
         let paragraphs = [
-            "先看弱电箱里的设备。入户光纤直接插进光猫（ONT）；它负责终结运营商的光纤接入，并把连接交给家里的以太网一侧。",
-            "师傅再用一根网线把光猫接到路由器。路由器负责组织家里的网络，并把这张家庭网络连接到上游。",
-            "于是手机通过 Wi‑Fi 连到路由器，电脑也可以通过网线连到它。Wi‑Fi 只是设备加入家庭网络的一种方式，不是路由器唯一的工作。",
-            "所以你家不是“多装了一台”，而是把两份工作分开做：光猫负责光纤接入，路由器负责家庭网络。两份工作也可以被做进同一台设备里。"
+            "弱电箱里的设备叫光猫（ONT）。入户光纤接在它上面，家里的设备通过它接入运营商的网络。",
+            "师傅用一根网线把光猫接到路由器。路由器连接家里的手机、电脑，再通过光猫接入互联网。",
+            "手机可以通过 Wi-Fi 连接路由器，电脑也可以用网线连接。同一台家用路由器通常支持这两种连接方式。",
+            "你家分别安装了光猫和路由器。有些设备同时具备这两种功能，叫光猫路由一体机，所以有的家庭只装一台。"
         ]
         let stages = ["光纤入户、光猫", "光纤入户、光猫、路由器",
                       "光纤入户、光猫、路由器、手机、电脑", "光纤入户、光猫、路由器、手机、电脑"]
@@ -164,7 +164,7 @@ final class LearningUITests: XCTestCase {
         }
         XCTAssertTrue(app.staticTexts["+30 XP"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.staticTexts["completion-lesson-title"].label, "宽带师傅为什么装了两个盒子？")
-        XCTAssertFalse(app.staticTexts["光猫负责接入光纤网络；家用路由器连接家里的网络和上游，通常还集成 Wi-Fi 接入与有线交换。两个盒子可以分工，也可以合在一起。"].exists)
+        XCTAssertFalse(app.staticTexts["光猫连接运营商的光纤网络，家用路由器通过光猫上网，并让手机、电脑通过 Wi-Fi 或网线接入家庭网络。有些设备集成了光猫和路由器的功能。"].exists)
         screenshot("H04-completion")
         tap("finish-session")
         XCTAssertEqual(app.staticTexts["xp-badge"].label, "30 经验值")
