@@ -4,7 +4,7 @@
 
 ## 当前版本
 
-- 反馈修正版候选 **0.8.0（build 21）**：主动确认退出丢弃当前草稿；用户气泡文字左对齐；设备图讲解气泡逐步替换；朋友换机场景与完成页文案重做。已完成历史与 XP 保留，后台意外中断仍可恢复。本地检查完成后集中运行 package / smoke，运行结果见 [反馈修正交接](docs/handoffs/2026-10-07-exit-and-story-feedback-handoff.md)，不能沿用 build 20 的 CI 结果。
+- 反馈修正版候选 **0.8.0（build 21）**：主动确认退出丢弃当前草稿；用户气泡文字左对齐；设备图讲解气泡逐步替换；朋友换机场景与完成页文案重做。已完成历史与 XP 保留，后台意外中断仍可恢复。[package #49](https://github.com/perinchiang/wanggan-ios/actions/runs/37508868129) 已通过（源码 `0da10ed`，1 分 46 秒，67 Core / 4 Web、iPhone Release 及安装包核验）；原生 smoke 进行中。结果见 [反馈修正交接](docs/handoffs/2026-10-07-exit-and-story-feedback-handoff.md)，不能沿用 build 20 的 CI 结果。
 
 - 快速试学候选 **0.7.0（build 20）**，源码 `ab8bc71`：[手动 package 构建](https://github.com/perinchiang/wanggan-ios/actions/runs/37505413864) 已通过，触发至完成 1 分 28 秒，62 Core / 4 Web、iPhone Release 编译、IPA 上传及本地安装包核验通过。家庭网络故事课沿用 build 19 的生活对话、稳定滚动、拓扑焦点高亮和跳过配对；本轮只新增快速打包模式及提高 build 号。详见 [快速试学包交接](docs/handoffs/2026-10-07-quick-trial-ipa-handoff.md)。本次没有运行原生 UI / 模拟器截图，真机试学待 Pat 反馈。
 

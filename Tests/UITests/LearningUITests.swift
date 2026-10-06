@@ -119,7 +119,9 @@ final class LearningUITests: XCTestCase {
         XCTAssertTrue(topology.waitForExistence(timeout: 5))
         XCTAssertEqual(topology.value as? String, "当前显示：光纤入户")
         screenshot("H02-topology-first-node")
-        let diagramY = topology.frame.minY
+        // Accessibility bounds grow symmetrically as upper/lower nodes appear.
+        let diagramCenterY = topology.frame.midY
+        var explanationY: CGFloat?
         let paragraphs = [
             "先看弱电箱里的设备。入户光纤直接插进光猫（ONT）；它负责终结运营商的光纤接入，并把连接交给家里的以太网一侧。",
             "师傅再用一根网线把光猫接到路由器。路由器负责组织家里的网络，并把这张家庭网络连接到上游。",
@@ -137,7 +139,10 @@ final class LearningUITests: XCTestCase {
             if index > 0 {
                 XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", paragraphs[index - 1])).firstMatch.exists, "Previous explanation is replaced")
             }
-            XCTAssertEqual(topology.frame.minY, diagramY, accuracy: 2, "Diagram stays in place without scrolling")
+            XCTAssertEqual(topology.frame.midY, diagramCenterY, accuracy: 2, "Diagram center stays in place without scrolling")
+            if let explanationY {
+                XCTAssertEqual(bubble.frame.minY, explanationY, accuracy: 2, "New explanation replaces the previous bubble in place")
+            } else { explanationY = bubble.frame.minY }
             XCTAssertTrue(bubble.isHittable)
             XCTAssertLessThan(bubble.frame.maxY, app.buttons["primary-action"].frame.minY)
             screenshot("H02-explanation-\(index + 1)")

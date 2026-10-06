@@ -22,7 +22,7 @@
 
 ## Not completed / 尚未完成
 
-当前候选的 macOS Core / iPhone 构建 / 原生 UI 运行与 IPA 核验待执行；Pat 真机体验待反馈。
+原生 smoke 中四项退出 / 恢复 / IPv4 流程通过；故事课定位断言修正后使用 home 专项复核中。Pat 真机体验待反馈。
 
 ## Known issues / 已知问题
 
@@ -30,7 +30,10 @@ Windows 无 Swift / iOS 工具链。VoiceOver、最大字号及小屏真机尚�
 
 ## Verification / 已做验证
 
-本地 JSON / YAML 解析、修改文档链接和 `git diff --check` 通过；4 项 Web 回归通过。课程数据比较确认只有 home-two-boxes 内容变更，其他小节及目录 / 短复习资源保持一致。Swift / 原生运行结果待 macOS CI，不沿用旧版通过记录。
+本地 JSON / YAML 解析、修改文档链接和 `git diff --check` 通过；4 项 Web 回归通过。课程数据比较确认只有 home-two-boxes 内容变更，其他小节及目录 / 短复习资源保持一致。
+- [package #49 / 37508868129](https://github.com/perinchiang/wanggan-ios/actions/runs/37508868129) success，源码 `0da10edcf24047782fa9c3e819aa3a751d572d9b`；触发到完成 1 分 46 秒，67 Core / 4 Web、iPhone Release 编译与 IPA 上传通过。
+- IPA 核验：ZIP 完整、0.8.0 / 21 / 原 bundle ID、iPhoneOS arm64 可执行文件、lessons.json / 离线 HTML 与候选源码一致、Assets.car 存在。包为 799046 bytes，SHA256 `dfc4c08f2f6ca287058b51c500a6cf70aef81077aaa99cfe515ef840162e9ae4`。
+- IPA、试学清单及日志在 `C:/Users/Administrator/Documents/wanggan/outputs/WangGan-0.8.0-build21/`；[smoke 37509234078](https://github.com/perinchiang/wanggan-ios/actions/runs/37509234078) 在同一源码上执行 5 项检查，4 项通过，故事课图位断言失败：新增上 / 下两行设备扩展了可访问性包围框，minY 不等于固定容器位置。截图确认前两条气泡替换、光纤 / 光猫位置不变；测试改为比较图形中心及气泡顶部位置（不放宽原位替换要求），用 home 专项继续检查未到达的追问 / 完成页。应用源码 / 资源未再修改，不再导出内容相同的 IPA。
 
 ## Next recommended task / 推荐下一步
 

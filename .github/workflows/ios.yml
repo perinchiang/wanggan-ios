@@ -10,6 +10,7 @@ on:
           - quick
           - package
           - smoke
+          - home
           - full
           - ipv4
           - review
@@ -105,6 +106,8 @@ jobs:
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testHomeTwoBoxesFlow')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4FoundationAddressRoleFlow')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testShortReviewResumesWithoutReplacingMainOrDuplicatingXP')
+          elif [ '${{ inputs.ui_scope }}' = 'home' ]; then
+            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testHomeTwoBoxesFlow')
           elif [ '${{ inputs.ui_scope }}' = 'ipv4' ]; then
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testSubnetResumesAndCompletesOnStepPlayer')
           elif [ -z '${{ inputs.ui_scope }}' ] || [ '${{ inputs.ui_scope }}' = 'foundation' ]; then
