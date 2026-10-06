@@ -378,7 +378,7 @@ struct StepLessonPlayer: View {
         case .diagram:
             if lesson.ipv4Foundation != nil {
                 let progress = session.ipv4FoundationProgress ?? IPv4FoundationProgress()
-                if progress.stage >= (lesson.ipv4Foundation?.stageCount ?? 4) - 1 { return "完成探索" }
+                if progress.stage >= (lesson.ipv4Foundation?.stageCount ?? 4) - 1 { return "完成本课" }
                 return "下一步"
             }
             if lesson.subnetMaskIntroduction != nil {
