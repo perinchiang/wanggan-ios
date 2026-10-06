@@ -2,7 +2,7 @@
 
 ## Current task / 本轮任务
 
-处理 Pat 的截图反馈：主动退出不保存本次进度、用户气泡左对齐、朋友家场景重写、完成页简化，以及固定设备图下只展示当前讲解气泡。
+处理 Pat 的截图反馈：主动退出不保存本次进度、用户气泡左对齐、朋友家场景重写、完成页简化，以及固定设备图下只展示当前讲解气泡；后续追加气泡内边距、正文荧光底色和朋友换机动机。
 
 ## Completed / 已完成
 
@@ -16,6 +16,8 @@
 - Pat 追加指出用户气泡右边留白偏多：0.8.1 build 22 将用户气泡水平内边距 20 → 10 pt，增加 20 pt 正文宽度。
 - Pat 明确原生交互由本人检查：AGENTS / ARCHITECTURE 同步为默认 Core / Web + package，不主动运行原生 UI / 截图。
 
+- 0.9.0 build 23：提问气泡水平内边距也收至 10 pt；移除单独关键词胶囊，使用 UILabel 原生富文本在正文各处关键词后加荧光底色并按宽度测量高度。朋友对白加入 Pat 提供的发烫 / 换机动机，合并重复开场。
+
 ## Decisions made / 本轮关键决策
 
 - 主动退出代表放弃本次未完成会话；既有成果不是本次草稿，不回滚。
@@ -25,7 +27,7 @@
 
 ## Not completed / 尚未完成
 
-0.8.1 build 22 的快速 package / IPA 核验待执行；原生交互与真机换行效果由 Pat 验收，不再自动跑。
+0.9.0 build 23 的快速 package / IPA 核验待执行；原生交互与真机换行效果由 Pat 验收，不再自动跑。
 
 ## Known issues / 已知问题
 
@@ -38,6 +40,8 @@ Windows 无 Swift / iOS 工具链。VoiceOver、最大字号及小屏真机尚�
 - IPA 核验：ZIP 完整、0.8.0 / 21 / 原 bundle ID、iPhoneOS arm64 可执行文件、lessons.json / 离线 HTML 与候选源码一致、Assets.car 存在。包为 799046 bytes，SHA256 `dfc4c08f2f6ca287058b51c500a6cf70aef81077aaa99cfe515ef840162e9ae4`。
 - IPA、试学清单及日志在 `C:/Users/Administrator/Documents/wanggan/outputs/WangGan-0.8.0-build21/`；[smoke 37509234078](https://github.com/perinchiang/wanggan-ios/actions/runs/37509234078) 在同一源码上执行 5 项检查，4 项通过，故事课图位断言失败：新增上 / 下两行设备扩展了可访问性包围框，minY 不等于固定容器位置。截图确认前两条气泡替换、光纤 / 光猫位置不变；测试改为比较图形中心及气泡顶部位置（不放宽原位替换要求），用 [home 专项 37511441581](https://github.com/perinchiang/wanggan-ios/actions/runs/37511441581) 复核时，模拟器编译通过，测试命令连续 180 秒无输出被 watchdog 终止，没有实际故事课通过记录。Pat 随后要求不再跑原生交互，未继续尝试。0.8.0 的专项复核期间应用源码 / 资源未修改，不再导出内容相同的 IPA；随后气泡宽度改动单独提升为 0.8.1 build 22。
 
+- [0.8.1 build 22 package / 37513241703](https://github.com/perinchiang/wanggan-ios/actions/runs/37513241703) success，源码 `1b4f1694d1525104fc1036baf3518e73b66c2112`，1 分 56 秒；67 Core / 4 Web，iPhone Release 与 IPA 核验通过，原生 UI / 截图明确跳过。该包 799047 bytes，SHA256 `b64c1d0e39b8ef421fd22f3bafc1c81159bc6792b7ea4342483a0b5ab61fc6ef`，输出在 `outputs/WangGan-0.8.1-build22/`。
+
 ## Next recommended task / 推荐下一步
 
-按 Pat 指定工作方式快速交付 0.8.1 build 22，附用户气泡宽度 / 确认退出 / 设备讲解 / 朋友换机 / 完成页清单，由 Pat 真机验收后反馈。
+按 Pat 指定工作方式快速交付 0.9.0 build 23，附用户气泡宽度 / 确认退出 / 设备讲解 / 朋友换机 / 完成页清单，由 Pat 真机验收后反馈。

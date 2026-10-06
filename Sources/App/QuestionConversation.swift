@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct QuestionConversation: View {
     let question: Question
@@ -44,7 +45,7 @@ struct ConversationBubble: View {
     let text: String
     var isQuestion = false
     var role: String? = nil
-    var emphasis: String? = nil
+    var highlightedTerms: [String] = []
 
     private var isUser: Bool { role == "user" }
 
@@ -74,19 +75,17 @@ struct ConversationBubble: View {
                 if role == "friend" {
                     Text("朋友").font(.caption.weight(.semibold)).foregroundStyle(Theme.muted)
                 }
-                if let emphasis, !emphasis.isEmpty {
-                    Text(emphasis)
-                        .font(.caption.weight(.bold))
-                        .padding(.horizontal, 9).padding(.vertical, 4)
-                        .background(Theme.lime.opacity(0.55), in: .capsule)
+                if highlightedTerms.isEmpty {
+                    Text(text)
+                        .font(.system(size: isQuestion ? 22 : 20, weight: isQuestion ? .bold : .medium))
+                        .lineSpacing(6)
+                        .multilineTextAlignment(.leading)
+                } else {
+                    HighlightedConversationText(text: text, terms: highlightedTerms)
                 }
-                Text(text)
-                    .font(.system(size: isQuestion ? 22 : 20, weight: isQuestion ? .bold : .medium))
-                    .lineSpacing(6)
-                    .multilineTextAlignment(.leading)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, isUser ? 10 : 20)
+            .padding(.horizontal, isUser || isQuestion ? 10 : 20)
             .padding(.vertical, 20)
             .background(isUser || isQuestion ? Theme.lime.opacity(0.24) : Theme.surface,
                         in: .rect(topLeadingRadius: isUser ? 22 : 6,
@@ -103,6 +102,54 @@ struct ConversationBubble: View {
             }
         }
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// Inline marker backgrounds keep the paragraph's natural wrapping on iOS 17.
+/// UILabel renders attributed background colors without a separate keyword row.
+private struct HighlightedConversationText: UIViewRepresentable {
+    let text: String
+    let terms: [String]
+
+    func makeUIView(context: Context) -> UILabel {
+        let label = UILabel()
+        label.numberOfLines = 0
+        label.backgroundColor = .clear
+        label.lineBreakMode = .byWordWrapping
+        label.isAccessibilityElement = true
+        label.setContentCompressionResistancePriority(.required, for: .vertical)
+        return label
+    }
+
+    func updateUIView(_ label: UILabel, context: Context) {
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.lineSpacing = 6
+        paragraph.alignment = .left
+        paragraph.lineBreakMode = .byWordWrapping
+        let attributed = NSMutableAttributedString(string: text, attributes: [
+            .font: UIFont.systemFont(ofSize: 20, weight: .medium),
+            .foregroundColor: UIColor(Theme.ink),
+            .paragraphStyle: paragraph
+        ])
+        let source = text as NSString
+        for term in Set(terms) where !term.isEmpty {
+            var remaining = NSRange(location: 0, length: source.length)
+            while remaining.length > 0 {
+                let range = source.range(of: term, options: [], range: remaining)
+                guard range.location != NSNotFound else { break }
+                attributed.addAttribute(.backgroundColor, value: UIColor(Theme.lime.opacity(0.5)), range: range)
+                let end = NSMaxRange(range)
+                remaining = NSRange(location: end, length: source.length - end)
+            }
+        }
+        label.attributedText = attributed
+        label.accessibilityLabel = text
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UILabel, context: Context) -> CGSize? {
+        guard let width = proposal.width, width.isFinite, width > 0 else { return nil }
+        let measured = uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+        return CGSize(width: width, height: ceil(measured.height))
     }
 }
 

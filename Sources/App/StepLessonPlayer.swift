@@ -141,11 +141,11 @@ struct StepLessonPlayer: View {
         if visibleTextCount > 0 {
             if lesson.topology != nil {
                 let paragraph = lesson.explanation[min(visibleTextCount, lesson.explanation.count) - 1]
-                ConversationBubble(text: paragraph, emphasis: topologyEmphasis(in: paragraph))
+                ConversationBubble(text: paragraph, highlightedTerms: topologyKeywords(in: paragraph))
                     .accessibilityIdentifier("topology-explanation-text")
             } else {
                 ForEach(Array(lesson.explanation.prefix(visibleTextCount)), id: \.self) { paragraph in
-                    ConversationBubble(text: paragraph, emphasis: topologyEmphasis(in: paragraph))
+                    ConversationBubble(text: paragraph, highlightedTerms: topologyKeywords(in: paragraph))
                         .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
             }
@@ -365,10 +365,12 @@ struct StepLessonPlayer: View {
         return conversationScrollTarget ?? "step-\(session.stepIndex)"
     }
 
-    private func topologyEmphasis(in paragraph: String) -> String? {
-        guard let topology = lesson.topology else { return nil }
-        let labels = topology.nodes.map(\.label).filter { paragraph.contains($0) }
-        return labels.isEmpty ? nil : labels.joined(separator: " · ")
+    private func topologyKeywords(in paragraph: String) -> [String] {
+        guard let topology = lesson.topology else { return [] }
+        let terms = topology.nodes.map { node in
+            node.label.contains("光纤") ? "光纤" : node.label
+        }
+        return terms.filter { paragraph.contains($0) }
     }
 
     private func feedbackCard(title: String, text: String, correct: Bool) -> some View {
