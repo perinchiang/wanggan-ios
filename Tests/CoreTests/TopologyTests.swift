@@ -84,6 +84,13 @@ final class TopologyTests: XCTestCase {
         plan.advance(&session)
         XCTAssertTrue(plan.isComplete(session))
         XCTAssertEqual(session.mistakes, 0)
+
+        let completed = session.stageSession(lesson: lesson)
+        XCTAssertEqual(completed.stage, .complete)
+        XCTAssertTrue(completed.matchingSolved, "A skipped optional matching step must count as satisfied")
+        var ledger = ProgressLedger()
+        XCTAssertEqual(ledger.complete(completed), 30)
+        XCTAssertNotNil(ledger.lessons[lesson.id])
     }
 
     func testCatalogRejectsTopologyBeyondExplanationBudget() throws {

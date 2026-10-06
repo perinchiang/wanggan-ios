@@ -341,8 +341,8 @@ extension StepSession {
         result.selectedAnswer = selectedAnswer
         result.answerSubmitted = answerSubmitted
         result.matches = matches
-        result.matchingSubmitted = matchingSubmitted
-        result.matchingSolved = matchingSolved
+        result.matchingSubmitted = lesson.usesMatching ? matchingSubmitted : true
+        result.matchingSolved = lesson.usesMatching ? matchingSolved : true
         result.challengeAnswer = challengeAnswer
         result.challengeSubmitted = challengeSubmitted
         result.challengeSolved = challengeSolved
