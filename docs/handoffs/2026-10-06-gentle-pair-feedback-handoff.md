@@ -24,6 +24,7 @@ Pat 要求删除「联系朋友 / 联系小林」等突兀题目，配对不画�
 
 ## Known issues / 已知问题
 - App 当前仍强制浅色，不能宣称完整深色主题验收。
+- 已查看最大字号静态截图：128 / 64 / 32 / 16 位值标签在八列图中竖向折行。流程与算式可见性通过，不代表图表的最大字号布局已验收；后续需要纵向替代布局。本轮交付的普通字号图表正常。
 - 保持原短复习与历史课程兼容数据，不扩展 Mastery / 调度系统。
 
 ## Verification / 已做验证
@@ -32,4 +33,14 @@ Pat 要求删除「联系朋友 / 联系小林」等突兀题目，配对不画�
 - 原生 foundation scope 包含前三课、Hop 双向即时配对 / 错选自动恢复 / 部分成功重启恢复，以及最大字号静态二进制演示；首轮 Actions 37433310553：56 Core、4 Web、device / simulator 编译通过，Hop 与前两课原生 UI 通过，二进制两项失败。实际可访问树把 Surface 的标识传播到子算式，覆盖 foundation-bit-equation；移除外层标识，保留算式自己标识后待复测。已查看首轮深色选中、红色反馈、绿色锁定与二进制开始阶段真实截图；正确卡片文字改为深色以改善可读性，五课提示去掉“连到”。
 
 ## Next recommended task / 推荐下一步
-完成本次 CI、查看原生截图并交付唯一版本 IPA；然后由 Pat 试学，再决定第一 / 二课分镜是否继续调整。
+由 Pat 真机试学 0.6.2 build 15 的前三课与配对反馈，再决定第一 / 二课分镜是否继续调整；大字号图表后续提供纵向替代。
+
+### 最终运行证据
+
+- App 源码：`a1d565862a45e934302e0d77c03245b316900843`，0.6.2 build 15。
+- [Actions 37435257801](https://github.com/perinchiang/wanggan-ios/actions/runs/37435257801) success：56 Core、4 Web、iPhone Release / simulator 编译、5 原生 UI 全部通过。
+- 5 UI：前三课无题完成（第二课回看 / 重启恢复）、Hop 两侧起选 / 错配自动恢复 / 正确项部分恢复 / 自动完成、最大字号静态 13 演示流程。共 225.972 秒实际测试，不等于整个 CI 用时。未重跑其他课程 UI 全套。
+- 已查看实际截图：深色起选、红色不匹配、绿色正确对、普通字号 8 + 4 + 1 = 13、最大字号静态算式。最大字号位值标签折行限制如上。
+- IPA：`C:/Users/Administrator/Downloads/WangGan-0.6.2-build15-unsigned.ipa`（742770 bytes）；SHA256 `a04c7697b2bc77816ec581a55426cf51e991ff7c309864f39b2aea79269abe86`。已解析 Info.plist 确認 0.6.2 / 15 / com.perinchiang.wanggan，核对 lessons.json 与本轮源码一致及可执行文件、Web 资源、Assets.car。
+- 日志与截图：`C:/Users/Administrator/Downloads/WangGan-0.6.2-build15-CI-37435257801/verification/`。首轮失败证据另保留在 `C:/Users/Administrator/Downloads/WangGan-0.6.2-CI-37433310553/verification/`。
+- 实体 iPhone、完整 VoiceOver、真实系统 Reduce Motion 切换尚未验收；未把观察完成虚构为首次独立作答。
