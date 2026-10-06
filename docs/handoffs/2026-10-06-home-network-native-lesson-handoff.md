@@ -32,7 +32,7 @@ Pat 对 0.7.0 漫画方向 PR #1（`codex/comic-home-network`，7.8MB AI 插画 
 - 第 1 章后续两课（测速 / 公网 IP、NAT「出去以后看到谁」）尚未设计实现。
 - 归档的 `subnet-mask` 试验课内容未来可回收进第 2 章后续，未动。
 - 旧 `ci/comic-0.7.0-build16` 远端分支未删除（留给 Pat 决定）。
-- CI 全套（构建 + Core 测试 + UI 测试 + IPA）未运行，待 Pat 手动触发。
+- CI 已运行两轮：第一轮因旧课程顺序断言失败，第二轮 Core / Web / iPhone 编译均通过，UI 剩两个按钮文案断言失败。已对齐「完成本课」文案，最终全套复验与 IPA 导出待本轮完成。
 
 ## Known issues / 已知问题
 
@@ -44,10 +44,12 @@ Pat 对 0.7.0 漫画方向 PR #1（`codex/comic-home-network`，7.8MB AI 插画 
 
 - **JSON 全量校验（Node 模拟 Swift 校验规则）**：目录 ID 覆盖（archived + ordered == lessons）、topology 全部约束、question / challenge correctID、matching solution 双向吻合、scene id 唯一、sources https——全部通过。
 - **静态走查**：对照 `LessonPlan` 逐步核对 Core 测试推进序列与 UI 测试点击序列（提交反馈 / 「看看为什么」推进 / matchPair 即时锁定 / challenge 两击完成 / +30 XP 结算）；修正了上轮遗留的 4 处问题——TopologyTests 差一步 advance（`submitChallenge` stepIndex 守卫会静默失效）、3 处 UI 测试 XP 断言未偏移、H02 截图时机在提交反馈而非图示步。
-- **未执行**：本机无 Swift 工具链，`swift test`、UI 测试、构建、IPA 导出全部待 macOS CI。以上静态验证不能替代运行证据。
+- **第一轮 CI（`fc7a2f7`，[37475768340](https://github.com/perinchiang/wanggan-ios/actions/runs/37475768340)）**：62 项 Core 中 11 个断言失败，集中在 4 个仍假设 IPv4 基础课为路线首课的用例。`541bf11` 已修正课程选择与推荐预期。
+- **第二轮 CI（`541bf11`，[37478002587](https://github.com/perinchiang/wanggan-ios/actions/runs/37478002587)）**：Core、Web、iPhone 目标编译通过；17 项 UI 用例中 12 项通过、3 项旧归档试验课跳过、2 项失败。`testHomeTwoBoxesFlow` 完整流程通过；失败均来自共享 helper 期待「完成探索」，实际基础课按钮为「完成本课」。本轮仅对齐该测试文案，不改应用代码、课程、版本或存储。
+- **尚待验证**：最终全套 UI 复验与 IPA 上传；真机试学、完整 VoiceOver 和拓扑图大字号验收未执行。
 
 ## Next recommended task / 推荐下一步
 
-1. Pat 在 GitHub 手动触发 iOS 工作流（候选提交：本分支，0.7.0 build 17），重点看 `testHomeTwoBoxesFlow` 与全套 XP 断言。
+1. Agent 在本分支继续触发完整 iOS 工作流（0.7.0 build 17），复验两个基础课用例与全套流程，成功后下载 IPA 和截图；仅测试修正不会改变安装包版本。
 2. CI 通过后合并进主线并真机试学，重点验收：拓扑图渐进揭示节奏、数据流动画时机（第 3 段讲解起跑）、VoiceOver 整图朗读。
 3. 试学满意后，以本课为样板设计第 1 章第 2 课（测速 / 公网 IP），复用 TopologyDiagram。

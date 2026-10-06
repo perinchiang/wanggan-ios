@@ -80,7 +80,7 @@ final class LearningUITests: XCTestCase {
             }
         }
         screenshot("\(evidencePrefix)-02-final-stage")
-        XCTAssertEqual(app.buttons["primary-action"].label, "完成探索")
+        XCTAssertEqual(app.buttons["primary-action"].label, "完成本课")
         tap("primary-action")
         XCTAssertTrue(app.staticTexts["+30 XP"].waitForExistence(timeout: 5))
         screenshot("\(evidencePrefix)-03-complete")
