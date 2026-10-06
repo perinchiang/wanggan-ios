@@ -12,7 +12,7 @@ final class TopologyTests: XCTestCase {
         TopologySpec(nodes: nodes, links: links, flow: flow, accessibilitySummary: summary)
     }
 
-    private let fiber = TopologyNode(id: "fiber", symbol: "cableconnector", label: "光纤", stage: 1, column: 0, row: 1)
+    private let fiber = TopologyNode(id: "fiber", symbol: "cable.connector", label: "光纤", stage: 1, column: 0, row: 1)
     private let ont = TopologyNode(id: "ont", symbol: "externaldrive", label: "光猫", stage: 2, column: 1, row: 1)
     private let router = TopologyNode(id: "router", symbol: "wifi.router", label: "路由器", stage: 3, column: 2, row: 1)
 

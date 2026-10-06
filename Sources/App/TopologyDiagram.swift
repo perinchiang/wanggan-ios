@@ -46,6 +46,8 @@ struct TopologyDiagram: View {
         .frame(height: 200)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(spec.accessibilitySummary)
+        .accessibilityValue("当前显示：" + visibleNodes.map(\.label).joined(separator: "、"))
+        .accessibilityIdentifier("topology-diagram")
         .task(id: flowReady) {
             guard flowReady, animated else { return }
             if reduceMotion { traveling = true }

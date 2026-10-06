@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 
 final class LearningUITests: XCTestCase {
     private var app: XCUIApplication!
@@ -99,13 +100,31 @@ final class LearningUITests: XCTestCase {
         tap("question-option-split")
         tap("primary-action") // submit the prediction and read the feedback
         tap("primary-action") // advance to the diagram step (stage 1: the fiber node)
+        XCTAssertNotNil(UIImage(systemName: "cable.connector"), "The fiber symbol must exist on this iOS runtime")
+        let topology = app.descendants(matching: .any)["topology-diagram"].firstMatch
+        XCTAssertTrue(topology.waitForExistence(timeout: 5))
+        XCTAssertEqual(topology.value as? String, "当前显示：光纤入户")
         screenshot("H02-topology-first-node")
-        for _ in 0..<8 {
+        for expectedNodes in ["光纤入户、光猫", "光纤入户、光猫、路由器",
+                              "光纤入户、光猫、路由器、手机、电脑"] {
+            tap("primary-action")
+            XCTAssertEqual(topology.value as? String, "当前显示：" + expectedNodes)
+        }
+        // Capture the diagram while it is still on the explanation page.
+        for _ in 0..<5 {
+            if topology.isHittable && topology.frame.minY > 100 &&
+                topology.frame.maxY < app.buttons["primary-action"].frame.minY { break }
+            app.swipeDown()
+        }
+        XCTAssertTrue(topology.isHittable)
+        XCTAssertLessThan(topology.frame.maxY, app.buttons["primary-action"].frame.minY)
+        screenshot("H03-topology-full")
+        for _ in 0..<4 {
             if app.buttons["match-left-fiber-in"].exists { break }
             tap("primary-action")
         }
         XCTAssertTrue(app.buttons["match-left-fiber-in"].exists, "Matching appears after the explanation")
-        screenshot("H03-topology-full-and-matching")
+        screenshot("H03-matching")
         tap("match-left-fiber-in")
         tap("match-right-ont")
         tap("match-left-home-net")

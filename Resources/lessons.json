@@ -172,7 +172,7 @@
         "nodes": [
           {
             "id": "fiber",
-            "symbol": "cableconnector",
+            "symbol": "cable.connector",
             "label": "光纤入户",
             "stage": 1,
             "column": 0,
@@ -290,7 +290,7 @@
           {
             "id": "fiber-in",
             "text": "接住光纤里的信号",
-            "symbol": "cableconnector"
+            "symbol": "cable.connector"
           },
           {
             "id": "home-net",
