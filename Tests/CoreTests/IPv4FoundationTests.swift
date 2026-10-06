@@ -57,17 +57,17 @@ final class IPv4FoundationTests: XCTestCase {
         XCTAssertEqual(restored, progress)
     }
 
-    func testFirstThreeFoundationLessonsAreActiveAndOldPilotsAreArchived() throws {
+    func testFoundationLessonsFollowTheStoryLessonAndOldPilotsAreArchived() throws {
         let content = try catalog()
         try content.validate()
 
         XCTAssertEqual(
-            Array(content.orderedLessonIDs.prefix(3)),
-            ["ipv4-address-role", "ipv4-address-format", "ipv4-octet-binary"]
+            Array(content.orderedLessonIDs.prefix(4)),
+            ["home-two-boxes", "ipv4-address-role", "ipv4-address-format", "ipv4-octet-binary"]
         )
         XCTAssertEqual(content.archivedLessonIDs, ["ipv4-address", "subnet-mask"])
 
-        let foundations = content.orderedLessonIDs.prefix(3).compactMap { id in
+        let foundations = content.orderedLessonIDs.compactMap { id -> IPv4FoundationKind? in
             content.lessons.first { $0.id == id }?.ipv4Foundation?.kind
         }
         XCTAssertEqual(foundations, [.addressRole, .addressFormat, .octetBinary])
@@ -101,11 +101,15 @@ final class IPv4FoundationTests: XCTestCase {
 
     func testObservationCompletionNeedsFinishedProgressAndRewardsExactlyOnce() throws {
         let content = try catalog()
-        for id in content.orderedLessonIDs.prefix(3) {
-            let lesson = try XCTUnwrap(content.lessons.first { $0.id == id })
+        let foundationLessons = content.orderedLessonIDs
+            .compactMap { id in content.lessons.first { $0.id == id } }
+            .filter { $0.ipv4Foundation != nil }
+        XCTAssertEqual(foundationLessons.map(\.id),
+                       ["ipv4-address-role", "ipv4-address-format", "ipv4-octet-binary"])
+        for lesson in foundationLessons {
             let plan = LessonPlan(lesson: lesson)
             XCTAssertEqual(plan.steps.map(\.kind), [.diagram, .summary])
-            var fresh = StepSession(lessonID: id)
+            var fresh = StepSession(lessonID: lesson.id)
             plan.advance(&fresh)
             XCTAssertEqual(fresh.stepIndex, 0)
             fresh.stepIndex = plan.summaryIndex

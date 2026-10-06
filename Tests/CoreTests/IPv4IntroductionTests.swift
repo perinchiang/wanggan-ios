@@ -89,7 +89,9 @@ final class IPv4IntroductionTests: XCTestCase {
         XCTAssertEqual(ledger.complete(completed), 30)
         ledger.complete(completed)
         XCTAssertEqual(ledger.totalXP, 30)
-        XCTAssertEqual(ledger.recommendedLessonID(in: content.orderedLessonIDs), "ipv4-address-role")
+        // Completing an archived pilot must not move the main-route frontier.
+        XCTAssertEqual(ledger.recommendedLessonID(in: content.orderedLessonIDs),
+                       try XCTUnwrap(content.orderedLessonIDs.first))
     }
 
     func testInsertedLessonKeepsOldMainAndIndependentEarlierDraftAfterRelaunch() throws {
@@ -148,6 +150,8 @@ final class IPv4IntroductionTests: XCTestCase {
         XCTAssertTrue(ledger.isUnlocked("gateway", in: try catalog().orderedLessonIDs))
         XCTAssertNil(ledger.earlierDrafts)
         XCTAssertNil(ledger.draft?.ipv4IntroductionProgress)
-        XCTAssertEqual(ProgressLedger().recommendedLessonID(in: try catalog().orderedLessonIDs), "ipv4-address-role")
+        // A fresh ledger recommends the first lesson of the active route.
+        XCTAssertEqual(ProgressLedger().recommendedLessonID(in: try catalog().orderedLessonIDs),
+                       try XCTUnwrap(try catalog().orderedLessonIDs.first))
     }
 }
