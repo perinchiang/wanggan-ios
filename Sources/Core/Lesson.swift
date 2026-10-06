@@ -28,6 +28,8 @@ struct Question: Codable, Equatable {
     let options: [AnswerOption]
     let correctID: String
     let hint: String
+    /// Optional illustrated reading after a successful transfer answer.
+    let answerExplanation: [AnswerExplanation]?
 }
 
 struct MatchItem: Codable, Equatable, Identifiable {
@@ -203,6 +205,12 @@ struct LessonCatalog: Codable {
                 }
                 if question.scene.contains(where: { $0.visual == "devices" }), question.devices == nil {
                     throw ContentError.invalid("\(lesson.id) 缺少用于比较的地址")
+                }
+                if let pages = question.answerExplanation {
+                    guard !pages.isEmpty, Set(pages.map(\.id)).count == pages.count,
+                          pages.allSatisfy(\.isValid) else {
+                        throw ContentError.invalid("\(lesson.id) 的答后图解不完整")
+                    }
                 }
             }
             let exercise = lesson.matching

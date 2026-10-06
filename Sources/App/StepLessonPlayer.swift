@@ -96,7 +96,16 @@ struct StepLessonPlayer: View {
             case .conversation, .question:
                 questionPhase
             case .diagram, .text:
-                explanationPhase
+                if let page = plan.answerExplanation(at: session.stepIndex) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        DevicePortsDiagram(spec: page.diagram)
+                        ConversationBubble(text: page.text, highlightedTerms: ["光猫", "路由器", "光纤", "FTTR", "WAN", "LAN"])
+                    }
+                    .id("answer-explanation-anchor")
+                    .accessibilityIdentifier("answer-explanation-\(page.id)")
+                } else {
+                    explanationPhase
+                }
             case .matching:
                 if lesson.usesMatching {
                     TutorBubble(text: "找找哪些意思对应。")
@@ -332,6 +341,7 @@ struct StepLessonPlayer: View {
     }
 
     private var explanationScrollTarget: String? {
+        if plan.answerExplanation(at: session.stepIndex) != nil { return "answer-explanation-anchor" }
         guard lesson.topology != nil, let kind = plan.step(at: session.stepIndex)?.kind,
               kind == .diagram || kind == .text else { return nil }
         return "topology-anchor"
@@ -361,6 +371,7 @@ struct StepLessonPlayer: View {
         if lesson.ipv4Introduction != nil, plan.step(at: session.stepIndex)?.kind == .diagram {
             return "introduction-\(session.ipv4IntroductionProgress?.stage ?? 0)"
         }
+        if plan.answerExplanation(at: session.stepIndex) != nil { return "answer-explanation" }
         if explanationScrollTarget != nil { return "topology-explanation" }
         if let feedbackScrollTarget { return "\(session.stepIndex)-\(feedbackScrollTarget)" }
         return conversationScrollTarget ?? "step-\(session.stepIndex)"
@@ -404,7 +415,10 @@ struct StepLessonPlayer: View {
             return plan.step(at: session.stepIndex + 1)?.kind == .question ? "我来判断" : "继续"
         case .question:
             if session.stepIndex == plan.challengeIndex {
-                return session.challengeSolved ? "完成探索" : session.challengeSubmitted ? "再试一次" : "确认判断"
+                if session.challengeSolved {
+                    return lesson.challenge.answerExplanation == nil ? "完成探索" : "看看接口有什么不同"
+                }
+                return session.challengeSubmitted ? "再试一次" : "确认判断"
             }
             return session.answerSubmitted ? "看看为什么" : "确认答案"
         case .diagram:
@@ -436,6 +450,9 @@ struct StepLessonPlayer: View {
             }
             return lesson.explanation.isEmpty ? "找找对应关系" : "继续看一小步"
         case .text:
+            if plan.answerExplanation(at: session.stepIndex) != nil {
+                return session.stepIndex + 1 == plan.summaryIndex ? "完成探索" : "继续看一小步"
+            }
             return plan.step(at: session.stepIndex + 1)?.kind == .matching ? "找找对应关系" : "继续看一小步"
         case .matching:
             return "继续"
@@ -490,7 +507,7 @@ struct StepLessonPlayer: View {
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) {
                     if session.challengeSolved {
                         plan.advance(&session)
-                        earnedXP = store.finish(session.stageSession(lesson: lesson))
+                        if isComplete { earnedXP = store.finish(session.stageSession(lesson: lesson)) }
                     } else if session.challengeSubmitted {
                         plan.retryChallenge(in: &session)
                     } else {
@@ -558,7 +575,10 @@ struct StepLessonPlayer: View {
                 plan.advance(&session)
             }
         case .text:
-            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) { plan.advance(&session) }
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) {
+                plan.advance(&session)
+                if isComplete { earnedXP = store.finish(session.stageSession(lesson: lesson)) }
+            }
         case .matching:
             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) {
                 if session.matchingSolved { plan.advance(&session) }

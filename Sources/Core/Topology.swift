@@ -1,5 +1,42 @@
 import Foundation
 
+enum PortMedium: String, Codable {
+    case power, fiber, ethernet
+}
+
+struct DevicePortConnection: Codable, Equatable, Identifiable {
+    let id: String
+    let label: String
+    let medium: PortMedium
+    let destination: String
+}
+
+/// Physical connectors and their destinations; power is never a data path.
+struct DevicePortsSpec: Codable, Equatable {
+    let title: String
+    let ports: [DevicePortConnection]
+    /// Optional optical branches from the distribution unit to room satellites.
+    let fiberRooms: [String]?
+    let note: String
+
+    var isValid: Bool {
+        !title.isEmpty && !note.isEmpty && !ports.isEmpty &&
+        Set(ports.map(\.id)).count == ports.count &&
+        ports.filter { $0.medium == .power }.count == 1 &&
+        ports.allSatisfy { !$0.id.isEmpty && !$0.label.isEmpty && !$0.destination.isEmpty } &&
+        (fiberRooms.map { !$0.isEmpty && Set($0).count == $0.count && $0.allSatisfy { !$0.isEmpty } } ?? true) &&
+        (fiberRooms == nil || ports.contains { $0.medium == .fiber && $0.id == "downstream" })
+    }
+}
+
+struct AnswerExplanation: Codable, Equatable, Identifiable {
+    let id: String
+    let text: String
+    let diagram: DevicePortsSpec
+
+    var isValid: Bool { !id.isEmpty && !text.isEmpty && diagram.isValid }
+}
+
 /// A node in a teaching topology: one device or medium shown as a native symbol.
 struct TopologyNode: Codable, Equatable, Identifiable {
     let id: String

@@ -110,6 +110,7 @@ final class StepPlanTests: XCTestCase {
         plan.submitChallenge(lesson.challenge.correctID, in: &session)
         XCTAssertFalse(plan.isComplete(session))
         plan.advance(&session)
+        for _ in lesson.challenge.answerExplanation ?? [] { plan.advance(&session) }
         XCTAssertTrue(plan.isComplete(session))
         XCTAssertEqual(session.mistakes, 0)
     }

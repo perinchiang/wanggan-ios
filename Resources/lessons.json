@@ -326,19 +326,19 @@
         "scene": [
           {
             "id": "friend-home",
-            "text": "后来去朋友家玩，发现他们家只有一台网络设备。"
+            "text": "后来你去朋友家玩，发现他们家只有一台网络设备。"
           },
           {
             "id": "friend-question",
-            "text": "师傅来装的时候，光纤就接在这台设备上，手机的 Wi-Fi 也是它发出来的。最近它老是发烫，有点不好用。我可以拿个普通的家用路由器把它换掉吗？",
+            "text": "师傅上门安装的时候，光纤线就接在这台路由器上，手机的 WiFi 也是它发出来的。最近它老是发烫，不太好用，我可以买个家用路由器把它换掉吗？",
             "speaker": "friend"
           }
         ],
         "options": [
           {
             "id": "allinone",
-            "text": "先别直接换，光纤接入的功能还得保留。",
-            "feedback": "对。这台设备把光纤接入和家庭网络的功能合在了一起。普通家用路由器通常不能直接接替光纤接入；更换之前，要确认这份工作由谁继续完成。"
+            "text": "先别直接换，最好联系运营商，让他们提供一个新的路由器。",
+            "feedback": "对，先联系运营商检查和处理这台设备。朋友叫它“路由器”，但它还承担了光猫接入光纤的工作。普通家用路由器通常不能直接替代它；如果需要换机，要确认新设备也能完成光纤接入。"
           },
           {
             "id": "router-only",
@@ -347,12 +347,136 @@
           }
         ],
         "correctID": "allinone",
-        "hint": "更换设备之前，先确认新设备能否接替旧设备承担的功能。"
+        "hint": "朋友口中的“路由器”还接着光纤。换掉它以后，光纤接入的工作由谁完成？",
+        "answerExplanation": [
+          {
+            "id": "integrated-ports",
+            "text": "先看朋友说的这台设备。光纤接进 PON 光纤口，说明它承担光猫的接入工作；它还能组网、发 WiFi，所以是光猫路由一体机。LAN 网口用网线连电脑、电视，也可以接墙内通往各房间的网线。电源口只负责供电。",
+            "diagram": {
+              "title": "光猫路由一体机 · 接口示意",
+              "ports": [
+                {
+                  "id": "power",
+                  "label": "电源口",
+                  "medium": "power",
+                  "destination": "电源适配器"
+                },
+                {
+                  "id": "pon",
+                  "label": "PON 光纤口",
+                  "medium": "fiber",
+                  "destination": "运营商入户光纤"
+                },
+                {
+                  "id": "lan1",
+                  "label": "LAN 1",
+                  "medium": "ethernet",
+                  "destination": "房间一 · 电脑"
+                },
+                {
+                  "id": "lan2",
+                  "label": "LAN 2",
+                  "medium": "ethernet",
+                  "destination": "房间二 · 电脑"
+                },
+                {
+                  "id": "lan3",
+                  "label": "LAN 3",
+                  "medium": "ethernet",
+                  "destination": "客厅 · 电视"
+                }
+              ],
+              "note": "接口数量与排列只是示例；三个房间在这里通过网线连接。"
+            }
+          },
+          {
+            "id": "router-ports",
+            "text": "普通家用路由器也有电源口和 LAN 网口，但通常通过 WAN 网口、用网线接上游光猫，而不是直接接运营商的入户光纤。它负责家里的组网和 WiFi，没有替光猫完成光纤接入。因此，能发 WiFi 并不代表可以直接换掉朋友的设备。",
+            "diagram": {
+              "title": "普通家用路由器 · 接口示意",
+              "ports": [
+                {
+                  "id": "power",
+                  "label": "电源口",
+                  "medium": "power",
+                  "destination": "电源适配器"
+                },
+                {
+                  "id": "wan",
+                  "label": "WAN 网口",
+                  "medium": "ethernet",
+                  "destination": "上游光猫的 LAN 口"
+                },
+                {
+                  "id": "lan1",
+                  "label": "LAN 1",
+                  "medium": "ethernet",
+                  "destination": "房间一 · 电脑"
+                },
+                {
+                  "id": "lan2",
+                  "label": "LAN 2",
+                  "medium": "ethernet",
+                  "destination": "房间二 · 电脑"
+                },
+                {
+                  "id": "lan3",
+                  "label": "LAN 3",
+                  "medium": "ethernet",
+                  "destination": "客厅 · 电视"
+                }
+              ],
+              "note": "示例采用独立 WAN / LAN 网口；部分型号支持自动识别或切换。"
+            }
+          },
+          {
+            "id": "fttr-rooms",
+            "text": "那 FTTR 又是什么？它是“光纤到房间”：主设备通过下行光口，把光纤继续铺到各房间的子设备，再由子设备提供 WiFi 和 LAN 网口。图中通过分光器连接三个房间。只有一台带光纤口的设备，不能说明家里已经用了 FTTR；要看房间之间怎样连接。",
+            "diagram": {
+              "title": "FTTR 主设备 → 各房间子设备",
+              "ports": [
+                {
+                  "id": "power",
+                  "label": "电源口",
+                  "medium": "power",
+                  "destination": "电源适配器"
+                },
+                {
+                  "id": "pon",
+                  "label": "PON 光纤口",
+                  "medium": "fiber",
+                  "destination": "运营商入户光纤"
+                },
+                {
+                  "id": "downstream",
+                  "label": "下行光口",
+                  "medium": "fiber",
+                  "destination": "分光器"
+                },
+                {
+                  "id": "lan1",
+                  "label": "LAN 网口",
+                  "medium": "ethernet",
+                  "destination": "本地电脑"
+                }
+              ],
+              "note": "光口数量、分光方式依型号而定；各子设备也需要供电。",
+              "fiberRooms": [
+                "房间一",
+                "房间二",
+                "客厅"
+              ]
+            }
+          }
+        ]
       },
       "sources": [
         "https://www.imda.gov.sg/-/media/imda/files/community/consumer-education/fibre-broadband/home_networking_reference_guide_detailed.pdf",
         "https://www.asus.com/sg/support/faq/1044897/",
-        "https://www.rfc-editor.org/rfc/rfc1812"
+        "https://www.rfc-editor.org/rfc/rfc1812",
+        "https://carrier.huawei.com/en/products/fixed-network/sub-solution-access/fttr-to-home",
+        "https://consumer.huawei.com/en/support/content/en-us15806327/",
+        "https://e.huawei.com/marketingcloud/pep/asset/20000001/Material/0edddd77253d499986308fa6cde66e7f/M3T1A669N1231359291496624209/How%20to%20Configure%20Huawei%20FTTR%20-%20OptiXstar%20F50%20_Fiber%20Uplink_.pdf"
       ],
       "matchingEnabled": false
     },

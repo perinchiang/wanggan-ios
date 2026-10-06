@@ -48,6 +48,8 @@ struct ConversationBubble: View {
     var highlightedTerms: [String] = []
 
     private var isUser: Bool { role == "user" }
+    @ScaledMetric(relativeTo: .body) private var bodyFontSize: CGFloat = 20
+    @ScaledMetric(relativeTo: .title2) private var questionFontSize: CGFloat = 22
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -75,17 +77,13 @@ struct ConversationBubble: View {
                 if role == "friend" {
                     Text("朋友").font(.caption.weight(.semibold)).foregroundStyle(Theme.muted)
                 }
-                if highlightedTerms.isEmpty {
-                    Text(text)
-                        .font(.system(size: isQuestion ? 22 : 20, weight: isQuestion ? .bold : .medium))
-                        .lineSpacing(6)
-                        .multilineTextAlignment(.leading)
-                } else {
-                    HighlightedConversationText(text: text, terms: highlightedTerms)
-                }
+                ConversationText(text: text, terms: highlightedTerms,
+                                 fontSize: isQuestion ? questionFontSize : bodyFontSize,
+                                 fontWeight: isQuestion ? .bold : .medium)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, isUser || isQuestion ? 10 : 20)
+            .padding(.horizontal, 10)
             .padding(.vertical, 20)
             .background(isUser || isQuestion ? Theme.lime.opacity(0.24) : Theme.surface,
                         in: .rect(topLeadingRadius: isUser ? 22 : 6,
@@ -105,17 +103,20 @@ struct ConversationBubble: View {
     }
 }
 
-/// Inline marker backgrounds keep the paragraph's natural wrapping on iOS 17.
-/// UILabel renders attributed background colors without a separate keyword row.
-private struct HighlightedConversationText: UIViewRepresentable {
+/// Measure every paragraph at the full bubble width; avoid balanced short lines
+/// leaving a wider blank strip on the right. Also renders inline marker backgrounds.
+private struct ConversationText: UIViewRepresentable {
     let text: String
     let terms: [String]
+    let fontSize: CGFloat
+    let fontWeight: UIFont.Weight
 
     func makeUIView(context: Context) -> UILabel {
         let label = UILabel()
         label.numberOfLines = 0
         label.backgroundColor = .clear
         label.lineBreakMode = .byWordWrapping
+        label.lineBreakStrategy = []
         label.isAccessibilityElement = true
         label.setContentCompressionResistancePriority(.required, for: .vertical)
         return label
@@ -126,8 +127,9 @@ private struct HighlightedConversationText: UIViewRepresentable {
         paragraph.lineSpacing = 6
         paragraph.alignment = .left
         paragraph.lineBreakMode = .byWordWrapping
+        paragraph.lineBreakStrategy = []
         let attributed = NSMutableAttributedString(string: text, attributes: [
-            .font: UIFont.systemFont(ofSize: 20, weight: .medium),
+            .font: UIFont.systemFont(ofSize: fontSize, weight: fontWeight),
             .foregroundColor: UIColor(Theme.ink),
             .paragraphStyle: paragraph
         ])

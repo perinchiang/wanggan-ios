@@ -152,11 +152,16 @@ final class LearningUITests: XCTestCase {
         screenshot("H03-topology-full")
         revealScene(option: "challenge-option-allinone")
         XCTAssertFalse(app.descendants(matching: .any)["challenge-scene-you-recall"].exists)
-        XCTAssertTrue(app.descendants(matching: .any)["challenge-scene-friend-home"].firstMatch.label.contains("后来去朋友家玩，发现他们家只有一台网络设备。"))
+        XCTAssertTrue(app.descendants(matching: .any)["challenge-scene-friend-home"].firstMatch.label.contains("后来你去朋友家玩，发现他们家只有一台网络设备。"))
         screenshot("H03-transfer-question")
         tap("challenge-option-allinone")
         tap("primary-action")
         tap("primary-action")
+        for pageID in ["integrated-ports", "router-ports", "fttr-rooms"] {
+            XCTAssertTrue(app.descendants(matching: .any)["answer-explanation-\(pageID)"].waitForExistence(timeout: 5))
+            XCTAssertFalse(app.staticTexts["+30 XP"].exists)
+            tap("primary-action")
+        }
         XCTAssertTrue(app.staticTexts["+30 XP"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.staticTexts["completion-lesson-title"].label, "宽带师傅为什么装了两个盒子？")
         XCTAssertFalse(app.staticTexts["光猫负责接入光纤网络；家用路由器连接家里的网络和上游，通常还集成 Wi-Fi 接入与有线交换。两个盒子可以分工，也可以合在一起。"].exists)

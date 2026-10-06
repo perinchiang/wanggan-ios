@@ -188,6 +188,12 @@ schemaVersion、课程内容版本、Lesson revision、Web 契约版本独立管
 
 迁移至少保护 XP、完成日期、学习日期、复习日期、有效会话和奖励幂等依据。备份不能在重复启动时被新的空进度覆盖。历史结算记录的增长以后按安全策略处理，裁剪前保证不会重新发奖；不因担心未来规模先建事件仓库。
 
+### 答后接口图解（0.10.0 候选）
+
+Challenge 可附加可选 `answerExplanation` 图解页，包含稳定页 ID、正文与 `DevicePortsSpec` 接口数据。Core 将其放在 Challenge 与 summary 之间；正确作答后逐页推进，读完再完成与结算。SwiftUI 复用 `DevicePortsDiagram` 显示电源、光纤、以太网连接及可选房间子设备，不按 Lesson ID 分派。旧课程缺省此字段时路径不变。
+
+`LessonSession.challengeExplanationID` 是可缺省的当前页标识；stage 仍为 challenge，转换器用稳定页 ID 恢复。旧已答草稿停留在原答题位置，旧 complete 直接映射新 summary，不重开课程、不重复奖励；未知 / 删除页 ID 回到已答题位置。存储键与 ledger 格式不变。主动退出仍丢弃当前草稿，后台中断保存该页。新增 Core 用例保护读完前不发奖、页恢复、旧 JSON、已完成记录与错误答案门控。
+
 ### 五课重排与草稿
 
 0.4.0 候选新增 `ipv4-address`，目录 revision 2，原五课 ID 不变。`IPv4IntroductionProgress` 保存当前观察阶段、最远观察阶段、已选字节、端点观察状态及完成标记；阶段 0 必须选字节、阶段 2 必须观察另一端点。回看只移动呈现阶段，已观察与完成标记不倒退。它通过可选字段附加到既有会话，恢复不重置预测题或错误次数。此次只支持四段地址入门组件内部回看，不宣称整个课程播放器已有任意步骤回退。

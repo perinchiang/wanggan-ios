@@ -12,6 +12,8 @@ struct LessonSession: Codable, Equatable, Identifiable {
     // Optional fields preserve decoding of drafts saved before conversation scenes existed.
     var questionSceneStep: Int?
     var challengeSceneStep: Int?
+    /// Stable optional page ID; older drafts have no answer-explanation position.
+    var challengeExplanationID: String?
     var answerSubmitted = false
     var explanationIndex = 0
     var matches: [String: String] = [:]
@@ -103,7 +105,21 @@ struct LessonSession: Codable, Equatable, Identifiable {
         case .matching:
             if !lesson.usesMatching || matchingSolved { stage = .challenge }
         case .challenge:
-            if challengeSolved { stage = .complete }
+            guard challengeSolved else { return }
+            let pages = lesson.challenge.answerExplanation ?? []
+            if let pageID = challengeExplanationID,
+               let index = pages.firstIndex(where: { $0.id == pageID }) {
+                if pages.indices.contains(index + 1) {
+                    challengeExplanationID = pages[index + 1].id
+                } else {
+                    challengeExplanationID = nil
+                    stage = .complete
+                }
+            } else if let first = pages.first {
+                challengeExplanationID = first.id
+            } else {
+                stage = .complete
+            }
         case .complete: break
         }
     }

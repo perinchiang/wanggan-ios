@@ -67,7 +67,8 @@ final class TopologyTests: XCTestCase {
         let plan = LessonPlan(lesson: lesson)
         XCTAssertEqual(plan.steps.first?.kind, .conversation)
         XCTAssertEqual(plan.steps.last?.kind, .summary)
-        XCTAssertEqual(plan.steps.filter { $0.kind == .text }.count, lesson.explanation.count)
+        XCTAssertEqual(plan.steps.filter { $0.kind == .text }.count,
+                       lesson.explanation.count + (lesson.challenge.answerExplanation?.count ?? 0))
 
         var session = StepSession(lessonID: lesson.id)
         for _ in 0..<plan.questionSceneCount { plan.advance(&session) }
@@ -82,6 +83,7 @@ final class TopologyTests: XCTestCase {
         XCTAssertEqual(session.stepIndex, plan.challengeIndex)
         plan.submitChallenge(lesson.challenge.correctID, in: &session)
         plan.advance(&session)
+        for _ in lesson.challenge.answerExplanation ?? [] { plan.advance(&session) }
         XCTAssertTrue(plan.isComplete(session))
         XCTAssertEqual(session.mistakes, 0)
 

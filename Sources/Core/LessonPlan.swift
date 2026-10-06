@@ -106,6 +106,9 @@ extension Lesson {
             result.append(LessonStep(id: "\(id).challenge.scene.\(message.id)", payload: .conversation(message)))
         }
         result.append(LessonStep(id: "\(id).challenge", payload: .question(challenge)))
+        for page in challenge.answerExplanation ?? [] {
+            result.append(LessonStep(id: "\(id).challenge.explanation.\(page.id)", payload: .text(page.text)))
+        }
         result.append(LessonStep(id: "\(id).summary", payload: .summary(takeaway)))
         return result
     }
@@ -123,6 +126,7 @@ struct StepSession: Codable, Equatable {
     var challengeAnswer: String?
     var challengeSubmitted = false
     var challengeSolved = false
+    var challengeExplanationID: String?
     var mistakes = 0
     var ipv4VisualPhase: Int?
     var ipv4SelectedOctet: Int?
@@ -192,6 +196,13 @@ struct LessonPlan {
         return session.challengeSolved && session.stepIndex >= summaryIndex
     }
 
+    func answerExplanation(at index: Int) -> AnswerExplanation? {
+        guard index > challengeIndex, index < summaryIndex else { return nil }
+        let pageIndex = index - challengeIndex - 1
+        guard let pages = lesson.challenge.answerExplanation, pages.indices.contains(pageIndex) else { return nil }
+        return pages[pageIndex]
+    }
+
     func canAdvance(_ session: StepSession) -> Bool {
         guard let step = step(at: session.stepIndex) else { return false }
         switch step.kind {
@@ -199,7 +210,9 @@ struct LessonPlan {
             if lesson.ipv4Foundation != nil { return session.ipv4FoundationProgress?.finished == true }
             if lesson.subnetMaskIntroduction != nil { return session.subnetMaskProgress?.finished == true }
             return lesson.ipv4Introduction == nil || session.ipv4IntroductionProgress?.finished == true
-        case .conversation, .text, .summary:
+        case .text:
+            return session.stepIndex <= challengeIndex || session.challengeSolved
+        case .conversation, .summary:
             return true
         case .question:
             if session.stepIndex == questionIndex { return session.answerSubmitted }
@@ -211,11 +224,8 @@ struct LessonPlan {
 
     func advance(_ session: inout StepSession) {
         guard canAdvance(session), session.stepIndex < summaryIndex else { return }
-        if session.stepIndex == challengeIndex {
-            session.stepIndex = summaryIndex
-        } else {
-            session.stepIndex += 1
-        }
+        session.stepIndex += 1
+        session.challengeExplanationID = answerExplanation(at: session.stepIndex)?.id
     }
 
     func submitAnswer(_ optionID: String, in session: inout StepSession) {
@@ -327,6 +337,11 @@ extension StepSession {
             stepIndex = lesson.usesMatching ? plan.matchingIndex : min(plan.matchingIndex + 1, plan.challengeIndex)
         case .challenge:
             stepIndex = min(plan.matchingIndex + 1 + stage.sceneStep(for: lesson.challenge, challenge: true), plan.challengeIndex)
+            if challengeSolved, let savedID = stage.challengeExplanationID,
+               let pageIndex = lesson.challenge.answerExplanation?.firstIndex(where: { $0.id == savedID }) {
+                stepIndex = plan.challengeIndex + 1 + pageIndex
+                challengeExplanationID = savedID
+            }
         case .complete:
             stepIndex = plan.summaryIndex
         }
@@ -352,6 +367,7 @@ extension StepSession {
         result.challengeAnswer = challengeAnswer
         result.challengeSubmitted = challengeSubmitted
         result.challengeSolved = challengeSolved
+        result.challengeExplanationID = plan.answerExplanation(at: stepIndex)?.id
         if lesson.ipv4Foundation != nil {
             result.stage = plan.isComplete(self) ? .complete : .explanation
             result.observationCompleted = plan.isComplete(self)
@@ -375,7 +391,7 @@ extension StepSession {
         } else if stepIndex < plan.challengeIndex {
             result.stage = .challenge
             result.challengeSceneStep = min(stepIndex - plan.matchingIndex - 1, plan.challengeSceneCount)
-        } else if stepIndex == plan.challengeIndex {
+        } else if stepIndex < plan.summaryIndex {
             result.stage = .challenge
             result.challengeSceneStep = lesson.challenge.scene.count
         } else {

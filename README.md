@@ -4,7 +4,7 @@
 
 ## 当前版本
 
-- 当前试学候选 **0.9.1（build 24）**：提问气泡也收窄左右内边距，选择按钮去掉文字后的占位留白；讲解关键词改为正文中的荧光底色；朋友对白加入发烫 / 换机动机。沿用主动退出重来、原位替换讲解与简洁完成页。仅运行 Core / Web 和快速 iPhone package，交互由 Pat 真机验收；[package 构建](https://github.com/perinchiang/wanggan-ios/actions/runs/37514639035) 已通过（源码 `c93fb72`，2 分 24 秒，67 Core / 4 Web、iPhone Release 与安装包核验）；原生 UI / 模拟器截图跳过，真机效果待 Pat 反馈。
+- 当前试学候选 **0.10.0（build 25）**：朋友对白与联系运营商的回复按 Pat 原句调整，补上「后来你去朋友家玩」，答题后新增一体机、普通路由器、FTTR 三页接口拓扑图解。全部对话气泡统一左右 10 pt 内边距，正文按完整宽度换行。仅计划运行 Core / Web 和快速 iPhone package；编译与安装包待验证，交互由 Pat 真机验收。
 
 - 上一候选 **0.8.1（build 22）**：收窄用户气泡两侧留白，沿用 0.8.0 的退出、故事题、原位替换讲解和完成页修正。按 Pat 明确要求只做 Core / Web 和快速 iPhone 打包，原生交互由 Pat 真机检查；[package 构建](https://github.com/perinchiang/wanggan-ios/actions/runs/37513241703) 通过（源码 `1b4f169`，1 分 56 秒，67 Core / 4 Web、iPhone Release 与安装包核验）；未跑原生 UI。
 
