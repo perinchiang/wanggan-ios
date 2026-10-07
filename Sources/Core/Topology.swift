@@ -107,6 +107,8 @@ struct TopologySpec: Codable, Equatable {
     let flow: [String]
     /// Spoken summary for VoiceOver; the rendered diagram is hidden from assistive tech.
     let accessibilitySummary: String
+    /// Optional teaching cue: wait for the paragraph explaining the journey.
+    var flowStartStage: Int? = nil
 
     var isValid: Bool {
         guard !nodes.isEmpty,
@@ -119,18 +121,26 @@ struct TopologySpec: Codable, Equatable {
         guard flow.count >= 2,
               Set(flow).count == flow.count,
               flow.allSatisfy(nodeIDs.contains) else { return false }
-        return !accessibilitySummary.isEmpty
+        guard flowStartStage.map({ $0 >= 1 }) ?? true else { return false }
+        return !accessibilitySummary.isEmpty && zip(flow, flow.dropFirst()).allSatisfy { from, to in
+            links.contains { ($0.from == from && $0.to == to) || ($0.from == to && $0.to == from) }
+        }
     }
 
     /// The last stage at which any node or link still appears.
     var maxStage: Int {
-        Swift.max(nodes.map(\.stage).max() ?? 1, links.map(\.stage).max() ?? 1)
+        Swift.max(Swift.max(nodes.map(\.stage).max() ?? 1, links.map(\.stage).max() ?? 1), flowStartStage ?? 1)
     }
 
     /// The last stage at which any flow node appears; the flow animation starts then.
     var flowStage: Int {
         let stages = flow.compactMap { id in nodes.first { $0.id == id }?.stage }
-        return stages.max() ?? maxStage
+        let pathLinks = links.filter { link in
+            zip(flow, flow.dropFirst()).contains { from, to in
+                (link.from == from && link.to == to) || (link.from == to && link.to == from)
+            }
+        }
+        return Swift.max(Swift.max(stages.max() ?? 1, pathLinks.map(\.stage).max() ?? 1), flowStartStage ?? 1)
     }
 
     func nodes(visibleAt stage: Int) -> [TopologyNode] {
@@ -138,6 +148,16 @@ struct TopologySpec: Codable, Equatable {
     }
 
     func links(visibleAt stage: Int) -> [TopologyLink] {
-        links.filter { $0.stage <= stage }
+        let visibleIDs = Set(nodes(visibleAt: stage).map(\.id))
+        return links.filter { $0.stage <= stage && visibleIDs.contains($0.from) && visibleIDs.contains($0.to) }
+    }
+
+    func spokenDescription(at stage: Int) -> String {
+        if stage >= maxStage { return accessibilitySummary }
+        let names = Dictionary(uniqueKeysWithValues: nodes.map { ($0.id, $0.label) })
+        let connections = links(visibleAt: stage).map {
+            "\(names[$0.from] ?? $0.from)\($0.wireless == true ? "通过 Wi-Fi" : "")连接\(names[$0.to] ?? $0.to)"
+        }
+        return (["当前图示：" + nodes(visibleAt: stage).map(\.label).joined(separator: "、")] + connections).joined(separator: "。")
     }
 }

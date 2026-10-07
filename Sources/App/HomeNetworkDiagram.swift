@@ -4,12 +4,23 @@ import SwiftUI
 struct HomeNetworkDiagram: View {
     let spec: HomeNetworkSpec
     @ScaledMetric(relativeTo: .caption) private var diagramHeight: CGFloat = 285
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var opticalRooms: Bool { spec.roomMedium == .fiber }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(spec.title).font(.headline)
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("\(spec.uplinkLabel) → \(spec.gatewayLabel)").font(.body)
+                    ForEach(spec.rooms, id: \.self) { room in
+                        Label(room, systemImage: "house").font(.headline)
+                        Text("\(opticalRooms ? "光纤" : "网线") → \(spec.roomDeviceLabel)")
+                            .font(.body).fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            } else {
             GeometryReader { geometry in
                 let width = geometry.size.width
                 let height = geometry.size.height
@@ -64,6 +75,7 @@ struct HomeNetworkDiagram: View {
             .frame(height: diagramHeight)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("\(spec.uplinkLabel)通过\(spec.uplink == .fiber ? "光纤" : "网线")连接\(spec.gatewayLabel)，再通过\(opticalRooms ? "光纤分配后" : "网线")连接\(spec.rooms.joined(separator: "、"))的\(spec.roomDeviceLabel)。")
+            }
             Text(spec.note).font(.caption).foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }

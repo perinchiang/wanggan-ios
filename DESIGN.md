@@ -74,7 +74,7 @@
 
 - 示意图本身是教学内容：它要分阶段出现、跟随讲解推进、承载数据流动画，位图做不到这些。
 - 内容迭代零资产成本：改一个 `TopologySpec` JSON 字段就能调整布局，不需要重新生图。
-- 天然继承全局能力：Dynamic Type、VoiceOver、Reduce Motion、Dark Mode 方向全部免费。
+- 原生组件便于接入系统能力，但 Dynamic Type、VoiceOver、Reduce Motion 仍需分别实现与验收；不据此宣称支持 Dark Mode。
 
 **设计原则**：
 
@@ -88,7 +88,7 @@
 
 - `nodes`：id、SF Symbol、label、stage（第几段讲解出现）、网格坐标（column / row）；
 - `links`：from / to、stage、wireless（虚线 + Wi-Fi 记号）；
-- `flow`：一条「数据走过的路径」；全部节点出现后，荧光黄绿描线并让数据包沿折线走一遍；
+- `flow`：一条「数据走过的路径」；节点与路径连线出现后，还要等可选 `flowStartStage` 指定的讲解阶段才播放。静态文字同时保留方向，支持重看；后台停止运动；
 - `accessibilitySummary`：整图合并为单一可访问元素的整体描述；
 - 校验约束：id 唯一、link 引用完整、flow 至少两个节点、`maxStage ≤ explanation 段数 + 1`，防止图文脱节。
 
@@ -96,7 +96,7 @@
 
 - 阶段揭示用 opacity + 轻微缩放过渡；数据流用 trim 描线 + 数据包沿折线行进，重复播放两遍；
 - Reduce Motion 直接切换到最终静态布局与完成态数据流，保留相同因果顺序；
-- VoiceOver 下整图为一个语义元素，朗读 `accessibilitySummary`，不逐节点打断。
+- VoiceOver 下整图为一个语义元素，分阶段只朗读已显示的设备与连接，最后朗读整图总结。辅助大字号下，拓扑、房间图与接口详情用纵向内容呈现；实际真机体验单独验收。
 
 
 - 当前 IPv4 图示的播放控件属于已实现试点；Pat 反馈「重播网络位 / 暂停 / 单步」像调试面板。后续调整现有 IPv4 教学及制作新入门课时，改为围绕观察与操作的分步界面，每个阶段只显示当前需要的内容和一个主要动作。

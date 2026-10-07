@@ -8,7 +8,11 @@ struct TopologyDiagram: View {
     /// 1-based reveal stage; `Int.max` shows everything.
     var stage = Int.max
     var animated = false
+    var replayID = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.scenePhase) private var scenePhase
+    @ScaledMetric(relativeTo: .caption) private var diagramHeight: CGFloat = 200
     @State private var traveling = false
 
     private var visibleNodes: [TopologyNode] { spec.nodes(visibleAt: stage) }
@@ -16,6 +20,64 @@ struct TopologyDiagram: View {
     private var flowReady: Bool { stage >= spec.flowStage }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if dynamicTypeSize.isAccessibilitySize {
+                accessibleLayout
+            } else {
+                grid
+            }
+            if flowReady {
+                Text("数据方向：" + spec.flow.compactMap { id in spec.nodes.first { $0.id == id }?.label }.joined(separator: " → "))
+                    .font(.caption).fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("topology-flow-direction")
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(spec.spokenDescription(at: stage) + (flowReady ? "。数据依次经过：" + spec.flow.compactMap { id in spec.nodes.first { $0.id == id }?.label }.joined(separator: "、") : ""))
+        .accessibilityValue("当前显示：" + visibleNodes.map(\.label).joined(separator: "、"))
+        .accessibilityIdentifier("topology-diagram")
+        .task(id: "\(flowReady)-\(animated)-\(reduceMotion)-\(scenePhase == .active)-\(dynamicTypeSize.isAccessibilitySize)-\(replayID)") {
+            setTraveling(false)
+            guard flowReady else { return }
+            guard animated, !reduceMotion, scenePhase == .active, !dynamicTypeSize.isAccessibilitySize else {
+                setTraveling(true)
+                return
+            }
+            do {
+                for pass in 0..<2 {
+                    if pass > 0 {
+                        setTraveling(false)
+                        try await Task.sleep(for: .milliseconds(80))
+                    }
+                    withAnimation(.easeInOut(duration: 1.7)) { traveling = true }
+                    try await Task.sleep(for: .milliseconds(1750))
+                }
+            } catch { /* The next task establishes the new stage or static state. */ }
+        }
+    }
+
+    private func setTraveling(_ value: Bool) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) { traveling = value }
+    }
+
+    /// At accessibility sizes, keep each connection readable without squeezing labels.
+    private var accessibleLayout: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            ForEach(visibleNodes) { node in
+                Label(node.label, systemImage: node.symbol).font(.body.weight(.semibold))
+                ForEach(visibleLinks.filter { $0.from == node.id }) { link in
+                    let destination = spec.nodes.first { $0.id == link.to }?.label ?? link.to
+                    Text("\(link.wireless == true ? "Wi-Fi" : "连线") → \(destination)")
+                        .font(.body).padding(.leading, 24)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }.frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var grid: some View {
         GeometryReader { geometry in
             let columns = max(spec.nodes.map(\.column).max() ?? 0, 0) + 1
             let rows = max(spec.nodes.map(\.row).max() ?? 0, 0) + 1
@@ -39,22 +101,11 @@ struct TopologyDiagram: View {
                         .fill(Theme.ink)
                 }
                 ForEach(visibleNodes) { node in
-                    nodeView(node, at: centers[node.id] ?? .zero)
+                    nodeView(node, at: centers[node.id] ?? .zero, width: geometry.size.width / CGFloat(columns) - 4)
                 }
             }
         }
-        .frame(height: 200)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(stage >= spec.maxStage ? spec.accessibilitySummary : "示意图")
-        .accessibilityValue("当前显示：" + visibleNodes.map(\.label).joined(separator: "、"))
-        .accessibilityIdentifier("topology-diagram")
-        .task(id: flowReady) {
-            guard flowReady, animated else { return }
-            if reduceMotion { traveling = true }
-            else {
-                withAnimation(.easeInOut(duration: 1.7).repeatCount(2, autoreverses: false)) { traveling = true }
-            }
-        }
+        .frame(height: diagramHeight)
     }
 
     private func linkView(_ link: TopologyLink, centers: [String: CGPoint]) -> some View {
@@ -76,25 +127,25 @@ struct TopologyDiagram: View {
         .transition(.opacity)
     }
 
-    private func nodeView(_ node: TopologyNode, at point: CGPoint) -> some View {
+    private func nodeView(_ node: TopologyNode, at point: CGPoint, width: CGFloat) -> some View {
         let focused = stage != Int.max && node.stage == stage
         return VStack(spacing: 6) {
             Image(systemName: node.symbol).font(.system(size: 27, weight: focused ? .semibold : .regular))
                 .frame(width: 52, height: 40)
                 .background(focused ? Theme.lime.opacity(0.55) : Theme.paper, in: .rect(cornerRadius: 8))
             Text(node.label).font(.caption.weight(focused ? .bold : .medium))
-                .lineLimit(1).minimumScaleFactor(0.6)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.horizontal, 7).padding(.vertical, 5)
+        .frame(width: max(width, 1)).padding(.vertical, 5)
         .background(focused ? Theme.lime.opacity(0.18) : Color.clear, in: .rect(cornerRadius: 12))
         .overlay {
             RoundedRectangle(cornerRadius: 12)
                 .strokeBorder(focused ? Theme.ink.opacity(0.7) : Color.clear, lineWidth: 1.5)
         }
-        .opacity(stage != Int.max && !focused ? 0.62 : 1)
         .position(point)
         .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: stage)
-        .transition(.opacity.combined(with: .scale(scale: 0.7)))
+        .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.7)))
     }
 
     private func midpoint(_ a: CGPoint, _ b: CGPoint) -> CGPoint {

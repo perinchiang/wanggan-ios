@@ -228,6 +228,21 @@ struct LessonPlan {
         session.challengeExplanationID = answerExplanation(at: session.stepIndex)?.id
     }
 
+    /// Revisit only the current teaching sequence; answers and rewards are untouched.
+    func canRevisitPreviousExplanation(_ session: StepSession) -> Bool {
+        if answerExplanation(at: session.stepIndex) != nil {
+            return session.challengeSolved && answerExplanation(at: session.stepIndex - 1) != nil
+        }
+        return lesson.topology != nil && session.stepIndex > questionIndex + 1 &&
+            session.stepIndex <= questionIndex + 1 + lesson.explanation.count
+    }
+
+    func revisitPreviousExplanation(_ session: inout StepSession) {
+        guard canRevisitPreviousExplanation(session) else { return }
+        session.stepIndex -= 1
+        session.challengeExplanationID = answerExplanation(at: session.stepIndex)?.id
+    }
+
     func submitAnswer(_ optionID: String, in session: inout StepSession) {
         guard session.stepIndex == questionIndex, let question = question(at: questionIndex),
               !session.answerSubmitted,
@@ -331,7 +346,7 @@ extension StepSession {
             } else if lesson.ipv4Visual != nil, stage.ipv4VisualPhase != nil, stage.ipv4VisualFinished != true {
                 stepIndex = plan.questionIndex + 1
             } else {
-                stepIndex = plan.questionIndex + 2 + min(stage.explanationIndex, max(lesson.explanation.count - 1, 0))
+                stepIndex = plan.questionIndex + 2 + max(-1, min(stage.explanationIndex, max(lesson.explanation.count - 1, 0)))
             }
         case .matching:
             stepIndex = lesson.usesMatching ? plan.matchingIndex : min(plan.matchingIndex + 1, plan.challengeIndex)

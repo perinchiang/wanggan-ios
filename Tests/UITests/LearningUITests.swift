@@ -119,14 +119,12 @@ final class LearningUITests: XCTestCase {
         XCTAssertTrue(topology.waitForExistence(timeout: 5))
         XCTAssertEqual(topology.value as? String, "当前显示：光纤入户")
         screenshot("H02-topology-first-node")
-        // Accessibility bounds grow symmetrically as upper/lower nodes appear.
-        let diagramCenterY = topology.frame.midY
-        var explanationY: CGFloat?
+        XCTAssertFalse(topology.label.contains("光猫"), "VoiceOver must not reveal the next device")
         let paragraphs = [
-            "先看弱电箱里的设备。入户光纤直接插进光猫（ONT）；它负责终结运营商的光纤接入，并把连接交给家里的以太网一侧。",
-            "师傅再用一根网线把光猫接到路由器。路由器负责组织家里的网络，并把这张家庭网络连接到上游。",
-            "于是手机通过 Wi‑Fi 连到路由器，电脑也可以通过网线连到它。Wi‑Fi 只是设备加入家庭网络的一种方式，不是路由器唯一的工作。",
-            "所以你家不是“多装了一台”，而是把两份工作分开做：光猫负责光纤接入，路由器负责家庭网络。两份工作也可以被做进同一台设备里。"
+            "师傅指着弱电箱：“这台叫光猫。门外来的光纤先接到它，再由它把连接交给网线。”原来，你认成路由器的第一台设备，另有名字。",
+            "顺着这根网线看，另一头才是客厅的家用路由器。它连着家里的设备，也把家里的网络接向光猫。",
+            "手机用 Wi-Fi，电脑用网线，都能接到这台路由器上。原来 Wi-Fi 只是连接方式之一，这台设备还照顾着用网线的电脑。",
+            "现在点开一个视频。传回手机的数据先经过光猫，再经过路由器，最后通过 Wi-Fi 到达手机。师傅装的不是两台重复的路由器：这一路上，它们各负责一段。"
         ]
         let stages = ["光纤入户、光猫", "光纤入户、光猫、路由器",
                       "光纤入户、光猫、路由器、手机、电脑", "光纤入户、光猫、路由器、手机、电脑"]
@@ -139,16 +137,23 @@ final class LearningUITests: XCTestCase {
             if index > 0 {
                 XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", paragraphs[index - 1])).firstMatch.exists, "Previous explanation is replaced")
             }
-            XCTAssertEqual(topology.frame.midY, diagramCenterY, accuracy: 2, "Diagram center stays in place without scrolling")
-            if let explanationY {
-                XCTAssertEqual(bubble.frame.minY, explanationY, accuracy: 2, "New explanation replaces the previous bubble in place")
-            } else { explanationY = bubble.frame.minY }
+            XCTAssertEqual(app.staticTexts["topology-stage"].label, "观察 \(index + 2) / 5")
+            XCTAssertEqual(app.buttons["topology-replay"].exists, index == 3,
+                           "The journey is introduced with the video paragraph")
+            for _ in 0..<5 {
+                if bubble.frame.maxY < app.buttons["primary-action"].frame.minY { break }
+                app.swipeUp()
+            }
             XCTAssertTrue(bubble.isHittable)
             XCTAssertLessThan(bubble.frame.maxY, app.buttons["primary-action"].frame.minY)
             screenshot("H02-explanation-\(index + 1)")
         }
-        XCTAssertTrue(topology.isHittable)
-        XCTAssertLessThan(topology.frame.maxY, app.buttons["primary-action"].frame.minY)
+        tap("topology-replay")
+        tap("teaching-previous")
+        XCTAssertEqual(app.staticTexts["topology-stage"].label, "观察 4 / 5")
+        XCTAssertFalse(app.buttons["topology-replay"].exists)
+        tap("primary-action")
+        XCTAssertEqual(app.staticTexts["topology-stage"].label, "观察 5 / 5")
         screenshot("H03-topology-full")
         revealScene(option: "challenge-option-allinone")
         XCTAssertFalse(app.descendants(matching: .any)["challenge-scene-you-recall"].exists)
@@ -169,6 +174,45 @@ final class LearningUITests: XCTestCase {
         tap("finish-session")
         XCTAssertEqual(app.staticTexts["xp-badge"].label, "30 经验值")
         XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "IP 地址是拿来做什么的？")
+    }
+
+    func testHomeTeachingBacktrackAndInterruptedResume() {
+        app.launch()
+        tap("start-lesson")
+        revealScene(option: "question-option-coverage")
+        tap("question-option-coverage")
+        tap("primary-action")
+        tap("primary-action")
+        relaunchKeepingProgress()
+        tap("start-lesson")
+        XCTAssertEqual(app.staticTexts["topology-stage"].label, "观察 1 / 5")
+        XCTAssertFalse(app.buttons["teaching-previous"].exists)
+        tap("primary-action")
+        tap("teaching-previous")
+        XCTAssertEqual(app.staticTexts["topology-stage"].label, "观察 1 / 5")
+        tap("primary-action")
+        relaunchKeepingProgress()
+        tap("start-lesson")
+        XCTAssertEqual(app.staticTexts["topology-stage"].label, "观察 2 / 5")
+        XCTAssertFalse(app.staticTexts["+30 XP"].exists)
+    }
+
+    func testHomeLargestTextStaticTeaching() {
+        app.launchArguments += ["--test-mask-accessibility"]
+        app.launch()
+        tap("start-lesson")
+        revealScene(option: "question-option-split")
+        tap("question-option-split")
+        tap("primary-action")
+        tap("primary-action")
+        for _ in 0..<4 { tap("primary-action") }
+        let topology = app.descendants(matching: .any)["topology-diagram"].firstMatch
+        XCTAssertTrue(topology.exists)
+        XCTAssertTrue(topology.label.contains("数据依次经过"))
+        tap("topology-replay")
+        tap("teaching-previous")
+        XCTAssertEqual(app.staticTexts["topology-stage"].label, "观察 4 / 5")
+        screenshot("H05-accessibility-static-topology")
     }
 
     func testConfirmedExitRestartsLessonAndPreservesMainProgress() {

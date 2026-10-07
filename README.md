@@ -4,6 +4,8 @@
 
 ## 当前版本
 
+- 开发候选 **0.12.0（build 27）**：沿用「两个路由器」生活入口、一体机换机场景和 FTTR 故事；分步讲解加入回看，视频数据流与讲解同步并可重看；拓扑逐阶段朗读连接关系，大字号下图示与接口改为纵向排列。运行验证见 [本轮交接](docs/handoffs/2026-10-07-home-lesson-review-followup-handoff.md)，不沿用 build 26 的结果。
+
 - 当前试学候选 **0.11.0（build 26）**：朋友名移到气泡上方，短气泡按正文收拢；答后以房间连线替代接口清单主图，从房间细线故事逐步引出 FTTR，最后用独立名称卡显示 FTTR / (Fiber to the Room) / 光纤到房间。接口详情默认折叠。[package 构建](https://github.com/perinchiang/wanggan-ios/actions/runs/37520749808) 已通过（源码 `eafe403`，1 分 55 秒，74 Core / 4 Web、iPhone Release 与安装包核验）；原生 UI / 模拟器截图明确跳过，交互由 Pat 真机验收。见 [故事揭晓交接](docs/handoffs/2026-10-07-fttr-story-reveal-handoff.md)。
 
 - 上一候选 **0.8.1（build 22）**：收窄用户气泡两侧留白，沿用 0.8.0 的退出、故事题、原位替换讲解和完成页修正。按 Pat 明确要求只做 Core / Web 和快速 iPhone 打包，原生交互由 Pat 真机检查；[package 构建](https://github.com/perinchiang/wanggan-ios/actions/runs/37513241703) 通过（源码 `1b4f169`，1 分 56 秒，67 Core / 4 Web、iPhone Release 与安装包核验）；未跑原生 UI。

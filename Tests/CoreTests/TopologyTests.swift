@@ -148,4 +148,103 @@ final class TopologyTests: XCTestCase {
         let catalog = try JSONDecoder().decode(LessonCatalog.self, from: JSONSerialization.data(withJSONObject: mutated))
         XCTAssertThrowsError(try catalog.validate(), "A stage beyond the explanation budget must fail catalog validation")
     }
+
+    func testJourneyWaitsForTeachingCueAndVisibleLinks() throws {
+        let home = try XCTUnwrap(catalog().lessons.first { $0.id == "home-two-boxes" }?.topology)
+        XCTAssertEqual(home.nodes(visibleAt: 4).count, home.nodes.count)
+        XCTAssertEqual(home.flowStage, 5, "The journey waits for the video paragraph")
+        var spec = makeSpec(nodes: [fiber, ont, router], links: [
+            TopologyLink(from: "fiber", to: "ont", stage: 2, wireless: nil),
+            TopologyLink(from: "ont", to: "router", stage: 6, wireless: nil)
+        ], flow: ["fiber", "ont", "router"])
+        spec.flowStartStage = 4
+        XCTAssertEqual(spec.flowStage, 6, "Packets cannot travel along an unrevealed link")
+        XCTAssertFalse(makeSpec(nodes: [fiber, ont, router], links: validLinks,
+                                flow: ["fiber", "router"]).isValid, "A flow cannot invent a connection")
+    }
+
+    func testSpokenStagesDescribeOnlyRevealedConnections() throws {
+        let spec = try XCTUnwrap(catalog().lessons.first { $0.id == "home-two-boxes" }?.topology)
+        XCTAssertFalse(spec.spokenDescription(at: 1).contains("光猫"))
+        XCTAssertTrue(spec.spokenDescription(at: 2).contains("光纤入户连接光猫"))
+        XCTAssertFalse(spec.spokenDescription(at: 2).contains("路由器"))
+        XCTAssertTrue(spec.spokenDescription(at: 4).contains("通过 Wi-Fi连接手机"))
+        XCTAssertEqual(spec.spokenDescription(at: spec.maxStage), spec.accessibilitySummary)
+        let oldJSON = try JSONSerialization.jsonObject(with: JSONEncoder().encode(spec)) as! [String: Any]
+        var legacy = oldJSON
+        legacy.removeValue(forKey: "flowStartStage")
+        let decoded = try JSONDecoder().decode(TopologySpec.self, from: JSONSerialization.data(withJSONObject: legacy))
+        XCTAssertNil(decoded.flowStartStage)
+        XCTAssertTrue(decoded.isValid)
+        XCTAssertEqual(decoded.flowStage, 4)
+    }
+
+    func testBacktrackingAndSerializedResumePreserveAnswersAtEveryTeachingStage() throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "home-two-boxes" })
+        let plan = LessonPlan(lesson: lesson)
+        var session = StepSession(lessonID: lesson.id)
+        for _ in 0..<plan.questionSceneCount { plan.advance(&session) }
+        plan.submitAnswer("coverage", in: &session)
+        plan.advance(&session)
+        for index in (plan.questionIndex + 1)...(plan.questionIndex + 1 + lesson.explanation.count) {
+            XCTAssertEqual(session.stepIndex, index)
+            let data = try JSONEncoder().encode(session.stageSession(lesson: lesson))
+            let saved = try JSONDecoder().decode(LessonSession.self, from: data)
+            var restored = StepSession(lesson: lesson, from: saved)
+            XCTAssertEqual(restored.stepIndex, index)
+            XCTAssertEqual(restored.id, session.id)
+            plan.revisitPreviousExplanation(&restored)
+            XCTAssertEqual(restored.stepIndex, max(plan.questionIndex + 1, index - 1))
+            XCTAssertEqual(restored.selectedAnswer, "coverage")
+            XCTAssertEqual(restored.mistakes, 1)
+            if index > plan.questionIndex + 1 { plan.advance(&restored) }
+            XCTAssertEqual(restored.stepIndex, index)
+            plan.advance(&session)
+        }
+        XCTAssertFalse(plan.canRevisitPreviousExplanation(session), "Reading back does not escape into questions")
+    }
+
+    func testLegacyExplanationAndInvalidNegativeIndexResumeSafely() throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "home-two-boxes" })
+        let plan = LessonPlan(lesson: lesson)
+        // Exact old shape: no new optional fields are needed to read old drafts.
+        let json = """
+        {"id":"22222222-2222-2222-2222-222222222222","lessonID":"home-two-boxes",
+         "stage":1,"answerSubmitted":true,"selectedAnswer":"split","explanationIndex":0,
+         "matches":{},"matchingSubmitted":false,"matchingSolved":false,
+         "challengeSubmitted":false,"challengeSolved":false,"mistakes":0}
+        """
+        var old = try JSONDecoder().decode(LessonSession.self, from: Data(json.utf8))
+        XCTAssertEqual(StepSession(lesson: lesson, from: old).stepIndex, plan.questionIndex + 2)
+        old.explanationIndex = -50
+        XCTAssertEqual(StepSession(lesson: lesson, from: old).stepIndex, plan.questionIndex + 1)
+    }
+
+    func testAnswerStoryBacktrackingKeepsGateAndRewardIdempotent() throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "home-two-boxes" })
+        let plan = LessonPlan(lesson: lesson)
+        var session = StepSession(lessonID: lesson.id)
+        session.stepIndex = plan.challengeIndex
+        plan.submitChallenge("router-only", in: &session)
+        plan.advance(&session)
+        XCTAssertEqual(session.stepIndex, plan.challengeIndex)
+        plan.retryChallenge(in: &session)
+        plan.submitChallenge(lesson.challenge.correctID, in: &session)
+        plan.advance(&session)
+        XCTAssertFalse(plan.canRevisitPreviousExplanation(session))
+        plan.advance(&session)
+        plan.revisitPreviousExplanation(&session)
+        XCTAssertEqual(plan.answerExplanation(at: session.stepIndex)?.id, "integrated-ports")
+        let restored = StepSession(lesson: lesson, from: session.stageSession(lesson: lesson))
+        XCTAssertEqual(restored.stepIndex, session.stepIndex)
+        XCTAssertTrue(restored.challengeSolved)
+        XCTAssertEqual(restored.mistakes, 1)
+        var ledger = ProgressLedger()
+        XCTAssertEqual(ledger.complete(session.stageSession(lesson: lesson)), 0)
+        while !plan.isComplete(session) { plan.advance(&session) }
+        XCTAssertEqual(ledger.complete(session.stageSession(lesson: lesson)), 30)
+        _ = ledger.complete(session.stageSession(lesson: lesson))
+        XCTAssertEqual(ledger.totalXP, 30)
+        XCTAssertFalse(plan.canRevisitPreviousExplanation(session))
+    }
 }

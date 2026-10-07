@@ -3,6 +3,7 @@ import SwiftUI
 /// A reusable connector diagram, with separate power, optical and Ethernet paths.
 struct DevicePortsDiagram: View {
     let spec: DevicePortsSpec
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -10,6 +11,14 @@ struct DevicePortsDiagram: View {
                 .font(.headline)
             VStack(spacing: 6) {
                 ForEach(spec.ports) { port in
+                    if dynamicTypeSize.isAccessibilitySize {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(port.label).font(.headline)
+                            Text("\(mediumName(port.medium)) → \(port.destination)").font(.body)
+                        }.frame(maxWidth: .infinity, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.vertical, 8)
+                    } else {
                     HStack(spacing: 8) {
                         socket(port.medium)
                             .frame(width: 22, height: 20)
@@ -28,9 +37,16 @@ struct DevicePortsDiagram: View {
                                 in: .rect(cornerRadius: 8))
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel("\(port.label)，通过\(mediumName(port.medium))连接\(port.destination)")
+                    }
                 }
             }
             if let rooms = spec.fiberRooms {
+                if dynamicTypeSize.isAccessibilitySize {
+                    ForEach(rooms, id: \.self) { room in
+                        Text("分光器 → 光纤 → \(room)的子设备（WiFi · LAN）")
+                            .font(.body).fixedSize(horizontal: false, vertical: true)
+                    }
+                } else {
                 GeometryReader { geometry in
                     Path { path in
                         let center = geometry.size.width / 2
@@ -58,6 +74,7 @@ struct DevicePortsDiagram: View {
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel("分光器通过光纤连接\(room)的子设备，子设备提供 WiFi 和 LAN 网口")
                     }
+                }
                 }
             }
             Text(spec.note).font(.caption).foregroundStyle(Theme.muted)

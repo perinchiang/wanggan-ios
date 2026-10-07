@@ -21,6 +21,7 @@ struct StepLessonPlayer: View {
     @State private var visualHeight: CGFloat = 340
     @State private var visualFailed = false
     @State private var visualReloadID = UUID()
+    @State private var topologyReplayID = 0
 
     init(lesson: Lesson, initialSession: LessonSession, usesStaticPresentation: Bool = false, onNext: @escaping (Lesson?) -> Void) {
         self.lesson = lesson
@@ -157,6 +158,14 @@ struct StepLessonPlayer: View {
             ), fontScale: visualFontScale)
         } else if session.stepIndex == plan.questionIndex + 1, let visual = lesson.ipv4Visual {
             ipv4VisualPanel(visual)
+        } else if let topology = lesson.topology {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("观察 \(visibleTextCount + 1) / \(lesson.explanation.count + 1)")
+                    .font(.caption).foregroundStyle(Theme.muted)
+                    .accessibilityIdentifier("topology-stage")
+                TopologyDiagram(spec: topology, stage: visibleTextCount + 1,
+                                animated: !reduceMotion, replayID: topologyReplayID)
+            }.id("topology-anchor")
         } else {
             ConceptIllustration(lesson: lesson, animated: true, stage: visibleTextCount + 1)
                 .id(lesson.topology == nil ? "concept-illustration" : "topology-anchor")
@@ -166,6 +175,11 @@ struct StepLessonPlayer: View {
                 let paragraph = lesson.explanation[min(visibleTextCount, lesson.explanation.count) - 1]
                 ConversationBubble(text: paragraph, highlightedTerms: topologyKeywords(in: paragraph))
                     .accessibilityIdentifier("topology-explanation-text")
+                if let topology = lesson.topology, visibleTextCount + 1 >= topology.flowStage {
+                    Button("再看一次数据怎么走") { topologyReplayID += 1 }
+                        .font(.subheadline).frame(minHeight: 44)
+                        .accessibilityIdentifier("topology-replay")
+                }
             } else {
                 ForEach(Array(lesson.explanation.prefix(visibleTextCount)), id: \.self) { paragraph in
                     ConversationBubble(text: paragraph, highlightedTerms: topologyKeywords(in: paragraph))
@@ -385,8 +399,8 @@ struct StepLessonPlayer: View {
         if lesson.ipv4Introduction != nil, plan.step(at: session.stepIndex)?.kind == .diagram {
             return "introduction-\(session.ipv4IntroductionProgress?.stage ?? 0)"
         }
-        if plan.answerExplanation(at: session.stepIndex) != nil { return "answer-explanation" }
-        if explanationScrollTarget != nil { return "topology-explanation" }
+        if plan.answerExplanation(at: session.stepIndex) != nil { return "answer-explanation-\(session.stepIndex)" }
+        if explanationScrollTarget != nil { return "topology-explanation-\(session.stepIndex)" }
         if let feedbackScrollTarget { return "\(session.stepIndex)-\(feedbackScrollTarget)" }
         return conversationScrollTarget ?? "step-\(session.stepIndex)"
     }
@@ -411,6 +425,11 @@ struct StepLessonPlayer: View {
 
     private var bottomBar: some View {
         VStack(spacing: 6) {
+            if plan.canRevisitPreviousExplanation(session) {
+                Button("上一步") { plan.revisitPreviousExplanation(&session) }
+                    .font(.subheadline).frame(minHeight: 44)
+                    .accessibilityIdentifier("teaching-previous")
+            }
             PrimaryButton(title: buttonTitle, enabled: buttonEnabled,
                           symbol: isComplete ? "arrow.right" : "",
                           identifier: isComplete ? "continue-learning" : "primary-action", action: performAction)
