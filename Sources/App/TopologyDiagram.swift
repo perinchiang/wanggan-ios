@@ -166,7 +166,7 @@ private struct FlowPath: Shape {
 }
 
 /// A packet dot that follows the flow polyline, generalizing the single-hop
-/// `TravelingPacket` in NetworkDiagram to any number of segments.
+/// a packet animation to any number of segments.
 private struct TravelingPacket: Shape {
     var progress: Double
     let points: [CGPoint]

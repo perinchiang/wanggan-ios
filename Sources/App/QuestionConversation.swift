@@ -17,8 +17,8 @@ struct QuestionConversation: View {
                 VStack(alignment: .leading, spacing: 16) {
                     ConversationBubble(text: message.text, role: message.speaker)
                         .accessibilityIdentifier("\(prefix)-scene-\(message.id)")
-                    if message.visual == "network" {
-                        NetworkDiagram(kind: lesson.diagram)
+                    if message.visual == "network", let topology = lesson.topology {
+                        TopologyDiagram(spec: topology, animated: false)
                     } else if message.visual == "devices", !ready, let devices = question.devices {
                         AddressComparison(devices: devices, identifier: "\(prefix)-intro-addresses")
                     }

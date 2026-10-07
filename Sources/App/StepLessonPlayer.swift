@@ -8,8 +8,6 @@ struct StepLessonPlayer: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     private var reduceMotion: Bool { systemReduceMotion || usesStaticPresentation }
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.scenePhase) private var scenePhase
     private let plan: LessonPlan
     @State private var session: StepSession
@@ -18,9 +16,6 @@ struct StepLessonPlayer: View {
     @State private var discardingSession = false
     @State private var showSources = false
     @State private var feedbackTick = 0
-    @State private var visualHeight: CGFloat = 340
-    @State private var visualFailed = false
-    @State private var visualReloadID = UUID()
     @State private var topologyReplayID = 0
 
     init(lesson: Lesson, initialSession: LessonSession, usesStaticPresentation: Bool = false, onNext: @escaping (Lesson?) -> Void) {
@@ -141,24 +136,7 @@ struct StepLessonPlayer: View {
     }
 
     @ViewBuilder private var explanationPhase: some View {
-        if let foundation = lesson.ipv4Foundation {
-            IPv4FoundationPanel(configuration: foundation, usesStaticPresentation: usesStaticPresentation, progress: Binding(
-                get: { session.ipv4FoundationProgress ?? IPv4FoundationProgress() },
-                set: { session.ipv4FoundationProgress = $0 }
-            ))
-        } else if let mask = lesson.subnetMaskIntroduction {
-            SubnetMaskIntroductionPanel(configuration: mask, usesStaticPresentation: usesStaticPresentation, progress: Binding(
-                get: { session.subnetMaskProgress ?? SubnetMaskProgress() },
-                set: { session.subnetMaskProgress = $0 }
-            ))
-        } else if let introduction = lesson.ipv4Introduction {
-            IPv4IntroductionPanel(introduction: introduction, progress: Binding(
-                get: { session.ipv4IntroductionProgress ?? IPv4IntroductionProgress() },
-                set: { session.ipv4IntroductionProgress = $0 }
-            ), fontScale: visualFontScale)
-        } else if session.stepIndex == plan.questionIndex + 1, let visual = lesson.ipv4Visual {
-            ipv4VisualPanel(visual)
-        } else if let topology = lesson.topology {
+        if let topology = lesson.topology {
             VStack(alignment: .leading, spacing: 14) {
                 Text("观察 \(visibleTextCount + 1) / \(lesson.explanation.count + 1)")
                     .font(.caption).foregroundStyle(Theme.muted)
@@ -166,9 +144,6 @@ struct StepLessonPlayer: View {
                 TopologyDiagram(spec: topology, stage: visibleTextCount + 1,
                                 animated: !reduceMotion, replayID: topologyReplayID)
             }.id("topology-anchor")
-        } else {
-            ConceptIllustration(lesson: lesson, animated: true, stage: visibleTextCount + 1)
-                .id(lesson.topology == nil ? "concept-illustration" : "topology-anchor")
         }
         if visibleTextCount > 0 {
             if lesson.topology != nil {
@@ -191,102 +166,6 @@ struct StepLessonPlayer: View {
             .foregroundStyle(Theme.muted)
             .accessibilityIdentifier("explanation-sources")
             .id("explanation-bottom")
-    }
-
-    @ViewBuilder private func ipv4VisualPanel(_ visual: IPv4VisualLesson) -> some View {
-        let phase = min(max(session.ipv4VisualPhase ?? 0, 0), 1)
-        let example = visual.examples[phase]
-        Text(phase == 0 ? "先看 /24 怎样把地址分成两部分。" : "换一条地址：点选网络部分结束的那个字节。")
-            .font(.subheadline).foregroundStyle(Theme.muted)
-        if !visualFailed {
-            IPv4AddressVisualWebView(
-                example: example, selectedOctet: session.ipv4SelectedOctet,
-                solved: session.ipv4VisualSolved ?? false, theme: colorScheme,
-                fontScale: visualFontScale,
-                reduceMotion: reduceMotion, isActive: scenePhase == .active,
-                onSelect: { selected in selectIPv4Boundary(selected) },
-                onHeight: { height in if abs(visualHeight - height) > 2 { visualHeight = height } },
-                onFailure: { visualFailed = true }
-            )
-            .id(visualReloadID)
-            .frame(height: visualHeight)
-            .accessibilityIdentifier("ipv4-visual")
-        } else {
-            ipv4VisualFallback(example: example)
-            Button("重试动态图") { visualFailed = false; visualReloadID = UUID() }
-                .font(.subheadline).frame(minHeight: 44)
-        }
-        if phase == 1, session.ipv4VisualSubmitted == true {
-            feedbackCard(
-                title: session.ipv4VisualSolved == true ? "分界找对了" : "再数一数网络位",
-                text: session.ipv4VisualSolved == true
-                    ? "前 \(example.prefix) 位属于网络部分，所以边界在第 \(example.prefix / 8) 个字节后。"
-                    : "/\(example.prefix) 表示从左往右数 \(example.prefix) 位；一个字节有 8 位。",
-                correct: session.ipv4VisualSolved == true
-            )
-            .id("ipv4-feedback")
-        }
-    }
-
-    private func ipv4VisualFallback(example: IPv4VisualExample) -> some View {
-        Surface {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("\(example.ip)/\(example.prefix)").font(.headline.monospaced())
-                if let address = IPv4AddressValue(ip: example.ip, prefix: example.prefix) {
-                    ForEach(0..<4, id: \.self) { index in
-                        let octet = Int(address.octets[index])
-                        let bits = address.binaryOctets[index]
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("第 \(index + 1) 个字节：\(octet) = \(bits)")
-                                .font(.subheadline.monospaced())
-                            if example.mode == .practice && session.ipv4VisualSolved != true {
-                                Button("选第 \(index + 1) 个字节后") { selectIPv4Boundary(index + 1) }
-                                    .accessibilityAddTraits(session.ipv4SelectedOctet == index + 1 ? .isSelected : [])
-                                    .accessibilityIdentifier("ipv4-fallback-boundary-\(index + 1)")
-                            }
-                        }
-                    }
-                    if example.mode == .explain || session.ipv4VisualSolved == true {
-                        Text("前 \(example.prefix) 位是网络部分；网络地址是 \(address.networkAddress)/\(example.prefix)。")
-                            .font(.subheadline)
-                    }
-                }
-            }
-        }
-    }
-
-    private func selectIPv4Boundary(_ selected: Int) {
-        guard (session.ipv4VisualPhase ?? 0) == 1, session.ipv4VisualSolved != true,
-              (1...4).contains(selected) else { return }
-        session.ipv4SelectedOctet = selected
-        session.ipv4VisualSubmitted = false
-    }
-
-    private var visualFontScale: Double {
-        switch dynamicTypeSize {
-        case .xSmall: return 0.9
-        case .small: return 0.95
-        case .medium, .large: return 1.0
-        case .xLarge: return 1.1
-        case .xxLarge: return 1.2
-        case .xxxLarge: return 1.3
-        case .accessibility1: return 1.45
-        case .accessibility2: return 1.65
-        case .accessibility3: return 1.85
-        case .accessibility4: return 2.0
-        case .accessibility5: return 2.2
-        @unknown default: return 1.0
-        }
-    }
-
-    private func checkIPv4Boundary() {
-        guard let example = lesson.ipv4Visual?.examples.last,
-              let selected = session.ipv4SelectedOctet,
-              session.ipv4VisualSubmitted != true,
-              let address = IPv4AddressValue(ip: example.ip, prefix: example.prefix) else { return }
-        session.ipv4VisualSubmitted = true
-        session.ipv4VisualSolved = address.isCorrectBoundary(selected)
-        if session.ipv4VisualSolved != true { session.mistakes += 1 }
     }
 
     private var visibleTextCount: Int {
@@ -376,29 +255,12 @@ struct StepLessonPlayer: View {
     }
 
     private var feedbackScrollTarget: String? {
-        if plan.step(at: session.stepIndex)?.kind == .diagram,
-           lesson.subnetMaskIntroduction != nil, session.subnetMaskProgress?.stage == 3,
-           session.subnetMaskProgress?.boundarySubmitted == true { return "mask-feedback" }
-        if plan.step(at: session.stepIndex)?.kind == .diagram,
-           lesson.ipv4Visual != nil, session.ipv4VisualSubmitted == true {
-            return "ipv4-feedback"
-        }
         guard plan.step(at: session.stepIndex)?.kind == .question else { return nil }
         let submitted = session.stepIndex == plan.challengeIndex ? session.challengeSubmitted : session.answerSubmitted
         return submitted ? "answer-feedback" : nil
     }
 
     private var scrollRequest: String {
-        if lesson.ipv4Foundation != nil, plan.step(at: session.stepIndex)?.kind == .diagram {
-            return "foundation-\(session.ipv4FoundationProgress?.stage ?? 0)"
-        }
-        if lesson.subnetMaskIntroduction != nil, plan.step(at: session.stepIndex)?.kind == .diagram {
-            let progress = session.subnetMaskProgress ?? SubnetMaskProgress()
-            return "mask-\(progress.stage)-\(progress.boundarySubmitted)"
-        }
-        if lesson.ipv4Introduction != nil, plan.step(at: session.stepIndex)?.kind == .diagram {
-            return "introduction-\(session.ipv4IntroductionProgress?.stage ?? 0)"
-        }
         if plan.answerExplanation(at: session.stepIndex) != nil { return "answer-explanation-\(session.stepIndex)" }
         if explanationScrollTarget != nil { return "topology-explanation-\(session.stepIndex)" }
         if let feedbackScrollTarget { return "\(session.stepIndex)-\(feedbackScrollTarget)" }
@@ -455,32 +317,6 @@ struct StepLessonPlayer: View {
             }
             return session.answerSubmitted ? "看看为什么" : "确认答案"
         case .diagram:
-            if lesson.ipv4Foundation != nil {
-                let progress = session.ipv4FoundationProgress ?? IPv4FoundationProgress()
-                if progress.stage >= (lesson.ipv4Foundation?.stageCount ?? 4) - 1 { return "完成本课" }
-                return "下一步"
-            }
-            if lesson.subnetMaskIntroduction != nil {
-                let progress = session.subnetMaskProgress ?? SubnetMaskProgress()
-                switch progress.stage {
-                case 0: return "看看掩码怎么标记"
-                case 1: return "只换掩码看看"
-                case 2: return "自己选一次分界"
-                default: return progress.boundarySolved ? "找找对应关系" : "检查分界"
-                }
-            }
-            if lesson.ipv4Introduction != nil {
-                switch session.ipv4IntroductionProgress?.stage ?? 0 {
-                case 0: return "拆开这一段"
-                case 1: return "看看取值范围"
-                case 2: return "拼回完整地址"
-                default: return "找找对应关系"
-                }
-            }
-            if lesson.ipv4Visual != nil {
-                if (session.ipv4VisualPhase ?? 0) == 0 { return "换一条试试" }
-                return session.ipv4VisualSolved == true ? "继续看一小步" : "检查分界"
-            }
             return lesson.explanation.isEmpty ? "找找对应关系" : "继续看一小步"
         case .text:
             if plan.answerExplanation(at: session.stepIndex) != nil {
@@ -500,20 +336,7 @@ struct StepLessonPlayer: View {
         case .conversation, .text, .summary:
             return true
         case .diagram:
-            if lesson.ipv4Foundation != nil {
-                return session.ipv4FoundationProgress?.canAdvance ?? true
-            }
-            if lesson.subnetMaskIntroduction != nil {
-                let progress = session.subnetMaskProgress ?? SubnetMaskProgress()
-                return progress.canAdvance || progress.stage == 3 &&
-                    progress.selectedBoundary != nil && !progress.boundarySubmitted
-            }
-            if lesson.ipv4Introduction != nil {
-                return session.ipv4IntroductionProgress?.canAdvance == true
-            }
-            guard lesson.ipv4Visual != nil, (session.ipv4VisualPhase ?? 0) == 1 else { return true }
-            return session.ipv4VisualSolved == true ||
-                (session.ipv4SelectedOctet != nil && session.ipv4VisualSubmitted != true)
+            return plan.canAdvance(session)
         case .question:
             if session.stepIndex == plan.challengeIndex { return session.challengeAnswer != nil }
             return session.selectedAnswer != nil
@@ -551,60 +374,12 @@ struct StepLessonPlayer: View {
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) {
                     if session.answerSubmitted {
                         plan.advance(&session)
-                        if lesson.ipv4Visual != nil {
-                            session.ipv4VisualPhase = 0
-                            session.ipv4VisualFinished = false
-                        }
                     }
                     else { plan.submitAnswer(session.selectedAnswer ?? "", in: &session) }
                 }
             }
         case .diagram:
-            if let foundation = lesson.ipv4Foundation {
-                var progress = session.ipv4FoundationProgress ?? IPv4FoundationProgress()
-                let isLastStage = progress.stage >= foundation.stageCount - 1
-                progress.advance(stageCount: foundation.stageCount)
-                session.ipv4FoundationProgress = progress
-                if isLastStage {
-                    plan.advance(&session)
-                    if plan.isComplete(session) { earnedXP = store.finish(session.stageSession(lesson: lesson)) }
-                }
-                return
-            }
-            if let configuration = lesson.subnetMaskIntroduction {
-                var progress = session.subnetMaskProgress ?? SubnetMaskProgress()
-                if progress.stage == 3 && !progress.boundarySolved {
-                    if progress.submitBoundary(configuration: configuration) == false { session.mistakes += 1 }
-                } else {
-                    let lastStage = progress.stage == 3
-                    progress.advance()
-                    session.subnetMaskProgress = progress
-                    if lastStage { plan.advance(&session) }
-                    return
-                }
-                session.subnetMaskProgress = progress
-                return
-            }
-            if lesson.ipv4Introduction != nil {
-                var progress = session.ipv4IntroductionProgress ?? IPv4IntroductionProgress()
-                let isLastStage = progress.stage == 3
-                progress.advance()
-                session.ipv4IntroductionProgress = progress
-                if isLastStage { plan.advance(&session) }
-                return
-            }
-            if lesson.ipv4Visual != nil {
-                if (session.ipv4VisualPhase ?? 0) == 0 {
-                    session.ipv4VisualPhase = 1
-                    return
-                }
-                if session.ipv4VisualSolved != true {
-                    checkIPv4Boundary()
-                    return
-                }
-            }
             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) {
-                if lesson.ipv4Visual != nil { session.ipv4VisualFinished = true }
                 plan.advance(&session)
             }
         case .text:

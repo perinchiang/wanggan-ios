@@ -3,8 +3,7 @@ import XCTest
 
 final class LearningTests: XCTestCase {
     private func catalog() throws -> LessonCatalog {
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        return try JSONDecoder().decode(LessonCatalog.self, from: Data(contentsOf: root.appendingPathComponent("Resources/lessons.json")))
+        try TestCatalog.compatibility()
     }
 
     private func finished(_ id: String = "gateway", mistakes: Int = 0) -> LessonSession {
@@ -26,25 +25,24 @@ final class LearningTests: XCTestCase {
         calendar.date(from: DateComponents(year: 2026, month: 10, day: 4, hour: 12))!
     }
 
-    func testAllShippedLessonsAreConsistent() throws {
-        let catalog = try catalog()
+    func testOnlyApprovedExampleIsShipped() throws {
+        let catalog = try TestCatalog.shipped()
         try catalog.validate()
-        XCTAssertTrue(Set([
-            "home-two-boxes", "ipv4-address-role", "ipv4-address-format", "ipv4-octet-binary",
-            "gateway", "subnet", "arp", "hop", "dns"
-        ]).isSubset(of: Set(catalog.lessons.map(\.id))))
-        for lesson in catalog.lessons {
-            XCTAssertFalse(lesson.sources.contains { URL(string: $0)?.scheme != "https" })
-        }
+        XCTAssertEqual(catalog.orderedLessonIDs, ["home-two-boxes"])
+        XCTAssertEqual(catalog.lessons.map(\.id), ["home-two-boxes"])
+        XCTAssertTrue(catalog.archivedLessonIDs.isEmpty)
+        XCTAssertTrue((catalog.reviewItems ?? []).isEmpty)
+        XCTAssertEqual(catalog.lessons.first?.title, "宽带师傅为什么装了两个路由器？")
+        XCTAssertTrue(ProgressLedger().isUnlocked("home-two-boxes", in: catalog.orderedLessonIDs))
     }
 
     func testCatalogChaptersCoverEveryLessonExactlyOnce() throws {
-        let catalog = try catalog()
+        let catalog = try TestCatalog.shipped()
         try catalog.validate()
         XCTAssertFalse(catalog.course.chapters.isEmpty)
         XCTAssertEqual(catalog.allLessonIDs.count, catalog.lessons.count)
         XCTAssertEqual(Set(catalog.allLessonIDs), Set(catalog.lessons.map(\.id)))
-        XCTAssertEqual(catalog.archivedLessonIDs, ["ipv4-address", "subnet-mask"])
+        XCTAssertEqual(catalog.archivedLessonIDs, [])
         XCTAssertTrue(Set(catalog.orderedLessonIDs).isDisjoint(with: Set(catalog.archivedLessonIDs)))
         for chapter in catalog.course.chapters {
             XCTAssertEqual(catalog.lessons(in: chapter.id).map(\.id), chapter.orderedLessonIDs)

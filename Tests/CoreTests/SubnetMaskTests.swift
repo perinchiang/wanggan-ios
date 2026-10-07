@@ -3,8 +3,7 @@ import XCTest
 
 final class SubnetMaskTests: XCTestCase {
     private func catalog() throws -> LessonCatalog {
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        return try JSONDecoder().decode(LessonCatalog.self, from: Data(contentsOf: root.appendingPathComponent("Resources/lessons.json")))
+        try TestCatalog.compatibility()
     }
 
     private var configuration: SubnetMaskIntroduction {

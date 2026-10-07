@@ -11,8 +11,7 @@ final class ShortReviewTests: XCTestCase {
     private func day(_ offset: Int) -> Date { calendar.date(byAdding: .day, value: offset, to: today)! }
 
     private func catalog() throws -> LessonCatalog {
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        return try JSONDecoder().decode(LessonCatalog.self, from: Data(contentsOf: root.appendingPathComponent("Resources/lessons.json")))
+        try TestCatalog.compatibility()
     }
     private func completed(_ id: String = "gateway") -> LessonSession {
         var session = LessonSession(lessonID: id)

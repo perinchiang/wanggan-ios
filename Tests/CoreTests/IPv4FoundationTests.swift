@@ -3,14 +3,7 @@ import XCTest
 
 final class IPv4FoundationTests: XCTestCase {
     private func catalog() throws -> LessonCatalog {
-        let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        return try JSONDecoder().decode(
-            LessonCatalog.self,
-            from: Data(contentsOf: root.appendingPathComponent("Resources/lessons.json"))
-        )
+        try TestCatalog.compatibility()
     }
 
     private func complete(_ lesson: Lesson) -> LessonSession {
@@ -57,7 +50,7 @@ final class IPv4FoundationTests: XCTestCase {
         XCTAssertEqual(restored, progress)
     }
 
-    func testFoundationLessonsFollowTheStoryLessonAndOldPilotsAreArchived() throws {
+    func testCompatibilityFixtureCoversObservationKindsAndArchivedIDs() throws {
         let content = try catalog()
         try content.validate()
 

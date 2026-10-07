@@ -7,9 +7,9 @@ struct RootView: View {
     @State private var activeReview: ShortReviewSession?
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    private var testsMaskAccessibility: Bool {
+    private var testsAccessibility: Bool {
         let arguments = ProcessInfo.processInfo.arguments
-        return arguments.contains("--uitesting") && arguments.contains("--test-mask-accessibility")
+        return arguments.contains("--uitesting") && arguments.contains("--test-accessibility")
     }
 
     var body: some View {
@@ -30,11 +30,11 @@ struct RootView: View {
         .foregroundStyle(Theme.ink)
         .background(Theme.paper)
         .fullScreenCover(item: $activeLesson) { lesson in
-            StepLessonPlayer(lesson: lesson, initialSession: store.session(for: lesson), usesStaticPresentation: testsMaskAccessibility) { next in
+            StepLessonPlayer(lesson: lesson, initialSession: store.session(for: lesson), usesStaticPresentation: testsAccessibility) { next in
                 activeLesson = next
             }
             .id(lesson.id)
-            .environment(\.dynamicTypeSize, testsMaskAccessibility ? .accessibility5 : dynamicTypeSize)
+            .environment(\.dynamicTypeSize, testsAccessibility ? .accessibility5 : dynamicTypeSize)
         }
         .alert("进度提示", isPresented: Binding(
             get: { store.storageWarning != nil }, set: { if !$0 { store.storageWarning = nil } }

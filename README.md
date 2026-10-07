@@ -1,38 +1,17 @@
 # 网感 · WangGan
 
-黑白与荧光黄绿的原生 SwiftUI 网络学习 App。每个小节：做出判断 → 分步解惑 → 连线练习 → 场景追问 → 经验结算。
+原生 SwiftUI 网络学习 App，以真实疑问、分步观察和迁移判断建立网络直觉。
 
 ## 当前版本
 
-- 开发候选 **0.13.0（build 28）**：沿用「两个路由器」生活入口、一体机换机场景和 FTTR 故事；分步讲解加入回看，视频数据流与讲解同步并可重看；拓扑逐阶段朗读连接关系，大字号下图示与接口改为纵向排列。运行验证见 [本轮交接](docs/handoffs/2026-10-07-home-lesson-review-followup-handoff.md)，包含接力分支的头像、接线端点与独立光猫修复，不沿用旧包结果。
+开发候选 **0.14.0（build 29）**。当前仅保留一节示例课：**宽带师傅为什么装了两个路由器？**（`home-two-boxes`）。
 
-- 上一修正候选 **0.12.0（build 27）**：修正朋友头像 / 姓名对齐、房间线路端点、补画普通路由器前的光猫，并改为直接的设备与接线讲解。[package 构建](https://github.com/perinchiang/wanggan-ios/actions/runs/37544603801) 与安装包核验已通过（源码 06d8097，77 Core / 4 Web、iPhone Release）；原生 UI 与模拟器截图未运行，真机阅读效果待 Pat 验收。见 [反馈修复交接](docs/handoffs/2026-10-07-lesson-feedback-fix-handoff.md)。
-
-- 上一试学候选 **0.11.0（build 26）**：朋友名移到气泡上方，短气泡按正文收拢；答后以房间连线替代接口清单主图，从房间细线故事逐步引出 FTTR，最后用独立名称卡显示 FTTR / (Fiber to the Room) / 光纤到房间。接口详情默认折叠。[package 构建](https://github.com/perinchiang/wanggan-ios/actions/runs/37520749808) 已通过（源码 `eafe403`，1 分 55 秒，74 Core / 4 Web、iPhone Release 与安装包核验）；原生 UI / 模拟器截图明确跳过，交互由 Pat 真机验收。见 [故事揭晓交接](docs/handoffs/2026-10-07-fttr-story-reveal-handoff.md)。
-
-- **此前试学反馈审核（历史记录）**：Pat 指出朋友头像对齐错误、线条被底色遮挡、普通路由器图缺少光猫，以及答后文案反复使用模糊比喻。已查明源码与提交来源，修正 COURSE_GUIDE / DESIGN 并整理替换文案；当时仅审核；后续源码修复与验证范围以上方 0.12.0 交接为准。见 [审核与待实施方案](docs/handoffs/2026-10-07-home-network-copy-audit-handoff.md)。
-
-- 上一候选 **0.8.1（build 22）**：收窄用户气泡两侧留白，沿用 0.8.0 的退出、故事题、原位替换讲解和完成页修正。按 Pat 明确要求只做 Core / Web 和快速 iPhone 打包，原生交互由 Pat 真机检查；[package 构建](https://github.com/perinchiang/wanggan-ios/actions/runs/37513241703) 通过（源码 `1b4f169`，1 分 56 秒，67 Core / 4 Web、iPhone Release 与安装包核验）；未跑原生 UI。
-
-- 反馈修正版候选 **0.8.0（build 21）**：主动确认退出丢弃当前草稿；用户气泡文字左对齐；设备图讲解气泡逐步替换；朋友换机场景与完成页文案重做。已完成历史与 XP 保留，后台意外中断仍可恢复。[package #49](https://github.com/perinchiang/wanggan-ios/actions/runs/37508868129) 已通过（源码 `0da10ed`，1 分 46 秒，67 Core / 4 Web、iPhone Release 及安装包核验）；原生 smoke 四项通过；故事课定位断言修正后的专项因模拟器无输出超时未完成。结果见 [反馈修正交接](docs/handoffs/2026-10-07-exit-and-story-feedback-handoff.md)，不能沿用 build 20 的 CI 结果。
-
-- 快速试学候选 **0.7.0（build 20）**，源码 `ab8bc71`：[手动 package 构建](https://github.com/perinchiang/wanggan-ios/actions/runs/37505413864) 已通过，触发至完成 1 分 28 秒，62 Core / 4 Web、iPhone Release 编译、IPA 上传及本地安装包核验通过。家庭网络故事课沿用 build 19 的生活对话、稳定滚动、拓扑焦点高亮和跳过配对；本轮只新增快速打包模式及提高 build 号。详见 [快速试学包交接](docs/handoffs/2026-10-07-quick-trial-ipa-handoff.md)。本次没有运行原生 UI / 模拟器截图，真机试学待 Pat 反馈。
-
-- 历史开发候选 0.4.0（build 8）：新增「IPv4 地址为什么写成四段？」基础课，复用本地 IPv4 图示，点选一段 → 8 位 → 0 / 255 → 完整 32 位，支持课内四个观察步骤回看与退出恢复。新用户从基础课开始；既有主线草稿优先续学，提前补基础课另存草稿。运行验证待本次集中 CI，不沿用下列发布结果。
-
-- 0.3.0（build 7），应用代码提交 `4696e2e`；手动 Actions [37302355235](https://github.com/perinchiang/wanggan-ios/actions/runs/37302355235) 通过并导出 iPhone 未签名 IPA。网关 / DNS 各两场景、一题短复习；可使用提示、答错重试、退出恢复，保留整课重学，分别保存草稿且共用每日 +5 XP。
-- 本轮 36 项 Core、2 项 Web、3 项原生 UI 通过（网关短复习、DNS 短复习、原整课学习 / 复习隔离回归），未重跑其余课 UI 全套。已检查短复习实际模拟器截图，错误反馈完整露出；真机、VoiceOver、大字号与后台体验待验收。详见 [短复习交接](docs/handoffs/2026-10-05-short-review-handoff.md)。
-
-- 上一版 0.2.0（build 6），对应代码提交 `92b2dac`；记录见手动 Actions [37294516851](https://github.com/perinchiang/wanggan-ios/actions/runs/37294516851)。
-- 子网课已加入离线 IPv4 地址拆解和分界练习。27 项 Core、2 项 Web 测试及 1 项子网原生流程测试通过，包含实际 WKWebView、答错改选、退出恢复与经验结算；本轮未运行其余四课 UI 全套。VoiceOver、大字号和后台切换的完整真机体验仍待验收。详见 [发布交接](docs/handoffs/2026-10-05-ipv4-visual-0-2-0-release-handoff.md)。
-- iOS 17+，iPhone，简体中文，竖屏。
-- 9 个小节：故事课「两个路由器」、三节 IPv4 基础课，以及网关、子网、ARP、逐跳转发、DNS；每节附知识来源。另有两节旧试验课已归档，不占用学习路线。
-- 原生路线图、分阶段揭示的拓扑示意图、数据包角色、触感反馈、连接曲线、通关与经验动画。
-- 场景按对话逐条出现，点击继续推进；完整交代条件后再显示选项。子网题始终在答题区域展示两台电脑的地址与掩码。
-- 本地进度、意外中断续学、主动退出重来、复习安排、经验等级、每周学习统计。
-- 主线续学与各节复习分别保存；复习不会把学习路线拉回旧课。复习完成后可继续主线最远的位置。
-- 首次完成 +30 XP；后续每个小节每日首次复习 +5 XP；同日重学不重复发奖。
-- 无账号、无广告、无远程模型调用、无服务器。付费与同步尚未加入。
+- 保留安装宽带的故事、分步拓扑与回看、视频数据流、一体机换机判断、答后房间接线和 FTTR 揭晓。
+- 其余八节在目录中的旧课、两节归档试验课及四道短复习题已删除；专用教学页面与旧教案同步移除。
+- 原学习记录、草稿、结算记录和 XP 保留。已删除课程不进入学习推荐、解锁或复习列表；示例课仍可重学。
+- 通用 Core、参数化 Web 图示与历史解码类型保留为技术组件，不代表有其他可学习课程。测试使用中性结构数据，不保存旧课正文。
+- 本轮验证范围与交付结果见 [交接记录](docs/handoffs/2026-10-07-single-example-handoff.md)。原生交互由 Pat 真机验收。
+- iOS 17+、iPhone、简体中文、竖屏；本地存储，无登录、支付或云同步。
 
 ## Windows → iPhone
 
@@ -66,7 +45,7 @@ swift test
 node --test scripts/test_ipv4_visual.cjs
 ```
 
-核心测试覆盖课程完整性、错题重试、连线一对一关系、阶段门控、奖励幂等、复习日期和进度序列化。GitHub Actions 另外运行 iOS UI 测试，验证实际小节完成、进度持久化、意外中断恢复与主动退出重来，并导出模拟器截图。
+核心测试覆盖唯一示例课、错题重试、阶段门控、奖励幂等、复习日期、删课后的历史保留与进度序列化。iOS UI 测试为可选检查，仅在 Pat 明确要求时运行；默认 package 不启动模拟器。
 
 SwiftUI 在 Windows 上不能本地编译预览。Actions 结果只证明对应 commit 的构建和测试状态；之后的未验证提交须另行标注，不把静态检查当成真机测试。
 
@@ -80,18 +59,8 @@ SwiftUI 在 Windows 上不能本地编译预览。Actions 结果只证明对应 
 
 ## 开发文档
 
-最新优先级修订见 [教学与互动需求交接](docs/handoffs/2026-10-05-teaching-priority-revision-handoff.md)：先基础课与分步教学，复习体系进一步开发暂缓。这里只记录规划，0.3.0 的界面和安装包未改变。
-
-本 README 描述当前 MVP；下列文档分别标注已实现、计划中、Draft 与暂缓内容，不代表未来能力已经上线。
-
-- [PRODUCT.md](PRODUCT.md)：产品定位、功能边界与演进阶段。
-- [DESIGN.md](DESIGN.md)：视觉规范、网络原生动效语言、声音与触感、Dark Mode 方向。
-- [COURSE_GUIDE.md](COURSE_GUIDE.md)：教学与题目规范、可调整的课程内容地图（Draft）。
-- [ARCHITECTURE.md](ARCHITECTURE.md)：系统边界、最小 Web 可视化试点、学习记录、迁移与测试。
-- [AGENTS.md](AGENTS.md)：项目开发与 AI 协作约定。
-
-## 内容约定
-
-题干给完整场景与前提，选项预测结果；每个错误选项针对一种误解。解释机制后，再只改变少量条件做迁移判断。引用 RFC 作为机制依据，场景与文字自行编写。经验不等同于专业能力认证。
-
-当前不含登录、推送、排行榜、支付、跨设备同步或真实设备实验。第一版优先验证一个小节的学习体验。
+- [PRODUCT.md](PRODUCT.md)：产品定位、当前能力与暂缓范围。
+- [COURSE_GUIDE.md](COURSE_GUIDE.md)：教学原则与未来故事地图（Draft）。第一课是唯一现有示例，未来课须重新设计与审读。
+- [DESIGN.md](DESIGN.md)：视觉、动效与可访问性规范。
+- [ARCHITECTURE.md](ARCHITECTURE.md)：系统边界、历史数据保护与测试矩阵。
+- [AGENTS.md](AGENTS.md)：开发与交付约定。

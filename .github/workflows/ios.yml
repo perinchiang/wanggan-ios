@@ -12,10 +12,6 @@ on:
           - smoke
           - home
           - full
-          - ipv4
-          - review
-          - foundation
-          - mask
 permissions:
   contents: read
 concurrency:
@@ -90,7 +86,7 @@ jobs:
           # The 15-second launch/log preflight is useful release evidence, but
           # it is pure overhead for the common quick path.
           if [ '${{ inputs.ui_scope }}' = 'full' ]; then
-            SIMCTL_CHILD_DYLD_LIBRARY_PATH="$PWD/build/simulator/Build/Products/Debug-iphonesimulator" xcrun simctl launch '${{ steps.simulator.outputs.id }}' com.perinchiang.wanggan --uitesting --reset-progress --seed-before-subnet | tee launch-simulator.log
+            SIMCTL_CHILD_DYLD_LIBRARY_PATH="$PWD/build/simulator/Build/Products/Debug-iphonesimulator" xcrun simctl launch '${{ steps.simulator.outputs.id }}' com.perinchiang.wanggan --uitesting --reset-progress | tee launch-simulator.log
             sleep 15
             xcrun simctl io '${{ steps.simulator.outputs.id }}' screenshot build/screenshots/before-ui-tests.png
             xcrun simctl spawn '${{ steps.simulator.outputs.id }}' launchctl list | grep -i wanggan >> launch-simulator.log || true
@@ -99,36 +95,11 @@ jobs:
           fi
 
           scope_args=()
-          if [ '${{ inputs.ui_scope }}' = 'smoke' ]; then
-            # High-signal simulator smoke set for current product surfaces.
-            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testConfirmedExitRestartsLessonAndPreservesMainProgress')
-            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testShortReviewConfirmedExitStartsFreshAndPreservesXP')
-            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testHomeTwoBoxesFlow')
-            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4FoundationAddressRoleFlow')
-            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testShortReviewResumesWithoutReplacingMainOrDuplicatingXP')
-          elif [ '${{ inputs.ui_scope }}' = 'home' ]; then
+          if [ '${{ inputs.ui_scope }}' = 'smoke' ] || [ '${{ inputs.ui_scope }}' = 'home' ]; then
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testHomeTwoBoxesFlow')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testHomeTeachingBacktrackAndInterruptedResume')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testHomeLargestTextStaticTeaching')
-          elif [ '${{ inputs.ui_scope }}' = 'ipv4' ]; then
-            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testSubnetResumesAndCompletesOnStepPlayer')
-          elif [ -z '${{ inputs.ui_scope }}' ] || [ '${{ inputs.ui_scope }}' = 'foundation' ]; then
-            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4FoundationAddressRoleFlow')
-            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4FoundationFormatBacktrackingResumeAndCompletion')
-            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4FoundationOctetBinaryFlow')
-            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testHopResumesAndCompletesOnStepPlayer')
-            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testFoundationBinaryLargestTextStaticPresentation')
-          elif [ '${{ inputs.ui_scope }}' = 'mask' ]; then
-            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4FoundationAddressRoleFlow')
-            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4FoundationFormatBacktrackingResumeAndCompletion')
-            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testIPv4FoundationOctetBinaryFlow')
-            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testSubnetResumesAndCompletesOnStepPlayer')
-            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testShortReviewResumesWithoutReplacingMainOrDuplicatingXP')
-            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testFullLessonPersistenceAndResume')
-          elif [ '${{ inputs.ui_scope }}' = 'review' ]; then
-            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testShortReviewResumesWithoutReplacingMainOrDuplicatingXP')
-            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testDNSShortReviewHintAndNextScenario')
-            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testFullLessonPersistenceAndResume')
+            scope_args+=('-only-testing:WangGanUITests/LearningUITests/testConfirmedExitRestartsExample')
           fi
 
           python3 scripts/run_command_with_timeout.py --log build-ui.log --idle-timeout 180 --wall-timeout 1200 -- xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Debug -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.id }}' -parallel-testing-enabled NO -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 -derivedDataPath build/simulator -resultBundlePath build/UITests.xcresult "${scope_args[@]}" CODE_SIGNING_ALLOWED=NO test-without-building

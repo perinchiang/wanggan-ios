@@ -73,9 +73,11 @@ struct ProgressLedger: Codable, Equatable {
         }
     }
 
+    // Missing course content does not invalidate persisted learning history.
+    // Recommendation and opening a lesson are filtered by the active catalog.
     mutating func normalizeDrafts(in orderedIDs: [String]) {
         if let saved = draft {
-            if !orderedIDs.contains(saved.lessonID) || saved.stage == .complete {
+            if saved.stage == .complete {
                 draft = nil
             } else if lessons[saved.lessonID] != nil {
                 // Older builds put a review in the main-course slot.
@@ -86,11 +88,11 @@ struct ProgressLedger: Codable, Equatable {
             }
         }
         reviewDrafts = reviewDrafts?.filter {
-            orderedIDs.contains($0.key) && lessons[$0.key] != nil &&
+            lessons[$0.key] != nil &&
             $0.value.lessonID == $0.key && $0.value.stage != .complete
         }
         earlierDrafts = earlierDrafts?.filter {
-            orderedIDs.contains($0.key) && lessons[$0.key] == nil &&
+            lessons[$0.key] == nil &&
             $0.value.lessonID == $0.key && $0.value.stage != .complete
         }
     }
