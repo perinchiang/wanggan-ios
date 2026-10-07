@@ -101,7 +101,7 @@ final class LearningUITests: XCTestCase {
     func testHomeTwoBoxesFlow() {
         app.launch()
         XCTAssertTrue(app.staticTexts["recommended-lesson-title"].waitForExistence(timeout: 10))
-        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "宽带师傅为什么装了两个盒子？")
+        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "宽带师傅为什么装了两个路由器？")
         tap("start-lesson")
         tap("primary-action")
         tap("primary-action")
@@ -163,8 +163,8 @@ final class LearningUITests: XCTestCase {
             tap("primary-action")
         }
         XCTAssertTrue(app.staticTexts["+30 XP"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.staticTexts["completion-lesson-title"].label, "宽带师傅为什么装了两个盒子？")
-        XCTAssertFalse(app.staticTexts["光猫负责接入光纤网络；家用路由器连接家里的网络和上游，通常还集成 Wi-Fi 接入与有线交换。两个盒子可以分工，也可以合在一起。"].exists)
+        XCTAssertEqual(app.staticTexts["completion-lesson-title"].label, "宽带师傅为什么装了两个路由器？")
+        XCTAssertFalse(app.staticTexts["光猫负责接入光纤网络；家用路由器负责家里的组网和出口。看起来像两个路由器，其实是两份不同的工作，也可以合到一台设备里。"].exists)
         screenshot("H04-completion")
         tap("finish-session")
         XCTAssertEqual(app.staticTexts["xp-badge"].label, "30 经验值")

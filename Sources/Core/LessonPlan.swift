@@ -381,7 +381,7 @@ extension StepSession {
             result.questionSceneStep = answerSubmitted ? lesson.question.scene.count : stepIndex
         } else if stepIndex < plan.matchingIndex || (!lesson.usesMatching && stepIndex == plan.matchingIndex) {
             result.stage = .explanation
-            result.explanationIndex = max(min(stepIndex - plan.questionIndex - 2, lesson.explanation.count - 1), 0)
+            result.explanationIndex = min(stepIndex - plan.questionIndex - 2, lesson.explanation.count - 1)
             if lesson.ipv4Visual != nil, stepIndex == plan.questionIndex + 1 {
                 result.ipv4VisualPhase = ipv4VisualPhase ?? 0
                 result.ipv4VisualFinished = false

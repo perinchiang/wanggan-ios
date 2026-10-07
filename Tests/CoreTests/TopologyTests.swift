@@ -95,6 +95,24 @@ final class TopologyTests: XCTestCase {
         XCTAssertNotNil(ledger.lessons[lesson.id])
     }
 
+    func testHomeLessonDiagramStepResumesAtDiagramNotFirstParagraph() throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "home-two-boxes" })
+        let plan = LessonPlan(lesson: lesson)
+        var session = StepSession(lessonID: lesson.id)
+        for _ in 0..<plan.questionSceneCount { plan.advance(&session) }
+        plan.submitAnswer(lesson.question.correctID, in: &session)
+        plan.advance(&session) // diagram step shows stage-1 nodes
+        XCTAssertEqual(session.stepIndex, plan.questionIndex + 1)
+
+        let draft = session.stageSession(lesson: lesson)
+        XCTAssertEqual(draft.stage, .explanation)
+        XCTAssertEqual(draft.explanationIndex, -1, "The diagram step must be distinguishable from the first explanation paragraph")
+
+        let restored = StepSession(lesson: lesson, from: draft)
+        XCTAssertEqual(restored.stepIndex, plan.questionIndex + 1,
+                       "Exiting on the diagram step must resume on the same step, not skip to the first explanation")
+    }
+
     func testRemovedHomeChallengeChoiceRestoresAsUnansweredWithSameIdentity() throws {
         let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "home-two-boxes" })
         var old = LessonSession(lessonID: lesson.id)

@@ -45,7 +45,7 @@ struct TopologyDiagram: View {
         }
         .frame(height: 200)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(spec.accessibilitySummary)
+        .accessibilityLabel(stage >= spec.maxStage ? spec.accessibilitySummary : "示意图")
         .accessibilityValue("当前显示：" + visibleNodes.map(\.label).joined(separator: "、"))
         .accessibilityIdentifier("topology-diagram")
         .task(id: flowReady) {
