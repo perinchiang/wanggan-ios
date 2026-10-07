@@ -53,6 +53,16 @@ open WangGan.xcodeproj
 
 模拟器可直接运行。需要 Xcode 真机运行时，在项目配置中把 `CODE_SIGNING_ALLOWED` 改为 `YES`，并在 Signing & Capabilities 选择自己的 Team、启用自动签名。源代码不需要重写。
 
+## 环境自检
+
+新 Mac 上可先运行诊断脚本，快速确认开发与构建条件（只读检查，不启动模拟器、不修改系统）：
+
+```sh
+./scripts/doctor.sh
+```
+
+输出按 PASS / WARN / FAIL 分类并给出失败时的下一步操作，检查 macOS、Xcode / xcode-select、Swift、XcodeGen、iOS Simulator runtime、可用的 iPhone 模拟器、项目脚本与资源，以及测试工具。`./scripts/doctor.sh --full` 额外按顺序执行项目已有验证：`swift test`、Web 测试、`xcodegen generate` 和 generic iOS Simulator 编译（复用 CI 同款命令，同样不启动模拟器）。
+
 ## 测试
 
 ```sh
