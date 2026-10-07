@@ -12,6 +12,8 @@ struct LessonSession: Codable, Equatable, Identifiable {
     // Optional fields preserve decoding of drafts saved before conversation scenes existed.
     var questionSceneStep: Int?
     var challengeSceneStep: Int?
+    /// Stable optional page ID; older drafts have no answer-explanation position.
+    var challengeExplanationID: String?
     var answerSubmitted = false
     var explanationIndex = 0
     var matches: [String: String] = [:]
@@ -22,12 +24,16 @@ struct LessonSession: Codable, Equatable, Identifiable {
     var challengeSolved = false
     var mistakes = 0
     var earnedXP: Int?
+    var observationCompleted: Bool?
     // Optional to keep drafts from earlier app versions decodable.
     var ipv4VisualPhase: Int?
     var ipv4SelectedOctet: Int?
     var ipv4VisualSubmitted: Bool?
     var ipv4VisualSolved: Bool?
     var ipv4VisualFinished: Bool?
+    var ipv4FoundationProgress: IPv4FoundationProgress?
+    var ipv4IntroductionProgress: IPv4IntroductionProgress?
+    var subnetMaskProgress: SubnetMaskProgress?
 
     init(lessonID: String, id: UUID = UUID()) {
         self.id = id
@@ -95,11 +101,25 @@ struct LessonSession: Codable, Equatable, Identifiable {
             if answerSubmitted { stage = .explanation }
         case .explanation:
             if explanationIndex + 1 < lesson.explanation.count { explanationIndex += 1 }
-            else { stage = .matching }
+            else { stage = lesson.usesMatching ? .matching : .challenge }
         case .matching:
-            if matchingSolved { stage = .challenge }
+            if !lesson.usesMatching || matchingSolved { stage = .challenge }
         case .challenge:
-            if challengeSolved { stage = .complete }
+            guard challengeSolved else { return }
+            let pages = lesson.challenge.answerExplanation ?? []
+            if let pageID = challengeExplanationID,
+               let index = pages.firstIndex(where: { $0.id == pageID }) {
+                if pages.indices.contains(index + 1) {
+                    challengeExplanationID = pages[index + 1].id
+                } else {
+                    challengeExplanationID = nil
+                    stage = .complete
+                }
+            } else if let first = pages.first {
+                challengeExplanationID = first.id
+            } else {
+                stage = .complete
+            }
         case .complete: break
         }
     }

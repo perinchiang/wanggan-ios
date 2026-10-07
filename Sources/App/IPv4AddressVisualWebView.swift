@@ -12,6 +12,7 @@ struct IPv4AddressVisualWebView: UIViewRepresentable {
     let onSelect: (Int) -> Void
     let onHeight: (CGFloat) -> Void
     let onFailure: () -> Void
+    var introduction: IPv4IntroductionProgress? = nil
 
     func makeCoordinator() -> Coordinator { Coordinator(parent: self) }
 
@@ -65,10 +66,10 @@ struct IPv4AddressVisualWebView: UIViewRepresentable {
             }
             wasActive = parent.isActive
 
-            let stateKey = "\(parent.example.ip)/\(parent.example.prefix)/\(parent.example.mode.rawValue)/\(parent.selectedOctet ?? 0)/\(parent.solved)/\(parent.theme)/\(parent.fontScale)/\(parent.reduceMotion)"
+            let stateKey = "\(parent.example.ip)/\(parent.example.prefix)/\(parent.example.mode.rawValue)/\(parent.selectedOctet ?? 0)/\(parent.solved)/\(parent.theme)/\(parent.fontScale)/\(parent.reduceMotion)/\(parent.introduction?.stage ?? -1)/\(parent.introduction?.rangeValue ?? 0)"
             guard lastState != stateKey else { return }
             lastState = stateKey
-            let input: [String: Any] = [
+            var input: [String: Any] = [
                 "ip": parent.example.ip,
                 "prefix": parent.example.prefix,
                 "mode": parent.example.mode.rawValue,
@@ -78,6 +79,10 @@ struct IPv4AddressVisualWebView: UIViewRepresentable {
                 "fontScale": parent.fontScale,
                 "reduceMotion": parent.reduceMotion
             ]
+            if let introduction = parent.introduction {
+                input["introductionStage"] = introduction.stage
+                input["rangeValue"] = introduction.rangeValue
+            }
             webView.callAsyncJavaScript("window.WangGanIPv4.update(config)", arguments: ["config": input],
                                         in: nil, in: .page) { [weak self, weak webView] result in
                 guard let self, self.webView === webView else { return }
@@ -93,7 +98,9 @@ struct IPv4AddressVisualWebView: UIViewRepresentable {
                 ready = true
                 sendStateIfReady()
             case "select":
-                guard parent.example.mode == .practice, !parent.solved,
+                let canSelect = parent.introduction.map { $0.stage == 0 }
+                    ?? (parent.example.mode == .practice && !parent.solved)
+                guard canSelect,
                       let selected = body["value"] as? Int, (1...4).contains(selected) else { return }
                 parent.onSelect(selected)
             case "height":

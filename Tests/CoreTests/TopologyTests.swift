@@ -1,0 +1,250 @@
+import XCTest
+@testable import WangGanCore
+
+final class TopologyTests: XCTestCase {
+    private func catalog() throws -> LessonCatalog {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        return try JSONDecoder().decode(LessonCatalog.self, from: Data(contentsOf: root.appendingPathComponent("Resources/lessons.json")))
+    }
+
+    private func makeSpec(nodes: [TopologyNode], links: [TopologyLink], flow: [String],
+                          summary: String = "示意图") -> TopologySpec {
+        TopologySpec(nodes: nodes, links: links, flow: flow, accessibilitySummary: summary)
+    }
+
+    private let fiber = TopologyNode(id: "fiber", symbol: "cable.connector", label: "光纤", stage: 1, column: 0, row: 1)
+    private let ont = TopologyNode(id: "ont", symbol: "externaldrive", label: "光猫", stage: 2, column: 1, row: 1)
+    private let router = TopologyNode(id: "router", symbol: "wifi.router", label: "路由器", stage: 3, column: 2, row: 1)
+
+    private var validLinks: [TopologyLink] {
+        [TopologyLink(from: "fiber", to: "ont", stage: 2, wireless: nil),
+         TopologyLink(from: "ont", to: "router", stage: 3, wireless: nil)]
+    }
+
+    func testValidSpecWithStagesAndFlow() {
+        let spec = makeSpec(nodes: [fiber, ont, router], links: validLinks, flow: ["fiber", "ont", "router"])
+        XCTAssertTrue(spec.isValid)
+        XCTAssertEqual(spec.maxStage, 3)
+        XCTAssertEqual(spec.flowStage, 3)
+        XCTAssertEqual(spec.nodes(visibleAt: 1).map(\.id), ["fiber"])
+        XCTAssertEqual(spec.links(visibleAt: 2).map(\.id), ["fiber-ont"])
+        XCTAssertEqual(Set(spec.nodes(visibleAt: 3).map(\.id)), Set(["fiber", "ont", "router"]))
+        XCTAssertEqual(spec.links(visibleAt: 2).count, 1)
+        XCTAssertEqual(spec.links(visibleAt: 3).count, 2)
+    }
+
+    func testFlowStageFollowsLatestFlowNodeNotTheWholeDiagram() {
+        let late = TopologyNode(id: "printer", symbol: "printer", label: "打印机", stage: 5, column: 3, row: 1)
+        let spec = makeSpec(nodes: [fiber, ont, router, late], links: validLinks, flow: ["fiber", "ont", "router"])
+        XCTAssertEqual(spec.maxStage, 5)
+        XCTAssertEqual(spec.flowStage, 3, "The flow starts as soon as its own nodes are visible")
+    }
+
+    func testInvalidSpecs() {
+        XCTAssertFalse(makeSpec(nodes: [fiber, fiber], links: validLinks, flow: ["fiber", "ont"]).isValid, "duplicate node ids")
+        XCTAssertFalse(makeSpec(nodes: [fiber, ont, router],
+                                links: [TopologyLink(from: "fiber", to: "ghost", stage: 1, wireless: nil)],
+                                flow: ["fiber", "ont"]).isValid, "link to missing node")
+        XCTAssertFalse(makeSpec(nodes: [fiber, ont, router], links: validLinks, flow: ["fiber", "ghost"]).isValid, "flow through missing node")
+        XCTAssertFalse(makeSpec(nodes: [fiber, ont, router], links: validLinks, flow: ["fiber"]).isValid, "flow needs a path")
+        XCTAssertFalse(makeSpec(nodes: [fiber, ont, router], links: validLinks, flow: ["fiber", "ont", "router"], summary: "").isValid, "summary required")
+        XCTAssertFalse(makeSpec(nodes: [fiber, ont, router], links: [], flow: ["fiber", "ont", "router"]).isValid, "links required")
+        XCTAssertFalse(makeSpec(nodes: [TopologyNode(id: "x", symbol: "x", label: "", stage: 1, column: 0, row: 0)],
+                                 links: [TopologyLink(from: "x", to: "x", stage: 1, wireless: nil)], flow: ["x", "x"]).isValid, "self link and empty label")
+    }
+
+    func testShippedHomeTopologyRevealsWithinExplanationBudget() throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "home-two-boxes" })
+        let topology = try XCTUnwrap(lesson.topology)
+        XCTAssertTrue(topology.isValid)
+        XCTAssertLessThanOrEqual(topology.maxStage, lesson.explanation.count + 1)
+        XCTAssertTrue(topology.flow.contains("router"), "The packet should traverse the home network")
+        XCTAssertEqual(lesson.diagram, "home")
+    }
+
+    func testHomeLessonPlaysThroughStandardSteps() throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "home-two-boxes" })
+        let plan = LessonPlan(lesson: lesson)
+        XCTAssertEqual(plan.steps.first?.kind, .conversation)
+        XCTAssertEqual(plan.steps.last?.kind, .summary)
+        XCTAssertEqual(plan.steps.filter { $0.kind == .text }.count,
+                       lesson.explanation.count + (lesson.challenge.answerExplanation?.count ?? 0))
+
+        var session = StepSession(lessonID: lesson.id)
+        for _ in 0..<plan.questionSceneCount { plan.advance(&session) }
+        XCTAssertEqual(session.stepIndex, plan.questionIndex)
+        plan.submitAnswer(lesson.question.correctID, in: &session)
+        plan.advance(&session) // diagram step shows stage-1 nodes
+        for _ in 0..<lesson.explanation.count { plan.advance(&session) }
+        plan.advance(&session) // go straight into the transfer scene
+        XCTAssertFalse(lesson.usesMatching)
+        XCTAssertEqual(session.stepIndex, plan.matchingIndex + 1)
+        for _ in 0..<plan.challengeSceneCount { plan.advance(&session) }
+        XCTAssertEqual(session.stepIndex, plan.challengeIndex)
+        plan.submitChallenge(lesson.challenge.correctID, in: &session)
+        plan.advance(&session)
+        for _ in lesson.challenge.answerExplanation ?? [] { plan.advance(&session) }
+        XCTAssertTrue(plan.isComplete(session))
+        XCTAssertEqual(session.mistakes, 0)
+
+        let completed = session.stageSession(lesson: lesson)
+        XCTAssertEqual(completed.stage, .complete)
+        XCTAssertTrue(completed.matchingSolved, "A skipped optional matching step must count as satisfied")
+        var ledger = ProgressLedger()
+        XCTAssertEqual(ledger.complete(completed), 30)
+        XCTAssertNotNil(ledger.lessons[lesson.id])
+    }
+
+    func testHomeLessonDiagramStepResumesAtDiagramNotFirstParagraph() throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "home-two-boxes" })
+        let plan = LessonPlan(lesson: lesson)
+        var session = StepSession(lessonID: lesson.id)
+        for _ in 0..<plan.questionSceneCount { plan.advance(&session) }
+        plan.submitAnswer(lesson.question.correctID, in: &session)
+        plan.advance(&session) // diagram step shows stage-1 nodes
+        XCTAssertEqual(session.stepIndex, plan.questionIndex + 1)
+
+        let draft = session.stageSession(lesson: lesson)
+        XCTAssertEqual(draft.stage, .explanation)
+        XCTAssertEqual(draft.explanationIndex, -1, "The diagram step must be distinguishable from the first explanation paragraph")
+
+        let restored = StepSession(lesson: lesson, from: draft)
+        XCTAssertEqual(restored.stepIndex, plan.questionIndex + 1,
+                       "Exiting on the diagram step must resume on the same step, not skip to the first explanation")
+    }
+
+    func testRemovedHomeChallengeChoiceRestoresAsUnansweredWithSameIdentity() throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "home-two-boxes" })
+        var old = LessonSession(lessonID: lesson.id)
+        old.stage = .challenge
+        old.challengeAnswer = "ont-only"
+        old.challengeSubmitted = true
+        old.mistakes = 3
+        let restored = StepSession(lesson: lesson, from: old)
+        XCTAssertEqual(restored.id, old.id)
+        XCTAssertEqual(restored.stepIndex, LessonPlan(lesson: lesson).challengeIndex)
+        XCTAssertNil(restored.challengeAnswer)
+        XCTAssertFalse(restored.challengeSubmitted)
+        XCTAssertFalse(restored.challengeSolved)
+        XCTAssertEqual(restored.mistakes, 3)
+    }
+
+    func testCatalogRejectsTopologyBeyondExplanationBudget() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let url = root.appendingPathComponent("Resources/lessons.json")
+        let json = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as! [String: Any]
+        let lessons = try XCTUnwrap(json["lessons"] as? [[String: Any]])
+        let index = try XCTUnwrap(lessons.firstIndex { $0["id"] as? String == "home-two-boxes" })
+        let topology = try XCTUnwrap(lessons[index]["topology"] as? [String: Any])
+        var nodes = try XCTUnwrap(topology["nodes"] as? [[String: Any]])
+        nodes[0]["stage"] = 99
+        var mutated = json
+        var mutatedLessons = lessons
+        var mutatedTopology = topology
+        mutatedTopology["nodes"] = nodes
+        mutatedLessons[index]["topology"] = mutatedTopology
+        mutated["lessons"] = mutatedLessons
+
+        let catalog = try JSONDecoder().decode(LessonCatalog.self, from: JSONSerialization.data(withJSONObject: mutated))
+        XCTAssertThrowsError(try catalog.validate(), "A stage beyond the explanation budget must fail catalog validation")
+    }
+
+    func testJourneyWaitsForTeachingCueAndVisibleLinks() throws {
+        let home = try XCTUnwrap(catalog().lessons.first { $0.id == "home-two-boxes" }?.topology)
+        XCTAssertEqual(home.nodes(visibleAt: 4).count, home.nodes.count)
+        XCTAssertEqual(home.flowStage, 5, "The journey waits for the video paragraph")
+        var spec = makeSpec(nodes: [fiber, ont, router], links: [
+            TopologyLink(from: "fiber", to: "ont", stage: 2, wireless: nil),
+            TopologyLink(from: "ont", to: "router", stage: 6, wireless: nil)
+        ], flow: ["fiber", "ont", "router"])
+        spec.flowStartStage = 4
+        XCTAssertEqual(spec.flowStage, 6, "Packets cannot travel along an unrevealed link")
+        XCTAssertFalse(makeSpec(nodes: [fiber, ont, router], links: validLinks,
+                                flow: ["fiber", "router"]).isValid, "A flow cannot invent a connection")
+    }
+
+    func testSpokenStagesDescribeOnlyRevealedConnections() throws {
+        let spec = try XCTUnwrap(catalog().lessons.first { $0.id == "home-two-boxes" }?.topology)
+        XCTAssertFalse(spec.spokenDescription(at: 1).contains("光猫"))
+        XCTAssertTrue(spec.spokenDescription(at: 2).contains("光纤入户连接光猫"))
+        XCTAssertFalse(spec.spokenDescription(at: 2).contains("路由器"))
+        XCTAssertTrue(spec.spokenDescription(at: 4).contains("通过 Wi-Fi连接手机"))
+        XCTAssertEqual(spec.spokenDescription(at: spec.maxStage), spec.accessibilitySummary)
+        let oldJSON = try JSONSerialization.jsonObject(with: JSONEncoder().encode(spec)) as! [String: Any]
+        var legacy = oldJSON
+        legacy.removeValue(forKey: "flowStartStage")
+        let decoded = try JSONDecoder().decode(TopologySpec.self, from: JSONSerialization.data(withJSONObject: legacy))
+        XCTAssertNil(decoded.flowStartStage)
+        XCTAssertTrue(decoded.isValid)
+        XCTAssertEqual(decoded.flowStage, 4)
+    }
+
+    func testBacktrackingAndSerializedResumePreserveAnswersAtEveryTeachingStage() throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "home-two-boxes" })
+        let plan = LessonPlan(lesson: lesson)
+        var session = StepSession(lessonID: lesson.id)
+        for _ in 0..<plan.questionSceneCount { plan.advance(&session) }
+        plan.submitAnswer("coverage", in: &session)
+        plan.advance(&session)
+        for index in (plan.questionIndex + 1)...(plan.questionIndex + 1 + lesson.explanation.count) {
+            XCTAssertEqual(session.stepIndex, index)
+            let data = try JSONEncoder().encode(session.stageSession(lesson: lesson))
+            let saved = try JSONDecoder().decode(LessonSession.self, from: data)
+            var restored = StepSession(lesson: lesson, from: saved)
+            XCTAssertEqual(restored.stepIndex, index)
+            XCTAssertEqual(restored.id, session.id)
+            plan.revisitPreviousExplanation(&restored)
+            XCTAssertEqual(restored.stepIndex, max(plan.questionIndex + 1, index - 1))
+            XCTAssertEqual(restored.selectedAnswer, "coverage")
+            XCTAssertEqual(restored.mistakes, 1)
+            if index > plan.questionIndex + 1 { plan.advance(&restored) }
+            XCTAssertEqual(restored.stepIndex, index)
+            plan.advance(&session)
+        }
+        XCTAssertFalse(plan.canRevisitPreviousExplanation(session), "Reading back does not escape into questions")
+    }
+
+    func testLegacyExplanationAndInvalidNegativeIndexResumeSafely() throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "home-two-boxes" })
+        let plan = LessonPlan(lesson: lesson)
+        // Exact old shape: no new optional fields are needed to read old drafts.
+        let json = """
+        {"id":"22222222-2222-2222-2222-222222222222","lessonID":"home-two-boxes",
+         "stage":1,"answerSubmitted":true,"selectedAnswer":"split","explanationIndex":0,
+         "matches":{},"matchingSubmitted":false,"matchingSolved":false,
+         "challengeSubmitted":false,"challengeSolved":false,"mistakes":0}
+        """
+        var old = try JSONDecoder().decode(LessonSession.self, from: Data(json.utf8))
+        XCTAssertEqual(StepSession(lesson: lesson, from: old).stepIndex, plan.questionIndex + 2)
+        old.explanationIndex = -50
+        XCTAssertEqual(StepSession(lesson: lesson, from: old).stepIndex, plan.questionIndex + 1)
+    }
+
+    func testAnswerStoryBacktrackingKeepsGateAndRewardIdempotent() throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "home-two-boxes" })
+        let plan = LessonPlan(lesson: lesson)
+        var session = StepSession(lessonID: lesson.id)
+        session.stepIndex = plan.challengeIndex
+        plan.submitChallenge("router-only", in: &session)
+        plan.advance(&session)
+        XCTAssertEqual(session.stepIndex, plan.challengeIndex)
+        plan.retryChallenge(in: &session)
+        plan.submitChallenge(lesson.challenge.correctID, in: &session)
+        plan.advance(&session)
+        XCTAssertFalse(plan.canRevisitPreviousExplanation(session))
+        plan.advance(&session)
+        plan.revisitPreviousExplanation(&session)
+        XCTAssertEqual(plan.answerExplanation(at: session.stepIndex)?.id, "integrated-ports")
+        let restored = StepSession(lesson: lesson, from: session.stageSession(lesson: lesson))
+        XCTAssertEqual(restored.stepIndex, session.stepIndex)
+        XCTAssertTrue(restored.challengeSolved)
+        XCTAssertEqual(restored.mistakes, 1)
+        var ledger = ProgressLedger()
+        XCTAssertEqual(ledger.complete(session.stageSession(lesson: lesson)), 0)
+        while !plan.isComplete(session) { plan.advance(&session) }
+        XCTAssertEqual(ledger.complete(session.stageSession(lesson: lesson)), 30)
+        _ = ledger.complete(session.stageSession(lesson: lesson))
+        XCTAssertEqual(ledger.totalXP, 30)
+        XCTAssertFalse(plan.canRevisitPreviousExplanation(session))
+    }
+}

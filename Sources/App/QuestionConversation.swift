@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct QuestionConversation: View {
     let question: Question
@@ -14,10 +15,10 @@ struct QuestionConversation: View {
         VStack(alignment: .leading, spacing: 18) {
             ForEach(visibleMessages) { message in
                 VStack(alignment: .leading, spacing: 16) {
-                    ConversationBubble(text: message.text)
+                    ConversationBubble(text: message.text, role: message.speaker)
                         .accessibilityIdentifier("\(prefix)-scene-\(message.id)")
-                    if message.visual == "network" {
-                        NetworkDiagram(kind: lesson.diagram)
+                    if message.visual == "network", let topology = lesson.topology {
+                        TopologyDiagram(spec: topology, animated: false)
                     } else if message.visual == "devices", !ready, let devices = question.devices {
                         AddressComparison(devices: devices, identifier: "\(prefix)-intro-addresses")
                     }
@@ -43,19 +44,118 @@ struct QuestionConversation: View {
 struct ConversationBubble: View {
     let text: String
     var isQuestion = false
+    var role: String? = nil
+    var highlightedTerms: [String] = []
+
+    private var isUser: Bool { role == "user" }
+    @ScaledMetric(relativeTo: .body) private var bodyFontSize: CGFloat = 20
+    @ScaledMetric(relativeTo: .title2) private var questionFontSize: CGFloat = 22
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            PacketMascot(size: 34).padding(.top, 10)
-            Text(text)
-                .font(.system(size: isQuestion ? 22 : 20, weight: isQuestion ? .bold : .medium))
-                .lineSpacing(6)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(20)
-                .background(isQuestion ? Theme.lime.opacity(0.24) : Theme.surface,
-                            in: .rect(topLeadingRadius: 6, bottomLeadingRadius: 22, bottomTrailingRadius: 22, topTrailingRadius: 22))
+            if isUser { Spacer(minLength: 42) }
+
+            if !isUser {
+                if role == "technician" {
+                    Image(systemName: "wrench.and.screwdriver.fill")
+                        .font(.system(size: 17, weight: .semibold))
+                        .frame(width: 34, height: 34)
+                        .background(Theme.surface, in: .circle)
+                        .padding(.top, 10)
+                        .accessibilityHidden(true)
+                } else if role == "friend" {
+                    Image(systemName: "person.crop.circle.fill")
+                        .font(.system(size: 32))
+                        .accessibilityHidden(true)
+                } else {
+                    PacketMascot(size: 34).padding(.top, 10)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                if role == "friend" {
+                    Text("朋友").font(.caption.weight(.semibold)).foregroundStyle(Theme.muted)
+                        .frame(minHeight: 32, alignment: .leading)
+                }
+                ConversationText(text: text, terms: highlightedTerms,
+                                 fontSize: isQuestion ? questionFontSize : bodyFontSize,
+                                 fontWeight: isQuestion ? .bold : .medium)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 20)
+                    .background(isUser || isQuestion ? Theme.lime.opacity(0.24) : Theme.surface,
+                                in: .rect(topLeadingRadius: isUser ? 22 : 6,
+                                          bottomLeadingRadius: 22,
+                                          bottomTrailingRadius: 22,
+                                          topTrailingRadius: isUser ? 6 : 22))
+            }
+            .layoutPriority(1)
+
+            if isUser {
+                Image(systemName: "person.crop.circle.fill")
+                    .font(.system(size: 32))
+                    .foregroundStyle(Theme.ink)
+                    .padding(.top, 10)
+                    .accessibilityHidden(true)
+            } else {
+                Spacer(minLength: 0)
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// Wrap at the available width, then fit the bubble to the longest rendered line.
+/// Short prompts no longer stretch their background across the whole row.
+private struct ConversationText: UIViewRepresentable {
+    let text: String
+    let terms: [String]
+    let fontSize: CGFloat
+    let fontWeight: UIFont.Weight
+
+    func makeUIView(context: Context) -> UILabel {
+        let label = UILabel()
+        label.numberOfLines = 0
+        label.backgroundColor = .clear
+        label.lineBreakMode = .byWordWrapping
+        label.lineBreakStrategy = []
+        label.isAccessibilityElement = true
+        label.setContentCompressionResistancePriority(.required, for: .vertical)
+        return label
+    }
+
+    func updateUIView(_ label: UILabel, context: Context) {
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.lineSpacing = 6
+        paragraph.alignment = .left
+        paragraph.lineBreakMode = .byWordWrapping
+        paragraph.lineBreakStrategy = []
+        let attributed = NSMutableAttributedString(string: text, attributes: [
+            .font: UIFont.systemFont(ofSize: fontSize, weight: fontWeight),
+            .foregroundColor: UIColor(Theme.ink),
+            .paragraphStyle: paragraph
+        ])
+        let source = text as NSString
+        for term in Set(terms) where !term.isEmpty {
+            var remaining = NSRange(location: 0, length: source.length)
+            while remaining.length > 0 {
+                let range = source.range(of: term, options: [], range: remaining)
+                guard range.location != NSNotFound else { break }
+                attributed.addAttribute(.backgroundColor, value: UIColor(Theme.lime.opacity(0.5)), range: range)
+                let end = NSMaxRange(range)
+                remaining = NSRange(location: end, length: source.length - end)
+            }
+        }
+        label.attributedText = attributed
+        label.accessibilityLabel = text
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UILabel, context: Context) -> CGSize? {
+        guard let width = proposal.width, width.isFinite, width > 0 else { return nil }
+        let measured = uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+        let fittedWidth = min(width, ceil(measured.width) + 1)
+        let fitted = uiView.sizeThatFits(CGSize(width: fittedWidth, height: .greatestFiniteMagnitude))
+        return CGSize(width: fittedWidth, height: ceil(fitted.height))
     }
 }
 

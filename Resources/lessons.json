@@ -1,683 +1,393 @@
 {
   "course": {
     "id": "wanggan-network-intuition",
-    "revision": 1,
+    "revision": 7,
     "title": "网感",
     "chapters": [
       {
-        "id": "first-look",
-        "title": "第一章 · 数据如何出发",
+        "id": "home-network",
+        "title": "故事 · 家里的网络从哪里来",
         "orderedLessonIDs": [
-          "gateway",
-          "subnet",
-          "arp",
-          "hop",
-          "dns"
+          "home-two-boxes"
         ]
       }
-    ]
+    ],
+    "archivedLessonIDs": []
   },
-  "reviewItems": [
-    {
-      "id": "gateway.local-printer", "revision": 1, "lessonID": "gateway",
-      "knowledgePointID": "ipv4.local-vs-gateway", "objective": "分清本地通信与网关转交",
-      "scenarioFamilyID": "local-printer",
-      "scene": "电脑和打印机接在一台独立交换机上，属于同一个 IP 子网，没有网络隔离。地址、掩码和打印服务正常，通过 IP 连接打印机。只有电脑的默认网关填错了。",
-      "prompt": "电脑还能把文件发给打印机吗？",
-      "options": [
-        {"id": "local", "text": "能，本地通信仍可进行", "feedback": "目标就在本地，不需要默认网关转交。"},
-        {"id": "all-fail", "text": "不能，所有数据都必须经过网关", "feedback": "你把网关当成了所有通信的必经之路。同一子网内，电脑可以直接把数据交给打印机。"},
-        {"id": "slow", "text": "能，但网关会让打印变慢", "feedback": "这条本地路径不经过默认网关，填错它不会自动让打印变慢。"}
-      ],
-      "correctID": "local", "hint": "先判断目标在本地还是远方，再决定是否需要网关。",
-      "explanation": "同一子网且没有隔离时，电脑在本地找到打印机并直接交付；默认网关用于转交去往其他网络的数据。"
-    },
-    {
-      "id": "gateway.local-projector", "revision": 1, "lessonID": "gateway",
-      "knowledgePointID": "ipv4.local-vs-gateway", "objective": "分清本地通信与网关转交",
-      "scenarioFamilyID": "local-projector",
-      "scene": "电脑与投影仪接在独立交换机上，属于同一个 IP 子网，地址与掩码正确，没有网络隔离。投影服务正常，电脑按 IP 连接。路由器关机了，交换机和两台设备仍通电。",
-      "prompt": "这次本地投影还能连接吗？",
-      "options": [
-        {"id": "local", "text": "能，本地路径仍正常", "feedback": "本地投影不用路由器转交。"},
-        {"id": "all-fail", "text": "不能，路由器关机就是全部断网", "feedback": "你把路由器关机当成了所有路径都消失。这里的本地路径仍由独立交换机连着。"},
-        {"id": "internet", "text": "只有能上互联网，投影才能连接", "feedback": "这里按 IP 连接本地服务，没有要求通过互联网。"}
-      ],
-      "correctID": "local", "hint": "画一下电脑到投影仪的路径：必须经过路由器吗？",
-      "explanation": "这条本地路径只经过仍工作的独立交换机。若路由器同时承担 Wi-Fi 或交换角色，关机的影响就需要重新判断。"
-    },
-    {
-      "id": "dns.uncached-name", "revision": 1, "lessonID": "dns",
-      "knowledgePointID": "dns.resolution-vs-connectivity", "objective": "分清名字解析与地址连通",
-      "scenarioFamilyID": "uncached-name",
-      "scene": "电脑的 IP、路由和网络连接正常。DNS 查询失败，没有可用缓存或本地名称映射。NAS 服务正常，支持直接按 IP 访问；一个新网站必须先查到域名对应的地址。",
-      "prompt": "现在最合理的判断是什么？",
-      "options": [
-        {"id": "ip", "text": "NAS 可按 IP 访问，新网站的域名访问受阻", "feedback": "DNS 失败阻碍找地址，不等于已知地址的路径失效。"},
-        {"id": "all-fail", "text": "DNS 失败，NAS 和网站一定都不能访问", "feedback": "你把查名字失败当成了所有地址都不可达。按已知 IP 访问 NAS，不需要这次 DNS 查询。"},
-        {"id": "all-work", "text": "网络正常，两个都一定能访问", "feedback": "新网站还缺少域名对应的地址；题目排除了缓存与本地名称映射。"}
-      ],
-      "correctID": "ip", "hint": "访问已知 IP 与查一个新域名，哪一个还需要 DNS？",
-      "explanation": "DNS 把名字对应到地址。查名字失败，不能因此断定已知 IP 的路径也坏了；新域名没有缓存或本地映射，才会卡在找地址这一步。"
-    },
-    {
-      "id": "dns.cached-name", "revision": 1, "lessonID": "dns",
-      "knowledgePointID": "dns.resolution-vs-connectivity", "objective": "分清名字解析与地址连通",
-      "scenarioFamilyID": "cached-name",
-      "scene": "DNS 服务器暂时不可用，但电脑已有某网站仍有效的地址缓存。缓存地址没有变化，路由、网络和网站服务正常，浏览器会使用该缓存。",
-      "prompt": "这个已缓存的网站此刻还能打开吗？",
-      "options": [
-        {"id": "cached", "text": "能，已有缓存可提供地址", "feedback": "这次不必重新向 DNS 服务器查地址。"},
-        {"id": "all-fail", "text": "不能，每次访问都必须重新查询 DNS", "feedback": "你忽略了有效缓存：名字已经能对应到地址，不必每次重新查询服务器。"},
-        {"id": "forever", "text": "能，所以以后永远不需要 DNS", "feedback": "缓存有有效期，也可能遇到新域名；现在可访问不能推出以后都不用 DNS。"}
-      ],
-      "correctID": "cached", "hint": "这一次，电脑是否已经有可用的地址？",
-      "explanation": "有效缓存可暂时替代新的 DNS 查询。这里地址和路径都正常，所以仍可访问；缓存过期或遇到新名字时，仍可能需要 DNS。"
-    }
-  ],
   "lessons": [
     {
-      "id": "gateway",
-      "title": "网关填错会怎样？",
-      "subtitle": "先分清：邻居，还是远方",
-      "takeaway": "什么时候需要网关",
-      "nextCuriosity": "电脑怎么知道，对方是不是邻居？",
-      "diagram": "gateway",
-      "question": {
-        "prompt": "网关填错了，电脑会完全断网吗？",
-        "options": [
+      "id": "home-two-boxes",
+      "title": "宽带师傅为什么装了两个路由器？",
+      "subtitle": "从家门口的一根光纤开始",
+      "takeaway": "光猫连接运营商的光纤网络，家用路由器通过光猫上网，并让手机、电脑通过 Wi-Fi 或网线接入家庭网络。有些设备集成了光猫和路由器的功能。",
+      "nextCuriosity": "手机要联系朋友的电脑时，靠什么找到对方？",
+      "diagram": "home",
+      "topology": {
+        "accessibilitySummary": "示意图：一根光纤从门外进入光猫，光猫用网线连接家用路由器，手机通过 Wi-Fi、电脑通过网线连接路由器。",
+        "nodes": [
           {
-            "id": "all-fail",
-            "text": "NAS 和互联网都访问不了",
-            "feedback": "你把网关当成了所有通信的必经之路。先看看：目标就在本地时，需要它转交吗？"
+            "id": "fiber",
+            "symbol": "cable.connector",
+            "label": "光纤入户",
+            "stage": 1,
+            "column": 0,
+            "row": 1
           },
           {
-            "id": "local",
-            "text": "NAS 能访问，互联网不行",
-            "feedback": "判断正确。关键在于目的地是否在本地子网，而不是电脑是否改过设置。"
+            "id": "ont",
+            "symbol": "externaldrive.connected.to.line.below",
+            "label": "光猫",
+            "stage": 2,
+            "column": 1,
+            "row": 1
           },
-          {
-            "id": "slow",
-            "text": "都能访问，只是速度变慢",
-            "feedback": "默认网关不是加速开关。去往远方的数据，需要一个真实可达的下一跳。"
-          }
-        ],
-        "correctID": "local",
-        "hint": "先把本地通信和跨网段通信分开想。",
-        "scene": [
-          {
-            "id": "home",
-            "text": "你正在用电脑访问家里的 NAS。刚才，你改了一项网络设置。"
-          },
-          {
-            "id": "wiring",
-            "text": "电脑和 NAS 接在同一台交换机上，属于同一 VLAN、同一子网。",
-            "visual": "network"
-          },
-          {
-            "id": "change",
-            "text": "你把电脑唯一的默认网关，改成了本地子网里一个不存在的地址。"
-          },
-          {
-            "id": "conditions",
-            "text": "其他都没动：手动 IPv4 地址和掩码正确，交换机、NAS 与服务正常。我们通过 IP 访问。"
-          }
-        ]
-      },
-      "explanation": [
-        "电脑会根据自己的 IP 和子网掩码，判断目标是否在本地子网。这里的 NAS 就是它的邻居。",
-        "访问本地 NAS，电脑把以太网帧直接交给 NAS，交换机负责转发。这个过程不需要路由器参与。",
-        "访问互联网服务器，在本题没有其他路由的条件下，电脑需要把帧交给默认网关。网关地址写错，这条路才走不通。"
-      ],
-      "matching": {
-        "prompt": "把访问目标，连到这一跳要交给的设备。",
-        "left": [
-          {
-            "id": "nas",
-            "text": "同一子网的 NAS",
-            "symbol": "externaldrive"
-          },
-          {
-            "id": "internet",
-            "text": "互联网服务器",
-            "symbol": "globe"
-          }
-        ],
-        "right": [
           {
             "id": "router",
-            "text": "默认网关",
+            "symbol": "wifi.router",
+            "label": "路由器",
+            "stage": 3,
+            "column": 2,
+            "row": 1
+          },
+          {
+            "id": "phone",
+            "symbol": "iphone",
+            "label": "手机",
+            "stage": 4,
+            "column": 3,
+            "row": 0
+          },
+          {
+            "id": "computer",
+            "symbol": "laptopcomputer",
+            "label": "电脑",
+            "stage": 4,
+            "column": 3,
+            "row": 2
+          }
+        ],
+        "links": [
+          {
+            "from": "fiber",
+            "to": "ont",
+            "stage": 2
+          },
+          {
+            "from": "ont",
+            "to": "router",
+            "stage": 3
+          },
+          {
+            "from": "router",
+            "to": "phone",
+            "stage": 4,
+            "wireless": true
+          },
+          {
+            "from": "router",
+            "to": "computer",
+            "stage": 4
+          }
+        ],
+        "flow": [
+          "fiber",
+          "ont",
+          "router",
+          "phone"
+        ],
+        "flowStartStage": 5
+      },
+      "question": {
+        "prompt": "你先猜猜，它们最可能怎么分工？",
+        "scene": [
+          {
+            "id": "move-in",
+            "text": "恭喜你新屋入伙。装修差不多搞定了，但家里还没有 Wi‑Fi 可以用，于是你约了宽带师傅上门装网。"
+          },
+          {
+            "id": "install",
+            "text": "师傅把入户光纤接进弱电箱里的一台设备，又从那里拉出一根网线，接到客厅的路由器。手机很快搜到了新的 Wi‑Fi。"
+          },
+          {
+            "id": "you-ask",
+            "text": "师傅，怎么装了两个路由器？是不是有一个装重复了？",
+            "speaker": "user"
+          },
+          {
+            "id": "technician",
+            "text": "没装错。它们看起来都跟“上网”有关，但做的不是同一件事。",
+            "speaker": "technician"
+          }
+        ],
+        "options": [
+          {
+            "id": "split",
+            "text": "前一个负责接入光纤，后一个负责家里的网络和 Wi‑Fi",
+            "feedback": "对。入户光纤接在光猫上，手机和电脑连的是路由器。下面看看它们之间怎么连接。"
+          },
+          {
+            "id": "coverage",
+            "text": "两台功能基本一样，只是分开放，主要为了让 Wi‑Fi 覆盖更好",
+            "feedback": "这里不仅是增加 Wi-Fi 覆盖：前一台连接入户光纤，后一台连接手机和电脑。两台设备的用途不同。"
+          },
+          {
+            "id": "wired-wireless",
+            "text": "前一个只管有线设备，后一个只管无线设备",
+            "feedback": "电脑也可以用网线接到路由器，所以这里不是按“有线 / 无线”来分工。"
+          }
+        ],
+        "correctID": "split",
+        "hint": "看看入户光纤插在哪台设备上，手机和电脑又连着哪台。"
+      },
+      "explanation": [
+        "师傅指着弱电箱：“这台叫光猫。”门外来的光纤接在它上面，家里的设备要通过它连上运营商的网络。原来，第一台还真不是你以为的路由器。",
+        "顺着这根网线看，另一头才是客厅的家用路由器。它连着家里的设备，也把家里的网络接向光猫。",
+        "手机用 Wi-Fi，电脑用网线，都能接到这台路由器上。原来 Wi-Fi 只是连接方式之一，这台设备还照顾着用网线的电脑。",
+        "现在点开一个视频。传回手机的数据先经过光猫，再经过路由器，最后通过 Wi-Fi 到达手机。你刚才认成“两台路由器”的，其实是一台光猫和一台家用路由器。"
+      ],
+      "matching": {
+        "prompt": "把连接方式与对应的设备连起来。",
+        "left": [
+          {
+            "id": "fiber-in",
+            "text": "连接入户光纤",
+            "symbol": "cable.connector"
+          },
+          {
+            "id": "home-net",
+            "text": "连接家里的手机和电脑",
+            "symbol": "house"
+          }
+        ],
+        "right": [
+          {
+            "id": "ont",
+            "text": "光猫",
+            "symbol": "externaldrive.connected.to.line.below"
+          },
+          {
+            "id": "router",
+            "text": "路由器",
             "symbol": "wifi.router"
-          },
-          {
-            "id": "host",
-            "text": "NAS 本身",
-            "symbol": "externaldrive"
           }
         ],
         "solution": {
-          "nas": "host",
-          "internet": "router"
+          "fiber-in": "ont",
+          "home-net": "router"
         },
-        "explanation": "目的地不同，第一跳要交给的设备也可能不同。这里讨论的是电脑所在的以太网。"
+        "explanation": "在这张图里，入户光纤连接光猫，手机和电脑连接路由器，光猫与路由器之间用网线连接。"
       },
       "challenge": {
-        "prompt": "把路由器彻底关机，NAS 还能访问吗？",
-        "options": [
-          {
-            "id": "yes",
-            "text": "能，本地通信不经过路由器",
-            "feedback": "对。交换机还在工作，本地直达的路径仍然存在。"
-          },
-          {
-            "id": "no",
-            "text": "不能，没有路由器就没有网络",
-            "feedback": "路由器负责跨网段转发。请沿着电脑到 NAS 的线看一遍：有经过它吗？"
-          }
-        ],
-        "correctID": "yes",
-        "hint": "独立交换机仍然通电，IP 也不依赖自动分配。",
+        "prompt": "你会怎么回答朋友？",
         "scene": [
           {
-            "id": "power",
-            "text": "这次不改设置。你直接把路由器关机了。"
+            "id": "friend-home",
+            "text": "后来你去朋友家玩，发现他们家只有一台网络设备。"
           },
           {
-            "id": "switch",
-            "text": "电脑和 NAS 接的是另一台独立交换机，它还在正常工作。"
+            "id": "friend-question",
+            "text": "师傅上门安装的时候，光纤线就接在这台路由器上，手机的 WiFi 也是它发出来的。最近它老是发烫，不太好用，我可以买个家用路由器把它换掉吗？",
+            "speaker": "friend"
+          }
+        ],
+        "options": [
+          {
+            "id": "allinone",
+            "text": "先别直接换，最好联系运营商，让他们提供一个新的路由器。",
+            "feedback": "对，先联系运营商检查。朋友说的这台是光猫路由一体机，既能接入光纤，也能提供 WiFi。普通家用路由器不能直接替换它；需要换机时，应使用适配运营商网络的光猫路由一体机。"
           },
           {
-            "id": "conditions",
-            "text": "它们仍在同一 VLAN、同一子网，沿用手动 IP。通过 IP 访问，NAS 服务正常。"
+            "id": "router-only",
+            "text": "可以直接换，新路由器能发 Wi-Fi 就行。",
+            "feedback": "普通家用路由器能提供 Wi-Fi，但通常不能直接连接运营商的入户光纤。拔掉原来的一体机后，只换上普通路由器仍然无法上网。"
+          }
+        ],
+        "correctID": "allinone",
+        "hint": "原来的设备直接连着入户光纤。普通家用路由器能直接接这根光纤吗？",
+        "answerExplanation": [
+          {
+            "id": "integrated-ports",
+            "text": "原来，朋友家这台是光猫路由一体机。它既能接入运营商的光纤，也能提供 WiFi。普通家用路由器不能直接替代它；需要换机时，请运营商检查并提供适配的光猫路由一体机。",
+            "diagram": {
+              "title": "光猫路由一体机 · 接口示意",
+              "ports": [
+                {
+                  "id": "power",
+                  "label": "电源口",
+                  "medium": "power",
+                  "destination": "电源适配器"
+                },
+                {
+                  "id": "pon",
+                  "label": "PON 光纤口",
+                  "medium": "fiber",
+                  "destination": "运营商入户光纤"
+                },
+                {
+                  "id": "lan1",
+                  "label": "LAN 1",
+                  "medium": "ethernet",
+                  "destination": "房间一 · 电脑"
+                },
+                {
+                  "id": "lan2",
+                  "label": "LAN 2",
+                  "medium": "ethernet",
+                  "destination": "房间二 · 电脑"
+                },
+                {
+                  "id": "lan3",
+                  "label": "LAN 3",
+                  "medium": "ethernet",
+                  "destination": "客厅 · 电视"
+                }
+              ],
+              "note": "接口数量与排列只是示例；三个房间在这里通过网线连接。"
+            },
+            "homeNetwork": {
+              "title": "光纤到家，再用网线进房间",
+              "uplink": "fiber",
+              "uplinkLabel": "入户光纤",
+              "gatewayLabel": "光猫路由一体机",
+              "roomMedium": "ethernet",
+              "rooms": [
+                "房间一",
+                "房间二",
+                "客厅"
+              ],
+              "roomDeviceLabel": "有线设备",
+              "note": "实线是入户光纤，虚线是房间网线；接口细节可在下方展开。"
+            }
+          },
+          {
+            "id": "router-ports",
+            "text": "普通家用路由器用网线连接光猫，再通过网线或 WiFi 连接家里的手机、电脑等设备。入户光纤仍然接在光猫上。",
+            "diagram": {
+              "title": "普通家用路由器 · 接口示意",
+              "ports": [
+                {
+                  "id": "power",
+                  "label": "电源口",
+                  "medium": "power",
+                  "destination": "电源适配器"
+                },
+                {
+                  "id": "wan",
+                  "label": "WAN 网口",
+                  "medium": "ethernet",
+                  "destination": "光猫的 LAN 口"
+                },
+                {
+                  "id": "lan1",
+                  "label": "LAN 1",
+                  "medium": "ethernet",
+                  "destination": "房间一 · 电脑"
+                },
+                {
+                  "id": "lan2",
+                  "label": "LAN 2",
+                  "medium": "ethernet",
+                  "destination": "房间二 · 电脑"
+                },
+                {
+                  "id": "lan3",
+                  "label": "LAN 3",
+                  "medium": "ethernet",
+                  "destination": "客厅 · 电视"
+                }
+              ],
+              "note": "示例采用独立 WAN / LAN 网口；部分型号支持自动识别或切换。"
+            },
+            "homeNetwork": {
+              "title": "光纤接光猫，网线接路由器",
+              "uplink": "fiber",
+              "uplinkLabel": "运营商入户光纤",
+              "gatewayLabel": "普通路由器",
+              "roomMedium": "ethernet",
+              "rooms": [
+                "房间一",
+                "房间二",
+                "客厅"
+              ],
+              "roomDeviceLabel": "有线设备",
+              "note": "实线是光纤，虚线是网线；光猫与路由器是两台独立设备。",
+              "opticalModemLabel": "光猫"
+            }
+          },
+          {
+            "id": "fttr-rooms",
+            "text": "后来你去另一位朋友家，发现卧室里也有一台提供 WiFi 的小设备，背后连着一条细线。朋友说：“这也是光纤，师傅从弱电箱里那台光猫一直铺到卧室的。”",
+            "diagram": {
+              "title": "FTTR 主设备 → 各房间子设备",
+              "ports": [
+                {
+                  "id": "power",
+                  "label": "电源口",
+                  "medium": "power",
+                  "destination": "电源适配器"
+                },
+                {
+                  "id": "pon",
+                  "label": "PON 光纤口",
+                  "medium": "fiber",
+                  "destination": "运营商入户光纤"
+                },
+                {
+                  "id": "downstream",
+                  "label": "下行光口",
+                  "medium": "fiber",
+                  "destination": "分光器"
+                },
+                {
+                  "id": "lan1",
+                  "label": "LAN 网口",
+                  "medium": "ethernet",
+                  "destination": "本地电脑"
+                }
+              ],
+              "note": "光口数量、分光方式依型号而定；各子设备也需要供电。",
+              "fiberRooms": [
+                "房间一",
+                "房间二",
+                "客厅"
+              ]
+            },
+            "homeNetwork": {
+              "title": "咦，光纤怎么也进了房间？",
+              "uplink": "fiber",
+              "uplinkLabel": "入户光纤",
+              "gatewayLabel": "弱电箱里的光猫",
+              "roomMedium": "fiber",
+              "rooms": [
+                "房间一",
+                "房间二",
+                "客厅"
+              ],
+              "roomDeviceLabel": "房间里的 WiFi 设备",
+              "note": "此例中的光猫支持通过光纤连接房间设备；并非所有光猫都有这个功能。图中省略了光纤分配细节，线的颜色不能用来判断是否为光纤。"
+            }
+          },
+          {
+            "id": "fttr-reveal",
+            "text": "原来，光纤不只接到家里，还可以铺进各个房间，再由房间里的设备提供 WiFi。这种方式叫 FTTR——光纤到房间。",
+            "termIntroduction": {
+              "name": "FTTR",
+              "englishName": "Fiber to the Room",
+              "chineseName": "光纤到房间"
+            }
           }
         ]
       },
       "sources": [
-        "https://www.rfc-editor.org/rfc/rfc1122#section-3.3.1.1"
-      ]
-    },
-    {
-      "id": "subnet",
-      "title": "谁才是我的邻居？",
-      "subtitle": "地址相似，不一定就在隔壁",
-      "takeaway": "IP 与掩码要一起看",
-      "nextCuriosity": "知道了对方的 IP，为什么还要找 MAC？",
-      "diagram": "subnet",
-      "ipv4Visual": {
-        "examples": [
-          { "ip": "192.168.1.10", "prefix": 24, "mode": "explain" },
-          { "ip": "10.20.30.40", "prefix": 16, "mode": "practice" }
-        ]
-      },
-      "question": {
-        "prompt": "它们属于同一个 IP 子网吗？",
-        "options": [
-          {
-            "id": "same",
-            "text": "是，前面都是 192.168",
-            "feedback": "只看共同开头还不够。掩码才决定哪些位属于网络部分。"
-          },
-          {
-            "id": "different",
-            "text": "不是，网络部分不同",
-            "feedback": "对。/24 下前三个字节是网络部分，这里 1 和 2 不同。"
-          },
-          {
-            "id": "cable",
-            "text": "只要接同一个交换机就是",
-            "feedback": "接在哪里与 IP 属于哪个子网是两件事。判断 IP 子网必须看地址和掩码。"
-          }
-        ],
-        "correctID": "different",
-        "hint": "/24 表示前 24 位，也就是前三个字节属于网络部分。",
-        "scene": [
-          {
-            "id": "encounter",
-            "text": "两台电脑准备互相发送数据。它们的地址看起来很像。"
-          },
-          {
-            "id": "addresses",
-            "text": "先把两台电脑的地址放在一起看看。",
-            "visual": "devices"
-          },
-          {
-            "id": "mask",
-            "text": "它们的掩码都是 /24，也就是 255.255.255.0。这次只判断 IP 子网关系。"
-          }
-        ],
-        "devices": [
-          {
-            "id": "a",
-            "name": "电脑 A",
-            "address": "192.168.1.10",
-            "prefix": "/24"
-          },
-          {
-            "id": "b",
-            "name": "电脑 B",
-            "address": "192.168.2.20",
-            "prefix": "/24"
-          }
-        ]
-      },
-      "explanation": [
-        "子网掩码划定 IP 地址的网络部分。/24 等价于 255.255.255.0，前三个字节是网络部分。",
-        "192.168.1.10/24 的网络地址是 192.168.1.0；192.168.2.20/24 的网络地址是 192.168.2.0。它们不相同。",
-        "如果两者都改成 /16，即 255.255.0.0，网络部分就变成前两个字节。此时它们都属于 192.168.0.0/16。这里仅讨论地址判断，不保证物理连接或安全策略允许通信。"
+        "https://www.imda.gov.sg/-/media/imda/files/community/consumer-education/fibre-broadband/home_networking_reference_guide_detailed.pdf",
+        "https://www.asus.com/sg/support/faq/1044897/",
+        "https://www.rfc-editor.org/rfc/rfc1812",
+        "https://carrier.huawei.com/en/products/fixed-network/sub-solution-access/fttr-to-home",
+        "https://consumer.huawei.com/en/support/content/en-us15806327/",
+        "https://e.huawei.com/marketingcloud/pep/asset/20000001/Material/0edddd77253d499986308fa6cde66e7f/M3T1A669N1231359291496624209/How%20to%20Configure%20Huawei%20FTTR%20-%20OptiXstar%20F50%20_Fiber%20Uplink_.pdf",
+        "https://e.huawei.com/cn/solutions/enterprise-optical-network/ftth/fttr-home"
       ],
-      "matching": {
-        "prompt": "给两种掩码，找到对应的网络部分。",
-        "left": [
-          {
-            "id": "24",
-            "text": "/24 掩码",
-            "symbol": "number"
-          },
-          {
-            "id": "16",
-            "text": "/16 掩码",
-            "symbol": "number"
-          }
-        ],
-        "right": [
-          {
-            "id": "two",
-            "text": "前两个字节",
-            "symbol": "square.split.2x1"
-          },
-          {
-            "id": "three",
-            "text": "前三个字节",
-            "symbol": "rectangle.split.3x1"
-          }
-        ],
-        "solution": {
-          "24": "three",
-          "16": "two"
-        },
-        "explanation": "一个字节是 8 位。掩码长度决定要比较的网络部分。"
-      },
-      "challenge": {
-        "prompt": "这次，它们属于同一个 IP 子网吗？",
-        "options": [
-          {
-            "id": "yes",
-            "text": "属于，都在 192.168.0.0/16",
-            "feedback": "对。地址没变，但网络边界变了。"
-          },
-          {
-            "id": "no",
-            "text": "不属于，第三个数仍然不同",
-            "feedback": "/16 只取前两个字节作网络部分。第三个字节已经属于主机部分。"
-          }
-        ],
-        "correctID": "yes",
-        "hint": "这次只比较前 16 位。",
-        "scene": [
-          {
-            "id": "change",
-            "text": "还是这两台电脑，两个 IP 地址都保持原样。"
-          },
-          {
-            "id": "mask",
-            "text": "这次只改一个条件：两台电脑的掩码都换成 /16。",
-            "visual": "devices"
-          }
-        ],
-        "devices": [
-          {
-            "id": "a",
-            "name": "电脑 A",
-            "address": "192.168.1.10",
-            "prefix": "/16"
-          },
-          {
-            "id": "b",
-            "name": "电脑 B",
-            "address": "192.168.2.20",
-            "prefix": "/16"
-          }
-        ]
-      },
-      "sources": [
-        "https://www.rfc-editor.org/rfc/rfc1122#section-3.3.1.1"
-      ]
-    },
-    {
-      "id": "arp",
-      "title": "有 IP，还缺什么？",
-      "subtitle": "找到这一跳的收件人",
-      "takeaway": "ARP 找的是本地下一跳",
-      "nextCuriosity": "数据经过路由器，信封会不会换？",
-      "diagram": "arp",
-      "question": {
-        "prompt": "发出第一跳前，电脑先查询谁的 IP 对应的 MAC？",
-        "options": [
-          {
-            "id": "server",
-            "text": "远方服务器的 IP",
-            "feedback": "服务器是最终目的地，但这次以太网交付先到本地网关。"
-          },
-          {
-            "id": "gateway",
-            "text": "本地网关的 IP",
-            "feedback": "对。先找到下一跳的 MAC，电脑才能把帧交给它。"
-          },
-          {
-            "id": "switch",
-            "text": "交换机的管理 IP",
-            "feedback": "普通二层交换转发不要求电脑先查询交换机管理地址的 MAC。"
-          }
-        ],
-        "correctID": "gateway",
-        "hint": "先想清楚：电脑发出的第一个帧，是谁来接收？",
-        "scene": [
-          {
-            "id": "destination",
-            "text": "电脑要通过以太网，访问另一个子网里的服务器。我们使用 IPv4。"
-          },
-          {
-            "id": "route",
-            "text": "电脑查过路由了：这次从本地网关转发出去。"
-          },
-          {
-            "id": "cache",
-            "text": "但它的 ARP 缓存是空的。第一个以太网帧，还没有收件人的 MAC。"
-          }
-        ]
-      },
-      "explanation": [
-        "IP 指明网络层的目的地，而在以太网上发送帧，还需要接收者的 MAC 地址。",
-        "IPv4 主机在本地链路上用 ARP 查询：谁拥有这个 IP？请告诉我你的 MAC。一般情况下，请求是本地广播，路由器不会把它转发到远方子网。",
-        "目标在本地子网，就查询目标的 MAC；目标在远方，就按路由选出的下一跳，查询本地网关的 MAC。"
-      ],
-      "matching": {
-        "prompt": "把下一跳，连到应该查询的 IP。",
-        "left": [
-          {
-            "id": "local",
-            "text": "直达本地 NAS",
-            "symbol": "externaldrive"
-          },
-          {
-            "id": "remote",
-            "text": "经网关访问远方",
-            "symbol": "globe"
-          }
-        ],
-        "right": [
-          {
-            "id": "gwip",
-            "text": "网关的 IP",
-            "symbol": "wifi.router"
-          },
-          {
-            "id": "nasip",
-            "text": "NAS 的 IP",
-            "symbol": "externaldrive"
-          }
-        ],
-        "solution": {
-          "local": "nasip",
-          "remote": "gwip"
-        },
-        "explanation": "ARP 查询跟随这一跳的交付对象，不是总去查询最终服务器。"
-      },
-      "challenge": {
-        "prompt": "之后每发送一个帧，都必须重新广播 ARP 吗？",
-        "options": [
-          {
-            "id": "no",
-            "text": "不必，可以先使用有效缓存",
-            "feedback": "对。ARP 缓存避免了每发一帧都重新查询。"
-          },
-          {
-            "id": "yes",
-            "text": "必须，每个帧都先问一次",
-            "feedback": "刚才得到的映射可以缓存并复用，不需要逐帧广播。"
-          }
-        ],
-        "correctID": "no",
-        "hint": "缓存的作用就是暂时保存已经查到的对应关系。",
-        "scene": [
-          {
-            "id": "known",
-            "text": "现在，ARP 缓存已经记住了网关的有效 MAC 地址。"
-          },
-          {
-            "id": "continue",
-            "text": "路由和网关都没变，电脑继续向远方服务器发送普通 IPv4 流量。"
-          }
-        ]
-      },
-      "sources": [
-        "https://www.rfc-editor.org/rfc/rfc826",
-        "https://www.rfc-editor.org/rfc/rfc1122#section-2.3.2"
-      ]
-    },
-    {
-      "id": "hop",
-      "title": "经过一站，换了什么？",
-      "subtitle": "这一跳，与最终目的地",
-      "takeaway": "每一跳有自己的帧",
-      "nextCuriosity": "输入一个网址，电脑怎么找到它？",
-      "diagram": "hop",
-      "question": {
-        "prompt": "路由器转发时，会原封不动传下去吗？",
-        "options": [
-          {
-            "id": "unchanged",
-            "text": "整份以太网帧完全不变",
-            "feedback": "上一跳的 MAC 只描述上一段交付。下一段链路需要新的帧头。"
-          },
-          {
-            "id": "frame",
-            "text": "重新封装下一跳的帧",
-            "feedback": "对。路由器处理 IP 包，再为下一段以太网链路构造帧。"
-          },
-          {
-            "id": "destination",
-            "text": "把目标 IP 改成自己的 IP",
-            "feedback": "这里没有 NAT 等地址转换，目标 IP 仍然是最终服务器。"
-          }
-        ],
-        "correctID": "frame",
-        "hint": "上一跳把帧交给路由器，下一跳又要交给谁？",
-        "scene": [
-          {
-            "id": "arrive",
-            "text": "电脑发出的一个普通 IPv4 包，刚刚到达路由器。"
-          },
-          {
-            "id": "links",
-            "text": "路由器下一步要把它交给服务器，两侧链路都是以太网。"
-          },
-          {
-            "id": "conditions",
-            "text": "没有 NAT、隧道或分片。下一跳的 MAC 也已经知道了。"
-          }
-        ]
-      },
-      "explanation": [
-        "路由器收到发给自己的以太网帧，取出 IP 包，查看路由，决定从哪里继续转发。",
-        "下一段以太网链路会使用新的帧头：源 MAC 是路由器出接口的 MAC，目标 MAC 是下一跳设备的 MAC。",
-        "在本题条件下，源与目标 IP 保持不变，但 IP 包不是每个字节都不变：路由器会减少 TTL，并更新 IPv4 首部校验和。"
-      ],
-      "matching": {
-        "prompt": "把地址，连到它描述的对象。",
-        "left": [
-          {
-            "id": "ip",
-            "text": "目标 IP",
-            "symbol": "globe"
-          },
-          {
-            "id": "mac",
-            "text": "这一跳的目标 MAC",
-            "symbol": "point.topleft.down.curvedto.point.bottomright.up"
-          }
-        ],
-        "right": [
-          {
-            "id": "next",
-            "text": "当前链路下一跳",
-            "symbol": "arrow.right"
-          },
-          {
-            "id": "final",
-            "text": "最终服务器",
-            "symbol": "server.rack"
-          }
-        ],
-        "solution": {
-          "ip": "final",
-          "mac": "next"
-        },
-        "explanation": "这个区分适用于本题明确排除了 NAT 和隧道的普通转发场景。"
-      },
-      "challenge": {
-        "prompt": "目标 IP 没变，说明 IP 包完全没变吗？",
-        "options": [
-          {
-            "id": "yes",
-            "text": "是，IP 层没有任何改变",
-            "feedback": "地址没变不等于所有字段都没变。还记得防止无限转发的 TTL 吗？"
-          },
-          {
-            "id": "no",
-            "text": "不是，TTL 等字段会改变",
-            "feedback": "对。区分地址、帧和整个 IP 包，就不会把它们混为一谈。"
-          }
-        ],
-        "correctID": "no",
-        "hint": "每经过一次路由转发，TTL 会减少。",
-        "scene": [
-          {
-            "id": "same",
-            "text": "还是刚才那次普通 IPv4 路由转发，没有 NAT、隧道或分片。"
-          },
-          {
-            "id": "observe",
-            "text": "转发前后，最终服务器的目标 IP 地址没有改变。"
-          }
-        ]
-      },
-      "sources": [
-        "https://www.rfc-editor.org/rfc/rfc1812#section-5.2.1",
-        "https://www.rfc-editor.org/rfc/rfc791"
-      ]
-    },
-    {
-      "id": "dns",
-      "title": "知道名字，怎么找到它？",
-      "subtitle": "把名字解析为地址",
-      "takeaway": "DNS 与网络连通是两件事",
-      "nextCuriosity": "明天换个场景，再检验一次你的判断。",
-      "diagram": "dns",
-      "question": {
-        "prompt": "根据这些现象，你会先查哪里？",
-        "options": [
-          {
-            "id": "bandwidth",
-            "text": "先升级宽带套餐",
-            "feedback": "当前证据指向名字解析超时，带宽大小不是优先排查方向。"
-          },
-          {
-            "id": "dns",
-            "text": "先检查 DNS 配置与可达性",
-            "feedback": "对。这是根据现象选择下一步排查，不是直接断言 DNS 服务器一定坏了。"
-          },
-          {
-            "id": "cable",
-            "text": "直接认定网线断了",
-            "feedback": "已能连接公网 IP，说明至少这条连接可用。先检查报告超时的解析环节。"
-          }
-        ],
-        "correctID": "dns",
-        "hint": "名字解析失败，和所有网络流量都失败，是不同的证据。",
-        "scene": [
-          {
-            "id": "ip",
-            "text": "你用测试程序，通过服务器的公网 IP，成功连接到了它的服务。"
-          },
-          {
-            "id": "name",
-            "text": "换成查询这台服务器的域名，DNS 工具却报告：解析超时。"
-          },
-          {
-            "id": "cache",
-            "text": "这次也没有可用的 DNS 缓存记录。你准备开始排查。"
-          }
-        ]
-      },
-      "explanation": [
-        "人习惯记名字，应用建立 IP 连接需要地址。DNS 可以提供域名对应的 A 或 AAAA 等记录，分别用于 IPv4 或 IPv6 地址。",
-        "解析成功不保证服务可访问；服务是否在线、路由、防火墙等仍然影响连接。解析失败也不表示所有 IP 通信都失败。",
-        "已有未过期的缓存时，部分应用可能继续使用缓存地址；没有缓存的新名字，则仍需要成功解析。真实网站也可能使用多个域名。"
-      ],
-      "matching": {
-        "prompt": "把两个问题，连到对应的检查环节。",
-        "left": [
-          {
-            "id": "name",
-            "text": "名字对应哪个 IP？",
-            "symbol": "text.magnifyingglass"
-          },
-          {
-            "id": "service",
-            "text": "这个 IP 的服务能连接吗？",
-            "symbol": "network"
-          }
-        ],
-        "right": [
-          {
-            "id": "connect",
-            "text": "连接与服务检查",
-            "symbol": "arrow.left.arrow.right"
-          },
-          {
-            "id": "resolve",
-            "text": "DNS 解析检查",
-            "symbol": "character.book.closed"
-          }
-        ],
-        "solution": {
-          "name": "resolve",
-          "service": "connect"
-        },
-        "explanation": "把问题拆成环节，排查才不会只剩下反复重启。"
-      },
-      "challenge": {
-        "prompt": "DNS 暂时不可用，所有已知网站都会立刻打不开吗？",
-        "options": [
-          {
-            "id": "yes",
-            "text": "一定，任何访问都要实时查询",
-            "feedback": "忽略了缓存。并不是每次连接都必须重新向 DNS 服务器查询。"
-          },
-          {
-            "id": "no",
-            "text": "不一定，部分访问可用缓存",
-            "feedback": "对。缓存能帮助部分访问继续，但不能保证每个网站都正常。"
-          }
-        ],
-        "correctID": "no",
-        "hint": "应用是否已经知道目标地址？缓存是否仍有效？",
-        "scene": [
-          {
-            "id": "outage",
-            "text": "DNS 暂时不可用了，但网络连接本身仍然正常。"
-          },
-          {
-            "id": "cache",
-            "text": "有些应用还保存着未过期的 DNS 缓存。我们只判断：是否必然全部失败。"
-          }
-        ]
-      },
-      "sources": [
-        "https://www.rfc-editor.org/rfc/rfc1034#section-5.3.3",
-        "https://www.rfc-editor.org/rfc/rfc1035"
-      ]
+      "matchingEnabled": false
     }
   ]
 }

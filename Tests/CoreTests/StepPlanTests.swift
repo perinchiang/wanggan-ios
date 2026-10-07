@@ -3,8 +3,7 @@ import XCTest
 
 final class StepPlanTests: XCTestCase {
     private func catalog() throws -> LessonCatalog {
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        return try JSONDecoder().decode(LessonCatalog.self, from: Data(contentsOf: root.appendingPathComponent("Resources/lessons.json")))
+        try TestCatalog.compatibility()
     }
 
     func testIPv4VisualCalculatesBoundariesAndRejectsInvalidInput() throws {
@@ -55,16 +54,23 @@ final class StepPlanTests: XCTestCase {
 
     func testEveryLessonDerivesConsistentSteps() throws {
         let lessons = try catalog().lessons
-        XCTAssertEqual(lessons.count, 5)
+        XCTAssertTrue(Set(["gateway", "subnet", "arp", "hop", "dns"]).isSubset(of: Set(lessons.map(\.id))))
         for lesson in lessons {
             let plan = LessonPlan(lesson: lesson)
             XCTAssertEqual(Set(plan.steps.map(\.id)).count, plan.steps.count)
+            if lesson.ipv4Foundation != nil {
+                XCTAssertEqual(plan.steps.map(\.kind), [.diagram, .summary])
+                continue
+            }
             XCTAssertEqual(plan.steps.filter { $0.kind == .conversation }.count,
                            lesson.question.scene.count + lesson.challenge.scene.count)
             XCTAssertEqual(plan.steps.filter { $0.kind == .question }.count, 2)
             XCTAssertEqual(plan.steps.filter { $0.kind == .diagram }.count, 1)
-            XCTAssertEqual(plan.steps.filter { $0.kind == .text }.count, lesson.explanation.count)
-            XCTAssertEqual(plan.steps.filter { $0.kind == .matching }.count, 1)
+            XCTAssertEqual(plan.steps[..<plan.challengeIndex].filter { $0.kind == .text }.count, lesson.explanation.count)
+            let answerPages = plan.steps[(plan.challengeIndex + 1)..<plan.summaryIndex]
+            XCTAssertEqual(answerPages.count, lesson.challenge.answerExplanation?.count ?? 0)
+            XCTAssertTrue(answerPages.allSatisfy { $0.kind == .text })
+            XCTAssertEqual(plan.steps.filter { $0.kind == .matching }.count, lesson.usesMatching ? 1 : 0)
             XCTAssertEqual(plan.steps.first?.kind, .conversation)
             XCTAssertEqual(plan.steps.last?.kind, .summary)
             XCTAssertLessThan(plan.questionIndex, plan.matchingIndex)
@@ -74,7 +80,7 @@ final class StepPlanTests: XCTestCase {
     }
 
     func testMigratedLessonsPlayThroughToCompletion() throws {
-        for lessonID in ["gateway", "subnet", "arp", "hop", "dns"] {
+        for lessonID in ["home-two-boxes", "gateway", "subnet", "arp", "hop", "dns"] {
             try assertLessonPlaysThroughToCompletion(lessonID)
         }
     }
@@ -92,19 +98,64 @@ final class StepPlanTests: XCTestCase {
         plan.advance(&session)
         for _ in 0..<lesson.explanation.count { plan.advance(&session) }
         plan.advance(&session)
-        XCTAssertEqual(session.stepIndex, plan.matchingIndex)
-
-        for (left, right) in lesson.matching.solution { plan.connect(left, to: right, in: &session) }
-        plan.submitMatching(in: &session)
-        plan.advance(&session)
+        if lesson.usesMatching {
+            XCTAssertEqual(session.stepIndex, plan.matchingIndex)
+            for (left, right) in lesson.matching.solution { plan.connect(left, to: right, in: &session) }
+            plan.submitMatching(in: &session)
+            plan.advance(&session)
+        } else {
+            XCTAssertEqual(session.stepIndex, plan.matchingIndex + 1)
+        }
         for _ in 0..<plan.challengeSceneCount { plan.advance(&session) }
         XCTAssertEqual(session.stepIndex, plan.challengeIndex)
 
         plan.submitChallenge(lesson.challenge.correctID, in: &session)
         XCTAssertFalse(plan.isComplete(session))
         plan.advance(&session)
+        for _ in lesson.challenge.answerExplanation ?? [] { plan.advance(&session) }
         XCTAssertTrue(plan.isComplete(session))
         XCTAssertEqual(session.mistakes, 0)
+    }
+
+    func testImmediatePairsKeepCorrectAnswersAndNeverPenalizeMismatch() throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "hop" })
+        let plan = LessonPlan(lesson: lesson)
+        var session = StepSession(lessonID: lesson.id)
+        XCTAssertFalse(plan.matchPair("ip", to: "final", in: &session), "Cannot answer a future step")
+        session.stepIndex = plan.matchingIndex
+        XCTAssertFalse(plan.matchPair("ip", to: "next", in: &session))
+        XCTAssertTrue(session.matches.isEmpty)
+        XCTAssertEqual(session.mistakes, 0)
+        XCTAssertFalse(plan.canAdvance(session))
+        XCTAssertTrue(plan.matchPair("ip", to: "final", in: &session))
+        XCTAssertFalse(plan.matchPair("mac", to: "final", in: &session))
+        XCTAssertFalse(plan.matchPair("unknown", to: "next", in: &session))
+        XCTAssertEqual(session.matches, ["ip": "final"])
+        XCTAssertEqual(session.mistakes, 0)
+        XCTAssertFalse(session.matchingSolved)
+        let restored = StepSession(lesson: lesson, from: session.stageSession(lesson: lesson))
+        XCTAssertEqual(restored.matches, session.matches)
+        XCTAssertTrue(plan.matchPair("mac", to: "next", in: &session))
+        XCTAssertTrue(plan.canAdvance(session))
+        XCTAssertTrue(session.matchingSolved)
+        XCTAssertTrue(session.matchingSubmitted)
+        XCTAssertFalse(plan.matchPair("ip", to: "next", in: &session))
+        XCTAssertEqual(session.matches, lesson.matching.solution)
+        XCTAssertEqual(session.mistakes, 0)
+    }
+
+    func testLegacyWrongMatchingDraftKeepsOnlyCorrectPairsWithoutClearingHistory() throws {
+        let lesson = try XCTUnwrap(catalog().lessons.first { $0.id == "hop" })
+        var old = LessonSession(lessonID: lesson.id)
+        old.stage = .matching
+        old.matches = ["ip": "next", "mac": "next"]
+        old.matchingSubmitted = true
+        old.mistakes = 2
+        let restored = StepSession(lesson: lesson, from: old)
+        XCTAssertEqual(restored.id, old.id)
+        XCTAssertEqual(restored.matches, ["mac": "next"])
+        XCTAssertFalse(restored.matchingSubmitted)
+        XCTAssertEqual(restored.mistakes, 2)
     }
 
     func testWrongChallengeRequiresRetryAndCountsMistake() throws {

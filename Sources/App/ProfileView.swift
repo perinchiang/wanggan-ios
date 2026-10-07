@@ -39,7 +39,7 @@ struct ProfileView: View {
                     if store.completedCount > 0 {
                         VStack(alignment: .leading, spacing: 14) {
                             Text("已经想通的事").font(.headline)
-                            ForEach(store.lessons.filter { store.ledger.lessons[$0.id] != nil }) { lesson in
+                            ForEach(store.activeLessons.filter { store.ledger.lessons[$0.id] != nil }) { lesson in
                                 Label(lesson.takeaway, systemImage: "checkmark").font(.subheadline)
                             }
                         }

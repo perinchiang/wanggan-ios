@@ -10,6 +10,8 @@ struct SceneMessage: Codable, Equatable, Identifiable {
     let id: String
     let text: String
     let visual: String?
+    /// Optional presentational role. nil keeps the narrator/tutor bubble.
+    let speaker: String?
 }
 
 struct SceneDevice: Codable, Equatable, Identifiable {
@@ -26,6 +28,8 @@ struct Question: Codable, Equatable {
     let options: [AnswerOption]
     let correctID: String
     let hint: String
+    /// Optional illustrated reading after a successful transfer answer.
+    let answerExplanation: [AnswerExplanation]?
 }
 
 struct MatchItem: Codable, Equatable, Identifiable {
@@ -53,12 +57,21 @@ struct Lesson: Codable, Equatable, Identifiable {
     let takeaway: String
     let nextCuriosity: String
     let diagram: String
+    let topology: TopologySpec?
+    let ipv4Foundation: IPv4Foundation?
     let ipv4Visual: IPv4VisualLesson?
+    let ipv4Introduction: IPv4Introduction?
+    let subnetMaskIntroduction: SubnetMaskIntroduction?
     let question: Question
     let explanation: [String]
+    /// Existing lessons show matching by default; a story may opt out when the
+    /// interaction would interrupt rather than reinforce the learning thread.
+    let matchingEnabled: Bool?
     let matching: MatchingExercise
     let challenge: Question
     let sources: [String]
+
+    var usesMatching: Bool { matchingEnabled ?? true }
 }
 
 struct Chapter: Codable, Equatable, Identifiable {
@@ -72,14 +85,18 @@ struct Course: Codable, Equatable, Identifiable {
     let revision: Int
     let title: String
     let chapters: [Chapter]
+    let archivedLessonIDs: [String]?
 }
 
 struct LessonCatalog: Codable {
     let course: Course
     let lessons: [Lesson]
-    let reviewItems: [ReviewItem]?
 
     var orderedLessonIDs: [String] { course.chapters.flatMap(\.orderedLessonIDs) }
+    var archivedLessonIDs: [String] { course.archivedLessonIDs ?? [] }
+    // Archived pilots sort before the active route only for draft preservation.
+    // They never participate in recommendation or unlocking.
+    var allLessonIDs: [String] { archivedLessonIDs + orderedLessonIDs }
 
     func lessons(in chapterID: String) -> [Lesson] {
         guard let chapter = course.chapters.first(where: { $0.id == chapterID }) else { return [] }
@@ -97,26 +114,55 @@ struct LessonCatalog: Codable {
             throw ContentError.invalid("课程目录为空或章节标识重复")
         }
         let chapterIDs = course.chapters.flatMap(\.orderedLessonIDs)
-        guard chapterIDs.count == lessons.count, Set(chapterIDs) == Set(lessons.map(\.id)) else {
-            throw ContentError.invalid("章节没有恰好覆盖每一课")
-        }
-        let items = reviewItems ?? []
-        guard Set(items.map(\.id)).count == items.count else {
-            throw ContentError.invalid("短复习标识重复")
-        }
-        for item in items {
-            guard lessons.contains(where: { $0.id == item.lessonID }), item.revision >= 1,
-                  !item.knowledgePointID.isEmpty, !item.objective.isEmpty, !item.scenarioFamilyID.isEmpty,
-                  !item.scene.isEmpty, !item.prompt.isEmpty, !item.hint.isEmpty, !item.explanation.isEmpty,
-                  item.options.count >= 2, Set(item.options.map(\.id)).count == item.options.count,
-                  item.options.contains(where: { $0.id == item.correctID }),
-                  item.options.allSatisfy({ !$0.text.isEmpty && !$0.feedback.isEmpty }) else {
-                throw ContentError.invalid("\(item.id) 的短复习内容不完整")
-            }
+        let archivedIDs = course.archivedLessonIDs ?? []
+        let listedIDs = chapterIDs + archivedIDs
+        guard Set(chapterIDs).isDisjoint(with: Set(archivedIDs)),
+              Set(archivedIDs).count == archivedIDs.count,
+              listedIDs.count == lessons.count,
+              Set(listedIDs) == Set(lessons.map(\.id)) else {
+            throw ContentError.invalid("章节与归档列表没有恰好覆盖每一课")
         }
         for lesson in lessons {
+            if let topology = lesson.topology {
+                // The topology reveals one stage per explanation paragraph (stage 1
+                // anchors the diagram step), so stages must fit the text budget and
+                // stay exclusive from the other visual mechanisms.
+                guard topology.isValid,
+                      lesson.ipv4Foundation == nil, lesson.ipv4Visual == nil,
+                      lesson.ipv4Introduction == nil, lesson.subnetMaskIntroduction == nil,
+                      !lesson.explanation.isEmpty,
+                      topology.maxStage <= lesson.explanation.count + 1 else {
+                    throw ContentError.invalid("\(lesson.id) 的拓扑图参数无效")
+                }
+            }
+            if let foundation = lesson.ipv4Foundation {
+                guard foundation.isValid,
+                      lesson.ipv4Introduction == nil,
+                      lesson.subnetMaskIntroduction == nil,
+                      lesson.ipv4Visual == nil,
+                      lesson.topology == nil,
+                      lesson.explanation.isEmpty else {
+                    throw ContentError.invalid("\(lesson.id) 的 IPv4 基础课参数无效")
+                }
+            }
+            if let mask = lesson.subnetMaskIntroduction {
+                guard mask.isValid, lesson.ipv4Foundation == nil,
+                      lesson.ipv4Introduction == nil, lesson.ipv4Visual == nil,
+                      lesson.topology == nil,
+                      lesson.explanation.isEmpty else {
+                    throw ContentError.invalid("\(lesson.id) 的掩码入门参数无效")
+                }
+            }
+            if let introduction = lesson.ipv4Introduction {
+                guard IPv4AddressValue(ip: introduction.ip, prefix: 32) != nil,
+                      lesson.ipv4Foundation == nil, lesson.ipv4Visual == nil,
+                      lesson.topology == nil else {
+                    throw ContentError.invalid("\(lesson.id) 的 IPv4 入门参数无效")
+                }
+            }
             if let visual = lesson.ipv4Visual {
-                guard visual.examples.count == 2,
+                guard lesson.ipv4Foundation == nil, lesson.topology == nil,
+                      visual.examples.count == 2,
                       visual.examples[0].mode == .explain,
                       visual.examples[1].mode == .practice,
                       visual.examples.allSatisfy({ IPv4AddressValue(ip: $0.ip, prefix: $0.prefix) != nil }),
@@ -145,6 +191,12 @@ struct LessonCatalog: Codable {
                 if question.scene.contains(where: { $0.visual == "devices" }), question.devices == nil {
                     throw ContentError.invalid("\(lesson.id) 缺少用于比较的地址")
                 }
+                if let pages = question.answerExplanation {
+                    guard !pages.isEmpty, Set(pages.map(\.id)).count == pages.count,
+                          pages.allSatisfy(\.isValid) else {
+                        throw ContentError.invalid("\(lesson.id) 的答后图解不完整")
+                    }
+                }
             }
             let exercise = lesson.matching
             let left = Set(exercise.left.map(\.id))
@@ -153,7 +205,8 @@ struct LessonCatalog: Codable {
                   !left.isEmpty, left.count == right.count,
                   Set(exercise.solution.keys) == left,
                   Set(exercise.solution.values) == right,
-                  !lesson.explanation.isEmpty, !lesson.sources.isEmpty else {
+                  (!lesson.explanation.isEmpty || lesson.ipv4Foundation != nil ||
+                   lesson.ipv4Introduction != nil || lesson.subnetMaskIntroduction != nil), !lesson.sources.isEmpty else {
                 throw ContentError.invalid("\(lesson.id) 的连线或讲解不完整")
             }
         }

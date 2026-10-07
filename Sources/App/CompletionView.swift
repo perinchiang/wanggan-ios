@@ -23,10 +23,11 @@ struct CompletionView: View {
                 Image(systemName: "flag.fill").font(.title).foregroundStyle(Theme.ink).offset(x: 117, y: -44)
             }.frame(height: 160).padding(.top, 20).accessibilityHidden(true)
             VStack(spacing: 12) {
-                Text("你已弄懂").font(.subheadline).foregroundStyle(Theme.muted)
-                Text(lesson.takeaway).font(.title.bold()).multilineTextAlignment(.center)
+                Text("你已完成").font(.subheadline).foregroundStyle(Theme.muted)
+                Text(lesson.title).font(.title2.bold()).multilineTextAlignment(.center)
+                    .accessibilityIdentifier("completion-lesson-title")
             }
-            Text(earnedXP > 0 ? "+\(earnedXP) XP" : "又巩固了一次")
+            Text(earnedXP > 0 ? "+\(earnedXP) XP" : "这节已经完成过了")
                 .font(earnedXP > 0 ? .largeTitle.weight(.black).monospacedDigit() : .title2.bold())
                 .padding(.horizontal, 24).padding(.vertical, 12)
                 .background(Theme.lime, in: .capsule)
@@ -37,7 +38,7 @@ struct CompletionView: View {
                 Text("Lv.\(level) · 距离下一级还差 \(100 - totalXP % 100) XP")
                     .font(.caption).foregroundStyle(Theme.muted)
                 if earnedXP == 0 {
-                    Text("同一天重复探索不再加分，明天复习可得 5 XP。")
+                    Text("每节课只在首次完成时获得经验值。")
                         .font(.caption).foregroundStyle(Theme.muted).multilineTextAlignment(.center)
                 }
             }
