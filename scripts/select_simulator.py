@@ -1,4 +1,4 @@
-"""Use iPhone 15 Pro on an installed iOS runtime, with an installed-phone fallback."""
+"""Reuse a booted iPhone; otherwise prefer iPhone 15 Pro for the CI layout."""
 import json
 import subprocess
 
@@ -6,7 +6,9 @@ devices = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "device
 phones = [d for runtime, entries in devices.items() if "iOS" in runtime for d in entries if d["name"].startswith("iPhone")]
 if not phones:
     raise SystemExit("No iOS simulator is installed in this runner image")
-phone = next((d for d in phones if d["name"] == "iPhone 15 Pro"), None)
+phone = next((d for d in phones if d["state"] == "Booted"), None)
+if phone is None:
+    phone = next((d for d in phones if d["name"] == "iPhone 15 Pro"), None)
 if phone is None:
     device_types = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "devicetypes", "--json"]))["devicetypes"]
     requested = next((d for d in device_types if d["name"] == "iPhone 15 Pro"), None)
