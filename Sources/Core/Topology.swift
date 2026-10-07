@@ -54,7 +54,7 @@ struct TermIntroduction: Codable, Equatable {
     }
 }
 
-/// A simplified home plan: one gateway and up to three room endpoints.
+/// A simplified home plan: an optional optical modem, a gateway and up to three rooms.
 /// Optical distribution is intentionally collapsed into a labelled junction.
 struct HomeNetworkSpec: Codable, Equatable {
     let title: String
@@ -65,11 +65,31 @@ struct HomeNetworkSpec: Codable, Equatable {
     let rooms: [String]
     let roomDeviceLabel: String
     let note: String
+    /// When present, the fiber terminates here; Ethernet connects it to the gateway.
+    /// Missing in older lesson content, which still renders one gateway.
+    let opticalModemLabel: String?
+
+    init(title: String, uplink: PortMedium, uplinkLabel: String, gatewayLabel: String,
+         roomMedium: PortMedium, rooms: [String], roomDeviceLabel: String, note: String,
+         opticalModemLabel: String? = nil) {
+        self.title = title
+        self.uplink = uplink
+        self.uplinkLabel = uplinkLabel
+        self.gatewayLabel = gatewayLabel
+        self.roomMedium = roomMedium
+        self.rooms = rooms
+        self.roomDeviceLabel = roomDeviceLabel
+        self.note = note
+        self.opticalModemLabel = opticalModemLabel
+    }
 
     var isValid: Bool {
         uplink != .power && roomMedium != .power &&
         !title.isEmpty && !uplinkLabel.isEmpty && !gatewayLabel.isEmpty &&
         !roomDeviceLabel.isEmpty && !note.isEmpty &&
+        (opticalModemLabel.map {
+            !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && uplink == .fiber
+        } ?? true) &&
         (1...3).contains(rooms.count) && Set(rooms).count == rooms.count &&
         rooms.allSatisfy { !$0.isEmpty }
     }

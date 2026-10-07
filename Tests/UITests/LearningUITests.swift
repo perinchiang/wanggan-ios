@@ -121,10 +121,10 @@ final class LearningUITests: XCTestCase {
         screenshot("H02-topology-first-node")
         XCTAssertFalse(topology.label.contains("光猫"), "VoiceOver must not reveal the next device")
         let paragraphs = [
-            "师傅指着弱电箱：“这台叫光猫。门外来的光纤先接到它，再由它把连接交给网线。”原来，你认成路由器的第一台设备，另有名字。",
+            "师傅指着弱电箱：“这台叫光猫。”门外来的光纤接在它上面，家里的设备要通过它连上运营商的网络。原来，第一台还真不是你以为的路由器。",
             "顺着这根网线看，另一头才是客厅的家用路由器。它连着家里的设备，也把家里的网络接向光猫。",
             "手机用 Wi-Fi，电脑用网线，都能接到这台路由器上。原来 Wi-Fi 只是连接方式之一，这台设备还照顾着用网线的电脑。",
-            "现在点开一个视频。传回手机的数据先经过光猫，再经过路由器，最后通过 Wi-Fi 到达手机。师傅装的不是两台重复的路由器：这一路上，它们各负责一段。"
+            "现在点开一个视频。传回手机的数据先经过光猫，再经过路由器，最后通过 Wi-Fi 到达手机。你刚才认成“两台路由器”的，其实是一台光猫和一台家用路由器。"
         ]
         let stages = ["光纤入户、光猫", "光纤入户、光猫、路由器",
                       "光纤入户、光猫、路由器、手机、电脑", "光纤入户、光猫、路由器、手机、电脑"]
@@ -169,7 +169,7 @@ final class LearningUITests: XCTestCase {
         }
         XCTAssertTrue(app.staticTexts["+30 XP"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.staticTexts["completion-lesson-title"].label, "宽带师傅为什么装了两个路由器？")
-        XCTAssertFalse(app.staticTexts["光猫负责接入光纤网络；家用路由器负责家里的组网和出口。看起来像两个路由器，其实是两份不同的工作，也可以合到一台设备里。"].exists)
+        XCTAssertFalse(app.staticTexts["光猫连接运营商的光纤网络，家用路由器通过光猫上网，并让手机、电脑通过 Wi-Fi 或网线接入家庭网络。有些设备集成了光猫和路由器的功能。"].exists)
         screenshot("H04-completion")
         tap("finish-session")
         XCTAssertEqual(app.staticTexts["xp-badge"].label, "30 经验值")

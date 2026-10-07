@@ -11,7 +11,8 @@ Pat 同意修正第一课审查问题，要求以「为什么装了两个路由�
 - Core 限定讲解序列内部回看；保留作答、错误数与会话 ID。负数旧位置下界保护；保留 IPv4 练习旧格式恢复。
 - 拓扑播放支持重看与后台静态呈现；按当前阶段提供连接关系朗读；拓扑、房间图、接口详情在辅助大字号下纵向显示。
 - 新增五项 Core 用例覆盖时机与连线、阶段朗读、旧 JSON、逐阶段恢复、回看与奖励幂等；维护原生流程并增加中断恢复和最大字号用例。
-- 候选 0.12.0 build 27，bundle ID 与存储键未改。
+- 最终候选 0.13.0 build 28，bundle ID 与存储键未改。
+- 核验安装包时发现另一个 worktree 的 codex/lesson-feedback（f22a5ab，应用源码 06d8097）尚未汇入本分支，且已经使用 0.12.0 build 27。合并其头像姓名、实测边界连线、独立光猫节点、答后中文修订、旧格式测试与交接记录；保留本轮标题、答前观察文案、回看、播放时机和大字号纵排。
 
 ## Decisions made / 本轮关键决策
 
@@ -29,7 +30,8 @@ Pat 同意修正第一课审查问题，要求以「为什么装了两个路由�
 ## Verification / 已做验证
 
 - 本地 4 项 Web 回归通过（直接执行 Node 测试文件；node --test 子进程启动受环境限制）。
-- git diff --check 通过；Core 与 App 运行验证待集中 CI。
+- 第一轮 38434bc 的 [package / 37575595834](https://github.com/perinchiang/wanggan-ios/actions/runs/37575595834) 通过：80 Core / 4 Web、iPhone Release；原生 UI / 截图 skipped。但其 0.12.0 build 27 与既有包冲突，且未包含 lesson-feedback 修复，因此该轮包不交付，结果不代表最终合并候选。
+- 合并后须重新运行 0.13.0 build 28 的检查；最终结果另记于下。
 
 ## Next recommended task / 推荐下一步
 

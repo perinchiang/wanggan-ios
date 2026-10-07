@@ -136,4 +136,38 @@ final class AnswerExplanationTests: XCTestCase {
         XCTAssertNil(old.termIntroduction)
         XCTAssertTrue(old.isValid)
     }
+
+    func testOldRoomContentDecodesWithoutAnOpticalModemNode() throws {
+        let fixture = #"{"title":"接线示意","uplink":"ethernet","uplinkLabel":"光猫的网线","gatewayLabel":"路由器","roomMedium":"ethernet","rooms":["卧室"],"roomDeviceLabel":"电脑","note":"旧格式"}"#
+        let old = try JSONDecoder().decode(HomeNetworkSpec.self, from: Data(fixture.utf8))
+        XCTAssertNil(old.opticalModemLabel)
+        XCTAssertEqual(old.uplink, .ethernet)
+        XCTAssertTrue(old.isValid)
+        XCTAssertEqual(try JSONDecoder().decode(HomeNetworkSpec.self, from: JSONEncoder().encode(old)), old)
+    }
+
+    func testStandaloneRouterDiagramIncludesSeparateOpticalAccess() throws {
+        let lesson = try homeLesson()
+        let page = try XCTUnwrap(lesson.challenge.answerExplanation?.first { $0.id == "router-ports" })
+        let network = try XCTUnwrap(page.homeNetwork)
+        XCTAssertNotNil(network.opticalModemLabel)
+        XCTAssertEqual(network.uplink, .fiber)
+        XCTAssertEqual(network.roomMedium, .ethernet)
+        XCTAssertTrue(network.isValid)
+        XCTAssertEqual(try JSONDecoder().decode(HomeNetworkSpec.self, from: JSONEncoder().encode(network)), network)
+        for other in lesson.challenge.answerExplanation ?? [] where other.id != page.id {
+            XCTAssertNil(other.homeNetwork?.opticalModemLabel)
+        }
+    }
+
+    func testOpticalModemNodeRejectsEmptyNameAndNonFiberInput() {
+        let empty = HomeNetworkSpec(title: "家", uplink: .fiber, uplinkLabel: "光纤",
+                                    gatewayLabel: "路由器", roomMedium: .ethernet, rooms: ["卧室"],
+                                    roomDeviceLabel: "电脑", note: "示意", opticalModemLabel: " ")
+        let ethernet = HomeNetworkSpec(title: "家", uplink: .ethernet, uplinkLabel: "网线",
+                                       gatewayLabel: "路由器", roomMedium: .ethernet, rooms: ["卧室"],
+                                       roomDeviceLabel: "电脑", note: "示意", opticalModemLabel: "光猫")
+        XCTAssertFalse(empty.isValid)
+        XCTAssertFalse(ethernet.isValid)
+    }
 }

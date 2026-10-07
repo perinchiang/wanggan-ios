@@ -146,7 +146,7 @@ Challenge 是练习角色 / 组合，不必复制一套专用答案状态。会�
 
 最小输入：`ip`、`prefix`、教学阶段、讲解 / 练习模式、主题、字号与 Reduce Motion 配置。最小命令：初始化 / 更新、播放、暂停、重播、必要的单步及恢复语义状态。最小回调：ready、用户提交或必要状态变化、error；嵌入尺寸确实需要时再加高度回调。
 
-上述播放命令是现有组件的内部能力；后续面向学习者的动作与分步界面遵守 DESIGN / COURSE_GUIDE，不要求把命令逐项做成可见控件。教学阶段推进与回看由 Core / 原生会话管理，Web 接收当前语义阶段并呈现；普通阶段按钮保持原生，具体图中操作留在组件内。0.12.0 候选在原生拓扑讲解与答后阅读序列内提供上一步；只移动当前阅读位置，保留答案、错误数与会话 ID，不回到已提交的题目、不从结算页倒退。答后页仍须读到最后才结算；重看动画不修改学习状态。不预建完整时间线编辑器。
+上述播放命令是现有组件的内部能力；后续面向学习者的动作与分步界面遵守 DESIGN / COURSE_GUIDE，不要求把命令逐项做成可见控件。教学阶段推进与回看由 Core / 原生会话管理，Web 接收当前语义阶段并呈现；普通阶段按钮保持原生，具体图中操作留在组件内。0.13.0 候选在原生拓扑讲解与答后阅读序列内提供上一步；只移动当前阅读位置，保留答案、错误数与会话 ID，不回到已提交的题目、不从结算页倒退。答后页仍须读到最后才结算；重看动画不修改学习状态。不预建完整时间线编辑器。
 
 原生图示的初始步骤以 `explanationIndex = -1` 保存；旧草稿的 0 仍表示第一段讲解，低于 -1 的无效值收敛到初始图示。IPv4 Web 练习继续用原有 phase / finished 字段，保留 explanationIndex 0，避免破坏旧草稿等价恢复。存储键与 schema 不变。TopologySpec 新增可缺省 flowStartStage；缺省仍等路径节点和连线出现后播放。旧内容与旧格式由 Core 用例验证。
 
@@ -190,9 +190,9 @@ schemaVersion、课程内容版本、Lesson revision、Web 契约版本独立管
 
 迁移至少保护 XP、完成日期、学习日期、复习日期、有效会话和奖励幂等依据。备份不能在重复启动时被新的空进度覆盖。历史结算记录的增长以后按安全策略处理，裁剪前保证不会重新发奖；不因担心未来规模先建事件仓库。
 
-### 答后图解与术语揭晓（0.11.0 候选）
+### 答后图解与术语揭晓（0.11.0 引入，0.12.0 修正）
 
-Challenge 可附加可选 `answerExplanation` 图解页，包含稳定页 ID、正文与可选 `DevicePortsSpec` 接口数据、`HomeNetworkSpec` 房间连接图或 `TermIntroduction` 名称卡片。至少有一种呈现，存在的内容均通过 Core 校验；旧接口页可缺省新增字段。Core 将其放在 Challenge 与 summary 之间；正确作答后逐页推进，读完再完成与结算。SwiftUI 复用 `HomeNetworkDiagram` / `TermIntroductionCard`，有接口数据时用默认折叠的 `DevicePortsDiagram` 作为详情；不按 Lesson ID 分派。名称卡片独立可复用，数据包含 name / englishName / chineseName，卡片统一加英文括号。旧课程缺省此字段时路径不变。
+Challenge 可附加可选 `answerExplanation` 图解页，包含稳定页 ID、正文与可选 `DevicePortsSpec` 接口数据、`HomeNetworkSpec` 房间连接图或 `TermIntroduction` 名称卡片。至少有一种呈现，存在的内容均通过 Core 校验；旧接口页可缺省新增字段。Core 将其放在 Challenge 与 summary 之间；正确作答后逐页推进，读完再完成与结算。SwiftUI 复用 `HomeNetworkDiagram` / `TermIntroductionCard`，有接口数据时用默认折叠的 `DevicePortsDiagram` 作为详情；不按 Lesson ID 分派。名称卡片独立可复用，数据包含 name / englishName / chineseName，卡片统一加英文括号。旧课程缺省此字段时路径不变。HomeNetworkSpec 新增可选 opticalModemLabel：存在时入户光纤先接光猫，再用网线接独立路由器；缺省时仍展示原单设备结构。该字段只用于课程图示，不改变存储 schema 或学习会话。旧字段缺省解码与新图示结构有 Core 回归用例，运行结果见本轮交接。
 
 `LessonSession.challengeExplanationID` 是可缺省的当前页标识；stage 仍为 challenge，转换器用稳定页 ID 恢复。旧已答草稿停留在原答题位置，旧 complete 直接映射新 summary，不重开课程、不重复奖励；未知 / 删除页 ID 回到已答题位置。存储键与 ledger 格式不变。主动退出仍丢弃当前草稿，后台中断保存该页。新增 Core 用例保护读完前不发奖、页恢复、旧 JSON、已完成记录与错误答案门控。
 
@@ -228,7 +228,7 @@ Challenge 可附加可选 `answerExplanation` 图解页，包含稳定页 ID、�
 | 变更 | 必要检查 |
 | --- | --- |
 | 仅文档 | 本地链接、状态标注、规则一致性、变更范围、`git diff --check` |
-| 课程内容 | JSON 解码与校验、ID / 引用 / 正确答案、先修关系、资源存在；代表性学习流程 |
+| 课程内容 | JSON 解码与校验、ID / 引用 / 正确答案、先修关系、资源存在；代表性学习流程；另按 COURSE_GUIDE 独立审读中文，机器检查不代表语言合格 |
 | Step / Core | 门控、重试、恢复、完成、主线与复习隔离，运行 `swift test` |
 | 奖励 / Mastery / Review | 同日零奖励错误、同日多次正确、重复结算、提示与独立证据、日期 / 时区边界 |
 | 迁移 | 真实旧格式、未知版本、损坏数据、课程重排、重复迁移、恢复失败保护 |
