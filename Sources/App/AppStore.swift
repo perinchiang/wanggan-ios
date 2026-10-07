@@ -1,6 +1,10 @@
 import SwiftUI
 import Observation
 
+private struct ProgressHeader: Decodable {
+    let schemaVersion: Int
+}
+
 @Observable @MainActor
 final class LearningStore {
     private(set) var catalog: LessonCatalog?
@@ -12,6 +16,7 @@ final class LearningStore {
     }
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let progressKey = "wanggan.progress.v1"
+    @ObservationIgnored private var progressWritesEnabled = true
 
     init() {
         let testing = ProcessInfo.processInfo.arguments.contains("--uitesting")
@@ -32,15 +37,19 @@ final class LearningStore {
         if let data = defaults.data(forKey: progressKey) {
             do {
                 let saved = try JSONDecoder().decode(ProgressLedger.self, from: data)
-                guard saved.schemaVersion == 1 else { throw ContentError.invalid("未知进度版本") }
                 ledger = saved
+                let header = try JSONDecoder().decode(ProgressHeader.self, from: data)
+                if header.schemaVersion == 1, defaults.data(forKey: "wanggan.progress.pre-v2") == nil {
+                    defaults.set(data, forKey: "wanggan.progress.pre-v2")
+                }
                 if catalog != nil {
                     ledger.normalizeDrafts(in: allLessonIDs)
                     persist()
                 }
             } catch {
                 defaults.set(data, forKey: "wanggan.progress.recovery")
-                storageWarning = "旧进度暂时无法读取，原始数据已保留在本机备份。当前使用新进度。"
+                progressWritesEnabled = false
+                storageWarning = "旧进度暂时无法读取，原始数据已保留。当前进度暂不写入；重置学习进度后可重新开始。"
             }
         }
 
@@ -65,7 +74,6 @@ final class LearningStore {
     var activeLessons: [Lesson] {
         orderedLessonIDs.compactMap { id in lessons.first { $0.id == id } }
     }
-    var reviewItems: [ReviewItem] { catalog?.reviewItems ?? [] }
     var chapters: [Chapter] { catalog?.course.chapters ?? [] }
     var orderedLessonIDs: [String] { catalog?.orderedLessonIDs ?? [] }
     var allLessonIDs: [String] { catalog?.allLessonIDs ?? [] }
@@ -74,7 +82,6 @@ final class LearningStore {
         return lessons.first { $0.id == id }
     }
     var completedCount: Int { activeLessons.filter { ledger.lessons[$0.id] != nil }.count }
-    var dueLessons: [Lesson] { activeLessons.filter { ledger.isDue($0.id) } }
 
     func lessons(in chapter: Chapter) -> [Lesson] { catalog?.lessons(in: chapter.id) ?? [] }
 
@@ -102,33 +109,16 @@ final class LearningStore {
         persist()
     }
 
-    func discardShortDraft(_ session: ShortReviewSession) {
-        ledger.discardShortDraft(session)
-        persist()
-    }
-
-    func shortSession(for lesson: Lesson) -> ShortReviewSession? {
-        ledger.shortSession(for: lesson.id, items: reviewItems)
-    }
-
-    func saveShortDraft(_ session: ShortReviewSession) {
-        ledger.saveShortDraft(session, items: reviewItems)
-        persist()
-    }
-
-    func finishShortReview(_ session: ShortReviewSession) -> Int {
-        let result = ledger.completeShortReview(session, items: reviewItems)
-        persist()
-        return result
-    }
-
     func resetProgress() {
         ledger = ProgressLedger()
+        progressWritesEnabled = true
+        defaults.removeObject(forKey: "wanggan.progress.pre-v2")
         defaults.removeObject(forKey: "wanggan.progress.recovery")
         persist()
     }
 
     private func persist() {
+        guard progressWritesEnabled else { return }
         do { defaults.set(try JSONEncoder().encode(ledger), forKey: progressKey) }
         catch { storageWarning = "这次进度未能保存，请暂时不要关闭应用。\(error.localizedDescription)" }
     }

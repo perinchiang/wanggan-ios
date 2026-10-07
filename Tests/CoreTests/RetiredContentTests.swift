@@ -34,7 +34,7 @@ final class RetiredContentTests: XCTestCase {
         main.stage = .explanation
         main.ipv4VisualPhase = 1
         main.ipv4SelectedOctet = 3
-        ledger.draft = main
+        ledger.saveDraft(main, in: ["gateway", "subnet"])
         let historicalLessons = ledger.lessons
         let example = LessonSession(lessonID: "home-two-boxes")
         ledger.normalizeDrafts(in: ids)
@@ -42,7 +42,7 @@ final class RetiredContentTests: XCTestCase {
         var restored = try JSONDecoder().decode(ProgressLedger.self, from: JSONEncoder().encode(ledger))
         restored.normalizeDrafts(in: ids)
         XCTAssertEqual(restored.draft, example)
-        XCTAssertEqual(restored.earlierDrafts?[main.lessonID], main)
+        XCTAssertEqual(restored.drafts[main.lessonID], main)
         XCTAssertEqual(restored.lessons, historicalLessons)
         XCTAssertEqual(restored.totalXP, 30)
         XCTAssertEqual(restored.settledSessions, ledger.settledSessions)
@@ -51,29 +51,8 @@ final class RetiredContentTests: XCTestCase {
         XCTAssertEqual(restored.complete(completion), 30)
         XCTAssertEqual(restored.complete(oldCompletion), 30)
         XCTAssertEqual(restored.totalXP, 60)
-        XCTAssertEqual(restored.earlierDrafts?[main.lessonID], main)
+        XCTAssertEqual(restored.drafts[main.lessonID], main)
         XCTAssertEqual(restored.lessons["gateway"], historicalLessons["gateway"])
     }
 
-    func testRetiredReviewDraftsAndEvidenceSurviveAndCannotCreateReviewEntry() throws {
-        let items = try XCTUnwrap(TestCatalog.compatibility().reviewItems)
-        let item = try XCTUnwrap(items.first)
-        var ledger = ProgressLedger()
-        ledger.complete(finish(item.lessonID))
-        ledger.reviewDrafts = [item.lessonID: LessonSession(lessonID: item.lessonID)]
-        ledger.earlierDrafts = ["subnet": LessonSession(lessonID: "subnet")]
-        var short = ShortReviewSession(item: item)
-        let wrong = try XCTUnwrap(item.options.first { $0.id != item.correctID })
-        short.select(wrong.id, item: item)
-        short.submit(item: item)
-        ledger.saveShortDraft(short, items: items)
-        let before = ledger
-        let shipped = try TestCatalog.shipped()
-        ledger.normalizeDrafts(in: shipped.allLessonIDs)
-        ledger = try JSONDecoder().decode(ProgressLedger.self, from: JSONEncoder().encode(ledger))
-        ledger.normalizeDrafts(in: shipped.allLessonIDs)
-        XCTAssertEqual(ledger, before)
-        XCTAssertNil(ledger.shortSession(for: item.lessonID, items: shipped.reviewItems ?? []))
-        XCTAssertTrue(shipped.lessons.filter { ledger.isDue($0.id) }.isEmpty)
-    }
 }

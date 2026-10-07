@@ -157,7 +157,7 @@ final class SubnetMaskTests: XCTestCase {
         XCTAssertEqual(ledger.totalXP, 30)
     }
 
-    func testAddingMaskLessonProtectsOlderMainReviewAndCompletedHistory() throws {
+    func testAddingMaskFixtureProtectsOlderMainAndCompletedHistory() throws {
         let ids = try catalog().allLessonIDs
         let json = #"{"schemaVersion":1,"totalXP":30,"lessons":{"gateway":{"completedAt":812721600,"lastPracticedAt":812721600,"nextReviewAt":812764800,"reviewLevel":0,"lastMistakes":0}},"activityDays":[812678400],"settledSessions":[],"draft":{"id":"00000000-0000-0000-0000-000000000001","lessonID":"subnet","stage":1,"explanationIndex":0,"answerSubmitted":true,"matches":{},"matchingSubmitted":false,"matchingSolved":false,"challengeSubmitted":false,"challengeSolved":false,"mistakes":1}}"#
         var ledger = try JSONDecoder().decode(ProgressLedger.self, from: Data(json.utf8))
@@ -165,9 +165,9 @@ final class SubnetMaskTests: XCTestCase {
         XCTAssertNil(main.subnetMaskProgress)
         let history = ledger.lessons
         ledger.normalizeDrafts(in: ids)
-        var review = LessonSession(lessonID: "gateway")
-        review.questionSceneStep = 1
-        ledger.saveDraft(review, in: ids)
+        var reading = LessonSession(lessonID: "gateway")
+        reading.questionSceneStep = 1
+        ledger.saveDraft(reading, in: ids)
         var earlier = LessonSession(lessonID: "subnet-mask")
         earlier.stage = .explanation
         earlier.subnetMaskProgress = observed()
@@ -175,7 +175,7 @@ final class SubnetMaskTests: XCTestCase {
         var restored = try JSONDecoder().decode(ProgressLedger.self, from: JSONEncoder().encode(ledger))
         restored.normalizeDrafts(in: ids)
         XCTAssertEqual(restored.session(for: "subnet"), main)
-        XCTAssertEqual(restored.session(for: "gateway"), review)
+        XCTAssertEqual(restored.session(for: "gateway"), reading)
         XCTAssertEqual(restored.session(for: "subnet-mask"), earlier)
         XCTAssertEqual(restored.recommendedLessonID(in: try catalog().orderedLessonIDs), "subnet")
         XCTAssertEqual(restored.lessons, history)

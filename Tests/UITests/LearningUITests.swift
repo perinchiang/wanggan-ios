@@ -16,7 +16,7 @@ final class LearningUITests: XCTestCase {
         XCTAssertTrue(button.waitForExistence(timeout: 10), "Missing \(id)")
         for _ in 0..<5 {
             let isChoice = id.contains("-option-") || id.hasPrefix("match-")
-            let footer = app.buttons["short-primary"].exists ? app.buttons["short-primary"] : app.buttons["primary-action"]
+            let footer = app.buttons["primary-action"]
             let aboveFooter = !isChoice || button.frame.midY < footer.frame.minY
             // A row with a tiny visible edge can be "hittable" while its tap point
             // sits behind the fixed recommendation panel. Scroll the full row in.
@@ -61,6 +61,9 @@ final class LearningUITests: XCTestCase {
 
     func testHomeTwoBoxesFlow() {
         app.launch()
+        XCTAssertEqual(app.tabBars.buttons.count, 2)
+        XCTAssertTrue(app.tabBars.buttons["学习"].exists)
+        XCTAssertTrue(app.tabBars.buttons["我的"].exists)
         XCTAssertTrue(app.staticTexts["recommended-lesson-title"].waitForExistence(timeout: 10))
         XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "宽带师傅为什么装了两个路由器？")
         tap("start-lesson")

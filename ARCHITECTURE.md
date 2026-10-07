@@ -13,27 +13,27 @@
 | `Sources/Core/Lesson.swift` | Course（id / revision / title）与 Chapter（id / title / orderedLessonIDs）目录模型；Lesson 固定包含 question / explanation / matching / challenge；课程与章节覆盖校验 |
 | `Sources/Core/LessonSession.swift` | question → explanation → matching → challenge → complete；课内状态、重试和累计错误数 |
 | `Sources/Core/LessonPlan.swift` | Step 类型与 payload（conversation / question / diagram / text / matching / summary）、Lesson→steps 适配、LessonPlan 步进门控、StepSession 及 stage↔step 双向适配 |
-| `Sources/Core/ProgressLedger.swift` | 完成记录、XP / 等级、复习日期、活动日、结算会话、主线 draft 与 reviewDrafts |
+| `Sources/Core/ProgressLedger.swift` | 首次完成记录、XP / 等级、活动日、结算会话、统一 drafts 与 mainLessonID |
 | `Sources/App/StepLessonPlayer.swift` | 当前示例课走 `StepLessonPlayer`（LessonPlan / StepSession）；旧原生播放器与按 Lesson ID 分派的入口已移除 |
 | `Sources/Core/IPv4AddressVisual.swift` / `Sources/App/IPv4AddressVisualWebView.swift` / `Resources/ipv4-address-visual.html` | 参数化 IPv4 校验、网络地址计算与本地 Web 图示；保留为技术组件，当前示例课未接入 |
-| `Sources/App/AppStore.swift` | 加载课程、UserDefaults 编解码、解锁与推荐、保存及重置 |
+| `Sources/Core/ProgressPersistence.swift` / `Sources/App/AppStore.swift` | v1 → v2 转换、加载课程、UserDefaults 保存与备份、解锁与推荐、重置 |
 | `Sources/Core/Topology.swift` / `Sources/App/TopologyDiagram.swift` | 数据驱动拓扑示意图：TopologySpec（nodes / links / flow / accessibilitySummary）在 Core 校验（id 唯一、引用完整、flow ≥ 2、maxStage ≤ explanation 段数 + 1），App 层按 stage 分阶段渲染节点、连线与数据包流动画；Lesson 可选 `topology` 字段，替代插画位图路线 |
 | `Sources/App` 其余文件 | SwiftUI 导航、页面、原生题型和图示 |
-| `Resources/lessons.json` | 仅第一节示例课内容与来源，无归档课程和短复习题 |
+| `Resources/lessons.json` | 仅第一节示例课内容与来源，无归档课程和复习内容 |
 | `Package.swift` / `Tests` | 独立 Core 测试和 iOS 原生 UI 测试 |
 | `project.yml` / `.github/workflows/ios.yml` | XcodeGen、macOS 构建、测试、截图和 IPA 导出 |
 
-当前奖励规则：首次完成一课 +30 XP；已完成课之后每个本地自然日首次复习 +5 XP；首次完成当天重复学习不追加奖励；会话重复结算不重复加分。等级为 `totalXP / 100 + 1`。
+当前奖励规则：首次完整完成一课 +30 XP；之后重新阅读该课不发奖，包括隔天或以后完成。同一会话重复结算返回原值，不重复增加总 XP。等级为 `totalXP / 100 + 1`，不代表知识掌握。
 
-当前复习：首次完成后次日复习，后续使用 1 / 3 / 7 / 14 天，错误可重置间隔级别。复习状态在每次有效完成后独立更新，不依赖当天是否发奖励：同日零奖励的错误仍重置级别并提前到次日，同日多次正确不能连续推进阶梯。
+当前只提供「学习 / 我的」入口。复习系统已完整删除：无到期计算、间隔阶梯、短复习、证据状态或每日 +5 XP。完成记录包含首次 completedAt 与 lastMistakes；再次阅读不改写首次成果。
 
-当前 schemaVersion 为 1，存储键为 `wanggan.progress.v1`。部分可选字段支持旧草稿解码，另有旧复习草稿归位逻辑；这不是完整的版本迁移框架。
+当前 schemaVersion 2，沿用存储键 `wanggan.progress.v1`。所有整课草稿统一按 Lesson ID 存入 drafts，mainLessonID 记录未完成主线位置；不设独立复习会话或草稿类型。v1 转换与原始备份规则见下方。
 
 ## 网络词典与文本匹配（后期计划，非现有 API）
 
 词典先以本地数据提供稳定词条 ID、名称、缩写 / 别名、简短释义与来源；Core 或独立纯函数按这些别名匹配文本，输出命中范围和词条 ID，原生界面负责波浪下划线、点词与释义小窗。匹配规则需处理大小写、词边界、重叠别名与标点，支持 IS-IS / ISIS 这类约定写法，避免简单子串替换造成误标。没有匹配项时保持普通文本。
 
-独立词典入口和课内释义共享数据，不为两个入口维护两份解释。查词仅影响展示，不推进 Step、解锁课程或发 XP；打开 / 关闭小窗不修改答案和草稿。若某题的释义提供了影响独立作答的帮助，应在后续证据设计中按帮助处理，不能默认为独立掌握；复习体系暂缓期间不提前实现新的调度系统。词条与未来 API 形状仍是计划，不在本轮新增存储 schema、Web 消息或通用富文本框架。
+独立词典入口和课内释义共享数据，不为两个入口维护两份解释。查词仅影响展示，不推进 Step、解锁课程或发 XP；打开 / 关闭小窗不修改答案和草稿。若某题的释义提供了影响独立作答的帮助，应在后续证据设计中按帮助处理，不能默认为独立掌握；不以词典实现为由引入调度系统。词条与未来 API 形状仍是计划，不在本轮新增存储 schema、Web 消息或通用富文本框架。
 
 ## 已确认架构边界
 
@@ -53,8 +53,6 @@
 | Lesson 引擎 | 步骤、动作门控、恢复、完成条件 | 直接访问具体存储 |
 | 可视化 | 参数化展示、动画与交互结果 | 发奖、判定课程解锁、保存业务账本 |
 | 练习 | 答案校验、反馈、作答证据 | 将重试成功伪装成独立掌握 |
-| KnowledgePoint / Mastery | 聚合知识点证据、可解释状态 | 从 XP 或观看时长推断能力 |
-| 复习 | 内容选择、日期与薄弱项优先级 | 覆盖主线续学位置 |
 | XP / 等级 | 奖励资格、幂等结算、等级 | 阻止零奖励学习更新证据 |
 | 头衔 / 成就 | 按明确条件授予成果 | 改写学习证据或隐式阻塞课程 |
 | 统计 / 打卡 | 聚合有效学习日期和活动 | 将打开 App 当作学习 |
@@ -67,10 +65,9 @@ SwiftUI 持有界面状态并发送动作，Core 持有学习规则；Web 只负
 ```text
 Course: id, revision, title, chapters, progressionPolicy
 Chapter: id, title, orderedLessonIDs, prerequisiteChapterIDs
-Lesson: id, revision, objective, prerequisites, knowledgePointIDs, steps, reviewItemIDs, sources
+Lesson: id, revision, objective, prerequisites, knowledgePointIDs, steps, sources
 Step: id, kind, typedPayload, completionRule
 KnowledgePoint: id, objective, prerequisiteIDs, misconceptionIDs
-ReviewItem: id, lessonID, knowledgePointIDs, scenarioFamilyID, steps
 ```
 
 这是模型职责草案，不是要求一次添加所有字段。KnowledgePoint 独立定义并由多课引用；稳定 ID 不使用显示名称或章节序号。内容版本、Lesson 修订、存储 schema 与 Web 协议版本各自解决不同兼容问题。
@@ -83,57 +80,19 @@ Challenge 是练习角色 / 组合，不必复制一套专用答案状态。会�
 
 访问权、完成记录、推荐位置与掌握状态分别表达。第一阶段仍线性解锁，但规则位于 Core 策略而非 SwiftUI 数组索引。未来可配置章内线性、章间满足先修条件后半开放；暂不实现技能树。
 
-已完成课保持可回看。插入基础课可以改变推荐建议，不能撤销旧成果或使旧课重新锁定。主线和复习有明确会话用途与独立草稿；先保留当前隔离行为，再按真实需求扩展多课程状态。
+已完成课保持可回看。插入基础课可以改变推荐建议，不能撤销旧成果或使旧课重新锁定。各课普通草稿独立保存；再次阅读其他课程不改变未完成主线的推荐位置。
 
-## 学习证据、Mastery、Review、XP：计划规则
+## 完成、奖励与学习日期
 
-实施状态：复习体系迭代暂缓。旧短复习题已移除，保留通用规则和历史证据；当前只可重学示例课，不据此扩展调度系统。
+Core 验证课程完成门槛后结算。首次完成记录与奖励幂等依据分别保存；同一会话重试不会重复发奖。重新打开已完成课是普通课程阅读，继续使用原 LessonPlan 和 LessonSession，不创建独立复习路径。
 
-### 保留的通用短复习逻辑（当前无题目）
+activityDays 以完成会话的本地自然日记账；重复完成可以记录当天学习，但不加 XP，不重写首次完成日期或错误数。是否通过不等于稳定掌握，不从 XP 推断专业能力。
 
-- `ReviewItem` 带独立 revision、所属 Lesson、知识点与场景族；当前 `lessons.json` 的 reviewItems 为空。通用逻辑支持一次一题；新会话轮换，未完成会话按 itemID / revision 恢复。内容修订不拿旧答案给新题结算，未知草稿不在启动时清除。
-- `ShortReviewSession` 保存选择、提示使用及提交列表。`ReviewAttempt` 记录 UUID、会话、题目修订、Lesson / 知识点 / 场景族、时间和时区、所选选项、正确性、首次提交及提示；所选错误选项的稳定 ID 对应针对性反馈，不收集滑动或点击流水。
-- ledger v1 新增可选 `shortReviewDrafts` / `reviewEvidence`。主线 draft、原整课 reviewDrafts、短复习草稿分别保存；旧格式缺少新字段正常解码，旧完成不迁移出掌握证据。课程加载失败时不规范化或清理历史草稿。
-- 有效提交立即保存证据；同一 attemptID 不重复追加。错误立即把所属课调回次日，不必等完成或有 XP。提示后 / 重试后答对为「在帮助下完成」，不增长复习间隔。短复习与整课共用每课每日首次 +5，完成日无额外奖励，按 sessionID 幂等结算；有效学习日仍以完成会话为口径。
-- 试点显示最新证据「还没有短复习记录 / 这次需要再巩固 / 这次在帮助下完成 / 独立答对过 / 隔天换场景也答对」。延迟证据要求首次无提示正确，且此前同知识点另一场景族有独立正确记录，至少相隔 24 小时并跨本地日期；同场景反复正确不升级为延迟证据。这些是可解释试点口径，不是完整 Mastery 算法或能力认证。
-- 原整课重学仍可用，不把旧预测题或 Challenge 追溯成知识点证据。复习页按近期错误、到期日期、课序排列；不另建知识点队列或复杂记忆算法。
+### 主动丢弃与中断恢复
 
-### 主动丢弃与中断恢复（0.8.0 候选）
+`discardDraft` 只移除 lessonID 与 sessionID 同时匹配的草稿；旧会话不能清除同课的新会话。确认退出后持久化并停止该页自动保存，取消保留页面；后台与意外终止保存当前阅读阶段。首次完成记录、settledSessions、XP 和其他课程草稿不撤回。
 
-- Core 的 `discardDraft` / `discardShortDraft` 只移除 lessonID 与 sessionID 同时匹配的草稿；旧会话不能清除同课的新会话。存储格式保持 ledger v1，不重置历史或奖励。
-- 确认退出由播放器调用上述动作并持久化；退出期间停止该页面的自动保存，避免草稿被重新写回。取消退出不改变会话；后台与意外终止继续按原规则保存 / 恢复。
-- 已提交短复习证据、复习日期、完成记录、settledSessions、XP 及其他课程草稿不撤回。
-- 故事课移除的旧选项若出现在未完成草稿中，恢复为同会话 / 同阶段的未作答状态，保留错误次数与其他进度。稳定 Lesson ID、正确选项 ID 和持久化键不变。
-
-### 最小证据
-
-记录有效提交，包含 attemptID、lessonID / stepID / itemID、knowledgePointIDs、contentRevision、时间、场景族、正确性、是否首次提交、是否使用提示与误区。不要记录每一帧、每次滑动或全部点击历史。
-
-保存相同作答不能重复产生学习证据。先由会话和提交动作本身保证单次处理，不为此预建分布式事件系统。
-
-### Mastery
-
-首版状态建议为「尚无证据」「正在建立」「能独立判断」「延迟后仍能判断」，另外标注近期需要巩固及相关误区，不提供缺乏依据的精确百分比。
-
-看完讲解不自动掌握；首题预测与学后作答区分；提示后正确记录为在帮助下完成。同场景重复正确不能无限提高状态，延迟的新场景证据更有价值。具体状态阈值和衰减参数保持 Draft，在短复习试点中验证，不提前引入复杂记忆算法。
-
-旧完成记录只证明完成，不能迁移出不存在的独立 / 延迟掌握证据。知识型成就条件与 Mastery 证据有关，具体阈值在功能实现时确定。
-
-### Review
-
-保留 1 / 3 / 7 / 14 天为基础阶梯。合格的独立正确复习可推进一级；错误缩短间隔、提高近期出现优先级。同日后续错误仍更新证据与调度；同日多次正确不能连续推进阶梯。先错后反复练对，不立即跳到最长间隔。
-
-首版可按 Lesson 形成复习组，结合相关知识点的错误、掌握证据和上次复习时间选择 ReviewItem。不要同时搭建两套互相争夺调度权的知识点 / 题目队列。当前按课序展示的复习页不等于已经实现上述优先级系统。
-
-复习会话可以更短，主动重学整课仍可用；二者都不修改主线位置。近期重现的具体次数和同日间距保持 Draft，避免机械重复形成负担。
-
-### XP 与统计
-
-先保留当前 +30 / 每课每日 +5 规则。短复习内多个 ReviewItem 共用所属 Lesson 的奖励资格，不能因拆题变成每题 +5；首次完成当天不额外获得复习奖励。结算重试返回原结果，不重复增加总 XP。
-
-一次有效操作分别计算学习证据、复习、奖励与统计，再保存一致快照。奖励为零不阻止其他更新。未来跨课复习在引入前明确奖励归属，不能临时按题累加。
-
-当前 activityDays 由完成会话产生；未来统计可增加有效练习事件，但必须先明确口径，不能把页面曝光算学习。记录事件时间和发生时的本地日期语境，避免跨时区后把历史热力图任意挪动；这属于未来 schema 设计，现有 Date 记录不能凭空恢复原时区。
+故事课移除的选项若出现在未完成草稿中，恢复为同会话、同阶段的未作答状态，保留错误次数与其他进度。第一课正文与稳定 ID 不因本轮删除系统而改变。
 
 ## HTML / WKWebView：最小试点优先
 
@@ -181,13 +140,13 @@ IPv4AddressVisual 保留为参数化技术组件与 Web 测试对象；当前第
 
 ## 本地持久化与迁移
 
-先为现有 UserDefaults 增加清楚的进度仓库边界，不同时更换数据库。数据规模和查询确有需要时，再选择原子 JSON 文件或数据库；不能因为引入 Mastery 就自动引入 SwiftData / 后端。
+先为现有 UserDefaults 增加清楚的进度仓库边界，不同时更换数据库。数据规模和查询确有需要时，再选择原子 JSON 文件或数据库；不能因为整理进度就自动引入 SwiftData / 后端。
 
 迁移流程：保留旧原始数据 → 明确版本转换 → 验证新结构与关键记录 → 写入并读回确认 → 切换有效版本。失败保留旧数据并进入恢复状态；重复迁移不产生额外奖励或重复活动。
 
 schemaVersion、课程内容版本、Lesson revision、Web 契约版本独立管理。未知更高存储版本不得被旧代码静默覆盖。不要用新增必填字段的默认值假设旧 JSON 一定能解码；用真实旧格式 fixtures 验证。
 
-迁移至少保护 XP、完成日期、学习日期、复习日期、有效会话和奖励幂等依据。备份不能在重复启动时被新的空进度覆盖。历史结算记录的增长以后按安全策略处理，裁剪前保证不会重新发奖；不因担心未来规模先建事件仓库。
+迁移至少保护 XP、首次完成日期、学习日期、整课草稿和奖励幂等依据。备份不能在重复启动时被新的空进度覆盖。历史结算记录的增长以后按安全策略处理，裁剪前保证不会重新发奖；不因担心未来规模先建事件仓库。
 
 ### 答后图解与术语揭晓（0.11.0 引入，0.12.0 修正）
 
@@ -195,20 +154,15 @@ Challenge 可附加可选 `answerExplanation` 图解页，包含稳定页 ID、�
 
 `LessonSession.challengeExplanationID` 是可缺省的当前页标识；stage 仍为 challenge，转换器用稳定页 ID 恢复。旧已答草稿停留在原答题位置，旧 complete 直接映射新 summary，不重开课程、不重复奖励；未知 / 删除页 ID 回到已答题位置。存储键与 ledger 格式不变。主动退出仍丢弃当前草稿，后台中断保存该页。新增 Core 用例保护读完前不发奖、页恢复、旧 JSON、已完成记录与错误答案门控。
 
-### 课程移除与历史草稿
+### v1 → v2：移除旧系统
 
-当前目录 revision 6，仅含 `home-two-boxes`。移除旧课程内容、归档目录与短复习题，既有 schemaVersion 1、存储键和第一课稳定 ID 不变。
+`ProgressPersistence` 读取真实 v1 数据；忽略已删除的到期时间、间隔级别、短会话与作答证据字段，不加载旧系统类型。旧 draft、earlierDrafts 和 reviewDrafts 中的整课会话合并进统一 drafts，保留 UUID、作答、错误数、图示位置和答后页 ID。未完成旧主线映射 mainLessonID；旧已完成课的阅读草稿不作为主线位置。
 
-`normalizeDrafts` 不因课程缺失清除草稿。有效旧主线草稿可保留在 draft；开始示例课时转存 earlierDrafts。有效复习草稿、短复习草稿、学习证据、完成日期、活动日、XP 和结算幂等记录保留。推荐、解锁、完成数量和到期列表仅依据当前目录，不显示已删除课程。
+XP、completedAt、lastMistakes、activityDays、settledSessions 保留；历史领取的 +5 XP 不扣回。新 v2 只编码当前字段，不写回旧调度或短会话。重复加载 / 转换 / 结算必须幂等。
 
-主线 / 复习隔离与完成会话清理仍按已有规则执行；启动旧版本数据、重复归一化、保存新课后重启与重复结算均由 Core 回归验证。历史 payload 类型保留用于解码，测试夹具只有中性文字和结构参数，不保存旧教学内容。
+App 在首次转换前将原 v1 字节存入 `wanggan.progress.pre-v2`，仅首次写入，不用后续快照覆盖。转换后沿用原活动存储键写 v2；这是数据恢复副本，不参与运行规则。课程加载失败跳过归一化与保存。未知版本或损坏数据保留原始内容并禁止普通写入，只有用户明确重置才重新启用并清除备份。
 
-### 已识别的基线风险：待修复
-
-- 课程加载失败时 `LearningStore` 已跳过归一化；本轮另外修正正常删课时丢失未知课程草稿的问题。
-- 未知 schema 当前备份后使用新进度，缺少受保护的恢复 / 迁移路径。
-
-这些是后续小范围修复候选，不表示本轮文档变更已修复业务代码。
+目录 revision 7 仅含 `home-two-boxes`。内容缺失不清除普通整课草稿和完成记录；推荐、解锁、显示完成数量只依据当前目录。历史 payload 类型和中性结构夹具服务必要的存档兼容，旧复习模型、调度和测试已删除。
 
 ## 渐进实施方法
 
@@ -220,14 +174,14 @@ Challenge 可附加可选 `answerExplanation` 图解页，包含稳定页 ID、�
 
 ## 测试策略与验证范围
 
-当前 Core 测试覆盖唯一示例课、移除内容后的数据保留，以及中性结构夹具上的门控、恢复、主线 / 复习隔离与奖励规则。原生 UI 用例仅保留第一课，可按 Pat 明确要求运行。
+当前 Core 测试覆盖唯一示例课、移除内容后的数据保留，以及中性结构夹具上的门控、恢复、多课草稿与主线位置保护与奖励规则。原生 UI 用例仅保留第一课，可按 Pat 明确要求运行。
 
 | 变更 | 必要检查 |
 | --- | --- |
 | 仅文档 | 本地链接、状态标注、规则一致性、变更范围、`git diff --check` |
 | 课程内容 | JSON 解码与校验、ID / 引用 / 正确答案、先修关系、资源存在；代表性学习流程；另按 COURSE_GUIDE 独立审读中文，机器检查不代表语言合格 |
-| Step / Core | 门控、重试、恢复、完成、主线与复习隔离，运行 `swift test` |
-| 奖励 / Mastery / Review | 同日零奖励错误、同日多次正确、重复结算、提示与独立证据、日期 / 时区边界 |
+| Step / Core | 门控、重试、恢复、完成、多课草稿与主线位置保护，运行 `swift test` |
+| 奖励 / 统计 | 仅首次完成发奖、同日与跨日再读不发奖、重复结算、日期 / 时区边界 |
 | 迁移 | 真实旧格式、未知版本、损坏数据、课程重排、重复迁移、恢复失败保护 |
 | UI / 动效 / 主题 | 当前试学由 Pat 真机验收，附对应清单；仅 Pat 明确要求时跑原生 UI / 模拟器截图。大字号、VoiceOver、Reduce Motion 等未验收项如实记录 |
 | Web | 组件参数和计算样例、直接通信、错误与恢复、生命周期；WKWebView 内集成验收 |

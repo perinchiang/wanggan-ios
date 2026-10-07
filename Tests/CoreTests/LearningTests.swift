@@ -31,7 +31,6 @@ final class LearningTests: XCTestCase {
         XCTAssertEqual(catalog.orderedLessonIDs, ["home-two-boxes"])
         XCTAssertEqual(catalog.lessons.map(\.id), ["home-two-boxes"])
         XCTAssertTrue(catalog.archivedLessonIDs.isEmpty)
-        XCTAssertTrue((catalog.reviewItems ?? []).isEmpty)
         XCTAssertEqual(catalog.lessons.first?.title, "宽带师傅为什么装了两个路由器？")
         XCTAssertTrue(ProgressLedger().isUnlocked("home-two-boxes", in: catalog.orderedLessonIDs))
     }
@@ -144,76 +143,20 @@ final class LearningTests: XCTestCase {
         XCTAssertEqual(ledger.complete(LessonSession(lessonID: "subnet"), now: today, calendar: calendar), 0)
     }
 
-    func testReviewRewardsAndIntervalsFollowLocalCalendar() throws {
-        var ledger = ProgressLedger()
-        ledger.complete(finished(), now: today, calendar: calendar)
-        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
-        XCTAssertFalse(ledger.isDue("gateway", now: today))
-        XCTAssertTrue(ledger.isDue("gateway", now: tomorrow))
-        XCTAssertEqual(ledger.complete(finished(), now: tomorrow, calendar: calendar), 5)
-        let progress = try XCTUnwrap(ledger.lessons["gateway"])
-        XCTAssertEqual(progress.reviewLevel, 1)
-        XCTAssertEqual(progress.nextReviewAt, calendar.date(byAdding: .day, value: 3, to: calendar.startOfDay(for: tomorrow)))
-        XCTAssertEqual(ledger.complete(finished(), now: tomorrow, calendar: calendar), 0)
-        XCTAssertEqual(ledger.totalXP, 35)
-    }
-
-    func testSameDayZeroRewardErrorStillUpdatesReviewSchedule() throws {
-        var ledger = ProgressLedger()
-        ledger.complete(finished(), now: today, calendar: calendar)
-        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
-        XCTAssertEqual(ledger.complete(finished(), now: tomorrow, calendar: calendar), 5)
-        var progress = try XCTUnwrap(ledger.lessons["gateway"])
-        XCTAssertEqual(progress.reviewLevel, 1)
-
-        XCTAssertEqual(ledger.complete(finished(mistakes: 2), now: tomorrow, calendar: calendar), 0)
-        progress = try XCTUnwrap(ledger.lessons["gateway"])
-        XCTAssertEqual(progress.reviewLevel, 0)
-        XCTAssertEqual(progress.lastMistakes, 2)
-        XCTAssertEqual(progress.nextReviewAt, calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: tomorrow)))
-        XCTAssertEqual(ledger.totalXP, 35)
-    }
-
-    func testSameDayRepeatedCorrectPracticeCannotAdvanceLadder() throws {
-        var ledger = ProgressLedger()
-        ledger.complete(finished(), now: today, calendar: calendar)
-        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
-        XCTAssertEqual(ledger.complete(finished(), now: tomorrow, calendar: calendar), 5)
-        XCTAssertEqual(ledger.complete(finished(), now: tomorrow, calendar: calendar), 0)
-        let progress = try XCTUnwrap(ledger.lessons["gateway"])
-        XCTAssertEqual(progress.reviewLevel, 1)
-        XCTAssertEqual(ledger.totalXP, 35)
-    }
-
-    func testErrorThenSameDayCorrectKeepsShortestInterval() throws {
-        var ledger = ProgressLedger()
-        ledger.complete(finished(), now: today, calendar: calendar)
-        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
-        XCTAssertEqual(ledger.complete(finished(mistakes: 1), now: tomorrow, calendar: calendar), 5)
-        var progress = try XCTUnwrap(ledger.lessons["gateway"])
-        XCTAssertEqual(progress.reviewLevel, 0)
-        let resetDue = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: tomorrow))!
-
-        XCTAssertEqual(ledger.complete(finished(), now: tomorrow, calendar: calendar), 0)
-        progress = try XCTUnwrap(ledger.lessons["gateway"])
-        XCTAssertEqual(progress.reviewLevel, 0)
-        XCTAssertEqual(progress.nextReviewAt, resetDue)
-    }
-
     func testPersistenceRoundTripIncludesDraftAndRewards() throws {
         var ledger = ProgressLedger()
         ledger.complete(finished(), now: today, calendar: calendar)
         var draft = LessonSession(lessonID: "subnet")
         draft.stage = .explanation
         draft.explanationIndex = 1
-        ledger.draft = draft
+        ledger.saveDraft(draft, in: ["gateway", "subnet"])
         let saved = try JSONEncoder().encode(ledger)
         let restored = try JSONDecoder().decode(ProgressLedger.self, from: saved)
         XCTAssertEqual(ledger, restored)
         XCTAssertEqual(restored.draft?.explanationIndex, 1)
     }
 
-    func testReviewDraftAndCompletionPreserveFartherMainCourse() throws {
+    func testReadingCompletedLessonAndCompletionPreserveFartherMainCourse() throws {
         let ids = ["gateway", "subnet", "arp", "hop", "dns"]
         var ledger = ProgressLedger()
         ledger.complete(finished("gateway"), now: today, calendar: calendar)
@@ -222,25 +165,25 @@ final class LearningTests: XCTestCase {
         main.stage = .explanation
         main.explanationIndex = 1
         ledger.saveDraft(main, in: ids)
-        var review = LessonSession(lessonID: "gateway")
-        review.questionSceneStep = 2
-        ledger.saveDraft(review, in: ids)
-        let otherReview = LessonSession(lessonID: "subnet")
-        ledger.saveDraft(otherReview, in: ids)
+        var reading = LessonSession(lessonID: "gateway")
+        reading.questionSceneStep = 2
+        ledger.saveDraft(reading, in: ids)
+        let otherReading = LessonSession(lessonID: "subnet")
+        ledger.saveDraft(otherReading, in: ids)
         XCTAssertEqual(ledger.recommendedLessonID(in: ids), "arp")
         XCTAssertEqual(ledger.session(for: "arp"), main)
-        XCTAssertEqual(ledger.session(for: "gateway"), review)
+        XCTAssertEqual(ledger.session(for: "gateway"), reading)
 
         var restored = try JSONDecoder().decode(ProgressLedger.self, from: JSONEncoder().encode(ledger))
-        review.stage = .complete
-        review.matchingSolved = true
-        review.challengeSolved = true
-        XCTAssertEqual(restored.complete(review, now: today, calendar: calendar), 0)
+        reading.stage = .complete
+        reading.matchingSolved = true
+        reading.challengeSolved = true
+        XCTAssertEqual(restored.complete(reading, now: today, calendar: calendar), 0)
         // The player's completion-state save must not erase the main draft either.
-        restored.saveDraft(review, in: ids)
+        restored.saveDraft(reading, in: ids)
         XCTAssertEqual(restored.draft, main)
-        XCTAssertEqual(restored.reviewDrafts?["subnet"], otherReview)
-        XCTAssertNil(restored.reviewDrafts?["gateway"])
+        XCTAssertEqual(restored.drafts["subnet"], otherReading)
+        XCTAssertNil(restored.drafts["gateway"])
         XCTAssertEqual(restored.recommendedLessonID(in: ids), "arp")
         XCTAssertEqual(restored.totalXP, 60)
 
@@ -260,16 +203,15 @@ final class LearningTests: XCTestCase {
         var main = LessonSession(lessonID: "arp")
         main.stage = .explanation
         let earlier = LessonSession(lessonID: "foundation")
-        let review = LessonSession(lessonID: "gateway")
+        let reading = LessonSession(lessonID: "gateway")
         ledger.saveDraft(main, in: ids)
         ledger.saveDraft(earlier, in: ids)
-        ledger.saveDraft(review, in: ids)
+        ledger.saveDraft(reading, in: ids)
         let before = ledger
 
         ledger.discardDraft(main)
         XCTAssertNil(ledger.draft)
-        XCTAssertEqual(ledger.earlierDrafts, before.earlierDrafts)
-        XCTAssertEqual(ledger.reviewDrafts, before.reviewDrafts)
+        XCTAssertEqual(ledger.drafts, before.drafts.filter { $0.key != main.lessonID })
         XCTAssertEqual(ledger.lessons, before.lessons)
         XCTAssertEqual(ledger.activityDays, before.activityDays)
         XCTAssertEqual(ledger.settledSessions, before.settledSessions)
@@ -279,24 +221,24 @@ final class LearningTests: XCTestCase {
         XCTAssertEqual(restored.session(for: "foundation"), earlier)
     }
 
-    func testDiscardReviewOrEarlierDraftDoesNotDisplaceMainCourse() throws {
+    func testDiscardOtherLessonDraftDoesNotDisplaceMainCourse() throws {
         let ids = ["foundation", "gateway", "subnet", "arp", "hop"]
         var ledger = ProgressLedger()
         ledger.complete(finished("gateway"), now: today, calendar: calendar)
         ledger.complete(finished("subnet"), now: today, calendar: calendar)
         let main = LessonSession(lessonID: "arp")
         let earlier = LessonSession(lessonID: "foundation")
-        let review = LessonSession(lessonID: "gateway")
-        let otherReview = LessonSession(lessonID: "subnet")
-        for draft in [main, earlier, review, otherReview] { ledger.saveDraft(draft, in: ids) }
+        let reading = LessonSession(lessonID: "gateway")
+        let otherReading = LessonSession(lessonID: "subnet")
+        for draft in [main, earlier, reading, otherReading] { ledger.saveDraft(draft, in: ids) }
         let history = ledger.lessons
-        ledger.discardDraft(review)
-        XCTAssertNil(ledger.reviewDrafts?["gateway"])
-        XCTAssertEqual(ledger.reviewDrafts?["subnet"], otherReview)
+        ledger.discardDraft(reading)
+        XCTAssertNil(ledger.drafts["gateway"])
+        XCTAssertEqual(ledger.drafts["subnet"], otherReading)
         XCTAssertEqual(ledger.draft, main)
-        XCTAssertEqual(ledger.earlierDrafts?["foundation"], earlier)
+        XCTAssertEqual(ledger.drafts["foundation"], earlier)
         ledger.discardDraft(earlier)
-        XCTAssertNil(ledger.earlierDrafts?["foundation"])
+        XCTAssertNil(ledger.drafts["foundation"])
         XCTAssertEqual(ledger.recommendedLessonID(in: ids), "arp")
         XCTAssertEqual(ledger.session(for: "arp"), main)
         XCTAssertEqual(ledger.lessons, history)
@@ -323,26 +265,6 @@ final class LearningTests: XCTestCase {
         for id in ids.dropFirst(2) { ledger.complete(finished(id), now: today, calendar: calendar) }
         ledger.saveDraft(LessonSession(lessonID: ids[0]), in: ids)
         XCTAssertEqual(ledger.recommendedLessonID(in: ids), ids.last)
-    }
-
-    func testLegacyReviewDraftMigratesWithoutResettingXP() throws {
-        let ids = try catalog().lessons.map(\.id)
-        var ledger = ProgressLedger()
-        ledger.complete(finished(ids[0]), now: today, calendar: calendar)
-        ledger.complete(finished(ids[1]), now: today, calendar: calendar)
-        var review = LessonSession(lessonID: ids[0])
-        review.questionSceneStep = 2
-        ledger.draft = review
-        var legacyJSON = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(ledger)) as? [String: Any])
-        legacyJSON.removeValue(forKey: "reviewDrafts")
-        var restored = try JSONDecoder().decode(ProgressLedger.self, from: JSONSerialization.data(withJSONObject: legacyJSON))
-        restored.normalizeDrafts(in: ids)
-        XCTAssertNil(restored.draft)
-        XCTAssertEqual(restored.reviewDrafts?[ids[0]], review)
-        XCTAssertEqual(restored.recommendedLessonID(in: ids), ids[2])
-        XCTAssertEqual(restored.totalXP, 60)
-        XCTAssertEqual(restored.lessons, ledger.lessons)
-        XCTAssertEqual(restored.activityDays, ledger.activityDays)
     }
 
     func testReopeningEarlierUnfinishedLessonCannotReplaceFartherDraft() throws {

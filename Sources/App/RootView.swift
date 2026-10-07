@@ -4,7 +4,6 @@ struct RootView: View {
     @Environment(LearningStore.self) private var store
     @State private var selectedTab = 0
     @State private var activeLesson: Lesson?
-    @State private var activeReview: ShortReviewSession?
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var testsAccessibility: Bool {
@@ -20,10 +19,8 @@ struct RootView: View {
                 TabView(selection: $selectedTab) {
                     LearningRouteView { activeLesson = $0 }
                         .tabItem { Label("学习", systemImage: "book.closed.fill") }.tag(0)
-                    ReviewView(openLesson: { activeLesson = $0 }, openShortReview: { activeReview = store.shortSession(for: $0) })
-                        .tabItem { Label("复习", systemImage: "arrow.counterclockwise") }.tag(1)
                     ProfileView()
-                        .tabItem { Label("我的", systemImage: "person.crop.circle") }.tag(2)
+                        .tabItem { Label("我的", systemImage: "person.crop.circle") }.tag(1)
                 }
             }
         }
@@ -41,11 +38,6 @@ struct RootView: View {
         )) {
             Button("知道了") { store.storageWarning = nil }
         } message: { Text(store.storageWarning ?? "") }
-        .fullScreenCover(item: $activeReview) { session in
-            if let item = store.reviewItems.first(where: { session.matches($0) }) {
-                ShortReviewPlayer(item: item, initialSession: session).id(session.id)
-            }
-        }
     }
 }
 
@@ -101,13 +93,13 @@ struct LearningRouteView: View {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(lesson.title).font(.headline).accessibilityIdentifier("recommended-lesson-title")
-                                Text(store.ledger.draft?.lessonID == lesson.id ? "上次学到的地方，还在这里" : "约 3 分钟 · 4 段探索")
+                                Text(store.ledger.hasDraft(for: lesson.id) ? "上次学到的地方，还在这里" : store.ledger.lessons[lesson.id] != nil ? "这一课已完成，可以再看一次" : "约 3 分钟 · 4 段探索")
                                     .font(.caption).foregroundStyle(Theme.muted)
                             }
                             Spacer(minLength: 4)
                             PacketMascot(size: 36)
                         }
-                        PrimaryButton(title: store.ledger.draft?.lessonID == lesson.id ? "继续探索" : "开始探索", identifier: "start-lesson") {
+                        PrimaryButton(title: store.ledger.hasDraft(for: lesson.id) ? "继续探索" : store.ledger.lessons[lesson.id] != nil ? "再看一次" : "开始探索", identifier: "start-lesson") {
                             openLesson(lesson)
                         }
                     }

@@ -91,7 +91,6 @@ struct Course: Codable, Equatable, Identifiable {
 struct LessonCatalog: Codable {
     let course: Course
     let lessons: [Lesson]
-    let reviewItems: [ReviewItem]?
 
     var orderedLessonIDs: [String] { course.chapters.flatMap(\.orderedLessonIDs) }
     var archivedLessonIDs: [String] { course.archivedLessonIDs ?? [] }
@@ -122,20 +121,6 @@ struct LessonCatalog: Codable {
               listedIDs.count == lessons.count,
               Set(listedIDs) == Set(lessons.map(\.id)) else {
             throw ContentError.invalid("章节与归档列表没有恰好覆盖每一课")
-        }
-        let items = reviewItems ?? []
-        guard Set(items.map(\.id)).count == items.count else {
-            throw ContentError.invalid("短复习标识重复")
-        }
-        for item in items {
-            guard lessons.contains(where: { $0.id == item.lessonID }), item.revision >= 1,
-                  !item.knowledgePointID.isEmpty, !item.objective.isEmpty, !item.scenarioFamilyID.isEmpty,
-                  !item.scene.isEmpty, !item.prompt.isEmpty, !item.hint.isEmpty, !item.explanation.isEmpty,
-                  item.options.count >= 2, Set(item.options.map(\.id)).count == item.options.count,
-                  item.options.contains(where: { $0.id == item.correctID }),
-                  item.options.allSatisfy({ !$0.text.isEmpty && !$0.feedback.isEmpty }) else {
-                throw ContentError.invalid("\(item.id) 的短复习内容不完整")
-            }
         }
         for lesson in lessons {
             if let topology = lesson.topology {

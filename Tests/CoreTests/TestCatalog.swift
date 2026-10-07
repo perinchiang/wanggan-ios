@@ -14,7 +14,7 @@ enum TestCatalog {
         return LessonCatalog(course: Course(id: "fixture", revision: 1, title: "Fixture",
             chapters: shipped.course.chapters + fixture.course.chapters,
             archivedLessonIDs: fixture.archivedLessonIDs),
-            lessons: shipped.lessons + fixture.lessons, reviewItems: fixture.reviewItems)
+            lessons: shipped.lessons + fixture.lessons)
     }
     private static let payload = #"""
     {
@@ -49,128 +49,6 @@ enum TestCatalog {
           "subnet-mask"
         ]
       },
-      "reviewItems": [
-        {
-          "id": "gateway.local-printer",
-          "revision": 1,
-          "lessonID": "gateway",
-          "knowledgePointID": "ipv4.local-vs-gateway",
-          "objective": "Fixture text",
-          "scenarioFamilyID": "local-printer",
-          "scene": "Fixture",
-          "prompt": "Fixture text",
-          "options": [
-            {
-              "id": "local",
-              "text": "Fixture text",
-              "feedback": "Fixture text"
-            },
-            {
-              "id": "all-fail",
-              "text": "Fixture text",
-              "feedback": "Fixture text"
-            },
-            {
-              "id": "slow",
-              "text": "Fixture text",
-              "feedback": "Fixture text"
-            }
-          ],
-          "correctID": "local",
-          "hint": "Fixture text",
-          "explanation": "Fixture text"
-        },
-        {
-          "id": "gateway.local-projector",
-          "revision": 1,
-          "lessonID": "gateway",
-          "knowledgePointID": "ipv4.local-vs-gateway",
-          "objective": "Fixture text",
-          "scenarioFamilyID": "local-projector",
-          "scene": "Fixture",
-          "prompt": "Fixture text",
-          "options": [
-            {
-              "id": "local",
-              "text": "Fixture text",
-              "feedback": "Fixture text"
-            },
-            {
-              "id": "all-fail",
-              "text": "Fixture text",
-              "feedback": "Fixture text"
-            },
-            {
-              "id": "internet",
-              "text": "Fixture text",
-              "feedback": "Fixture text"
-            }
-          ],
-          "correctID": "local",
-          "hint": "Fixture text",
-          "explanation": "Fixture text"
-        },
-        {
-          "id": "dns.uncached-name",
-          "revision": 1,
-          "lessonID": "dns",
-          "knowledgePointID": "dns.resolution-vs-connectivity",
-          "objective": "Fixture text",
-          "scenarioFamilyID": "uncached-name",
-          "scene": "Fixture",
-          "prompt": "Fixture text",
-          "options": [
-            {
-              "id": "ip",
-              "text": "Fixture text",
-              "feedback": "Fixture text"
-            },
-            {
-              "id": "all-fail",
-              "text": "Fixture text",
-              "feedback": "Fixture text"
-            },
-            {
-              "id": "all-work",
-              "text": "Fixture text",
-              "feedback": "Fixture text"
-            }
-          ],
-          "correctID": "ip",
-          "hint": "Fixture text",
-          "explanation": "Fixture text"
-        },
-        {
-          "id": "dns.cached-name",
-          "revision": 1,
-          "lessonID": "dns",
-          "knowledgePointID": "dns.resolution-vs-connectivity",
-          "objective": "Fixture text",
-          "scenarioFamilyID": "cached-name",
-          "scene": "Fixture",
-          "prompt": "Fixture text",
-          "options": [
-            {
-              "id": "cached",
-              "text": "Fixture text",
-              "feedback": "Fixture text"
-            },
-            {
-              "id": "all-fail",
-              "text": "Fixture text",
-              "feedback": "Fixture text"
-            },
-            {
-              "id": "forever",
-              "text": "Fixture text",
-              "feedback": "Fixture text"
-            }
-          ],
-          "correctID": "cached",
-          "hint": "Fixture text",
-          "explanation": "Fixture text"
-        }
-      ],
       "lessons": [
         {
           "id": "ipv4-address-role",

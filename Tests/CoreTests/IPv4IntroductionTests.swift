@@ -124,7 +124,7 @@ final class IPv4IntroductionTests: XCTestCase {
         XCTAssertEqual(restored.session(for: "subnet"), main)
         XCTAssertEqual(restored.recommendedLessonID(in: try catalog().orderedLessonIDs), "subnet")
         XCTAssertEqual(restored.totalXP, 60)
-        XCTAssertNil(restored.earlierDrafts?["ipv4-address"])
+        XCTAssertNil(restored.drafts["ipv4-address"])
     }
 
     func testSwitchingFromInsertedLessonToOldUnlockedLessonKeepsBothDrafts() throws {
@@ -147,7 +147,7 @@ final class IPv4IntroductionTests: XCTestCase {
         ledger.normalizeDrafts(in: ids)
         XCTAssertEqual(ledger.recommendedLessonID(in: try catalog().orderedLessonIDs), "gateway")
         XCTAssertTrue(ledger.isUnlocked("gateway", in: try catalog().orderedLessonIDs))
-        XCTAssertNil(ledger.earlierDrafts)
+        XCTAssertEqual(ledger.drafts.count, 1)
         XCTAssertNil(ledger.draft?.ipv4IntroductionProgress)
         // A fresh ledger recommends the first lesson of the active route.
         XCTAssertEqual(ProgressLedger().recommendedLessonID(in: try catalog().orderedLessonIDs),
