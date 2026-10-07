@@ -39,6 +39,9 @@ final class LearningStore {
                 let saved = try JSONDecoder().decode(ProgressLedger.self, from: data)
                 ledger = saved
                 let header = try JSONDecoder().decode(ProgressHeader.self, from: data)
+                if header.schemaVersion < 3, defaults.data(forKey: "wanggan.progress.pre-v3") == nil {
+                    defaults.set(data, forKey: "wanggan.progress.pre-v3")
+                }
                 if header.schemaVersion == 1, defaults.data(forKey: "wanggan.progress.pre-v2") == nil {
                     defaults.set(data, forKey: "wanggan.progress.pre-v2")
                 }
@@ -99,6 +102,10 @@ final class LearningStore {
     }
 
     func finish(_ session: LessonSession) -> Int {
+        if let saved = session.practice {
+            guard let lesson = lessons.first(where: { $0.id == session.lessonID })?.practice,
+                  saved.isValid(for: lesson), saved.isComplete else { return 0 }
+        }
         let result = ledger.complete(session)
         persist()
         return result
@@ -113,6 +120,7 @@ final class LearningStore {
         ledger = ProgressLedger()
         progressWritesEnabled = true
         defaults.removeObject(forKey: "wanggan.progress.pre-v2")
+        defaults.removeObject(forKey: "wanggan.progress.pre-v3")
         defaults.removeObject(forKey: "wanggan.progress.recovery")
         persist()
     }

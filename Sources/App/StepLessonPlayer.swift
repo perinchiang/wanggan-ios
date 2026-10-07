@@ -63,7 +63,7 @@ struct StepLessonPlayer: View {
             if isComplete { earnedXP = store.finish(session.stageSession(lesson: lesson)) }
             else { store.saveDraft(session.stageSession(lesson: lesson)) }
         }
-        .confirmationDialog("确认退出？", isPresented: $showExit, titleVisibility: .visible) {
+        .alert("确认退出？", isPresented: $showExit) {
             Button("确定退出", role: .destructive) {
                 discardingSession = true
                 store.discardDraft(session.stageSession(lesson: lesson))

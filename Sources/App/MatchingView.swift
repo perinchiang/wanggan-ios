@@ -14,6 +14,9 @@ struct MatchingView: View {
     let matches: [String: String]
     let onPair: (String, String) -> Bool
     var usesStaticPresentation = false
+    var isLocked = false
+    var compact = false
+    var statusOverride: String?
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @State private var selection: Selection?
     @State private var pending: Pair?
@@ -23,6 +26,7 @@ struct MatchingView: View {
     private var reduceMotion: Bool { systemReduceMotion || usesStaticPresentation }
     private var solved: Bool { exercise.isCorrect(matches) }
     private var selectionPrompt: String {
+        if let statusOverride { return statusOverride }
         if solved { return "配对已完成" }
         if error != nil { return "这两项不匹配，换一个试试" }
         if pending != nil { return "看看这两项是否对应" }
@@ -86,13 +90,15 @@ struct MatchingView: View {
             }
         } label: {
             VStack(spacing: 10) {
-                Image(systemName: paired ? "checkmark.circle.fill" : wrong ? "xmark.circle.fill" : item.symbol)
-                    .font(.system(size: 26))
+                if paired || wrong || !item.symbol.isEmpty {
+                    Image(systemName: paired ? "checkmark.circle.fill" : wrong ? "xmark.circle.fill" : item.symbol)
+                        .font(.system(size: compact ? 20 : 26))
+                }
                 Text(item.text).font(.subheadline.weight(.semibold))
                     .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
             }
             .foregroundStyle(chosen ? Theme.paper : wrong ? Color.red : Theme.ink)
-            .frame(maxWidth: .infinity, minHeight: 96).padding(.horizontal, 10).padding(.vertical, 12)
+            .frame(maxWidth: .infinity, minHeight: compact ? 48 : 96).padding(.horizontal, 10).padding(.vertical, 12)
             .background(chosen ? Theme.ink : wrong ? Color.red.opacity(0.12) : paired ? Color.green.opacity(0.12) : Theme.surface,
                         in: .rect(cornerRadius: 19))
             .overlay(RoundedRectangle(cornerRadius: 19).strokeBorder(
@@ -101,7 +107,7 @@ struct MatchingView: View {
             .offset(x: wrong && errorPulse && !reduceMotion ? 4 : 0)
         }
         .buttonStyle(.plain)
-        .disabled(paired || pending != nil)
+        .disabled(isLocked || paired || pending != nil)
         .accessibilityLabel(item.text)
         .accessibilityValue(paired ? "配对正确：\(connectedName ?? "")" : wrong ? "不匹配，可以重新选择" :
             chosen ? "已选中，接着选择\(left ? "右侧" : "左侧")" : "未选择")

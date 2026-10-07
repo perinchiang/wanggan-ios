@@ -1,5 +1,14 @@
 name: Build and test iOS
 on:
+  pull_request:
+    paths:
+      - 'Sources/**'
+      - 'Resources/**'
+      - 'Tests/**'
+      - 'scripts/**'
+      - 'Package.swift'
+      - 'project.yml'
+      - '.github/workflows/ios.yml'
   workflow_dispatch:
     inputs:
       ui_scope:
@@ -49,7 +58,7 @@ jobs:
 
       # Quick still compiles the real SwiftUI app, but does not boot a simulator.
       - name: Compile app quickly
-        if: inputs.ui_scope == 'quick'
+        if: github.event_name == 'pull_request' || inputs.ui_scope == 'quick'
         run: |
           xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build/quick CODE_SIGNING_ALLOWED=NO build
 
@@ -68,13 +77,13 @@ jobs:
           zip -qry ../WangGan-unsigned.ipa Payload
 
       - name: Select iPhone simulator
-        if: inputs.ui_scope != 'quick' && inputs.ui_scope != 'package'
+        if: github.event_name == 'workflow_dispatch' && inputs.ui_scope != 'quick' && inputs.ui_scope != 'package'
         id: simulator
         run: |
           python3 scripts/select_simulator.py >> "$GITHUB_OUTPUT"
 
       - name: Run native UI tests
-        if: inputs.ui_scope != 'quick' && inputs.ui_scope != 'package'
+        if: github.event_name == 'workflow_dispatch' && inputs.ui_scope != 'quick' && inputs.ui_scope != 'package'
         run: |
           xcrun simctl boot '${{ steps.simulator.outputs.id }}' || true
           xcrun simctl bootstatus '${{ steps.simulator.outputs.id }}' -b
@@ -96,6 +105,7 @@ jobs:
 
           scope_args=()
           if [ '${{ inputs.ui_scope }}' = 'smoke' ] || [ '${{ inputs.ui_scope }}' = 'home' ]; then
+            scope_args+=('-only-testing:WangGanUITests/PracticeUITests')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testHomeTwoBoxesFlow')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testHomeTeachingBacktrackAndInterruptedResume')
             scope_args+=('-only-testing:WangGanUITests/LearningUITests/testHomeLargestTextStaticTeaching')
@@ -105,7 +115,7 @@ jobs:
           python3 scripts/run_command_with_timeout.py --log build-ui.log --idle-timeout 180 --wall-timeout 1200 -- xcodebuild -project WangGan.xcodeproj -scheme WangGan -configuration Debug -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.id }}' -parallel-testing-enabled NO -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 -derivedDataPath build/simulator -resultBundlePath build/UITests.xcresult "${scope_args[@]}" CODE_SIGNING_ALLOWED=NO test-without-building
 
       - name: Export simulator screenshots
-        if: always() && inputs.ui_scope != 'quick' && inputs.ui_scope != 'package'
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.ui_scope != 'quick' && inputs.ui_scope != 'package'
         run: |
           mkdir -p build/screenshots
           xcrun simctl io '${{ steps.simulator.outputs.id }}' screenshot build/screenshots/final-simulator.png || true

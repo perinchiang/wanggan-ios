@@ -1,6 +1,6 @@
 # 网感：系统架构与渐进迁移
 
-状态：职责边界与数据保护原则已确认；当前只提供第一节示例课。通用组件和历史解码能力保留，其余目标模型仍是计划。运行证据见当前交接。
+状态：职责边界与数据保护原则已确认；当前新开课提供第一节短题，旧草稿保留原播放器恢复路径。其余目标模型仍是计划，运行证据见当前交接。
 
 ## 文档职责
 
@@ -14,12 +14,12 @@
 | `Sources/Core/LessonSession.swift` | question → explanation → matching → challenge → complete；课内状态、重试和累计错误数 |
 | `Sources/Core/LessonPlan.swift` | Step 类型与 payload（conversation / question / diagram / text / matching / summary）、Lesson→steps 适配、LessonPlan 步进门控、StepSession 及 stage↔step 双向适配 |
 | `Sources/Core/ProgressLedger.swift` | 首次完成记录、XP / 等级、活动日、结算会话、统一 drafts 与 mainLessonID |
-| `Sources/App/StepLessonPlayer.swift` | 当前示例课走 `StepLessonPlayer`（LessonPlan / StepSession）；旧原生播放器与按 Lesson ID 分派的入口已移除 |
+| `Sources/App/PracticeLessonPlayer.swift` / `StepLessonPlayer.swift` | 新开课走短题播放器；没有短题状态的旧故事草稿按原 Step 恢复，不按 Lesson ID 复制专用页面 |
 | `Sources/Core/IPv4AddressVisual.swift` / `Sources/App/IPv4AddressVisualWebView.swift` / `Resources/ipv4-address-visual.html` | 参数化 IPv4 校验、网络地址计算与本地 Web 图示；保留为技术组件，当前示例课未接入 |
 | `Sources/Core/ProgressPersistence.swift` / `Sources/App/AppStore.swift` | v1 → v2 转换、加载课程、UserDefaults 保存与备份、解锁与推荐、重置 |
 | `Sources/Core/Topology.swift` / `Sources/App/TopologyDiagram.swift` | 数据驱动拓扑示意图：TopologySpec（nodes / links / flow / accessibilitySummary）在 Core 校验（id 唯一、引用完整、flow ≥ 2、maxStage ≤ explanation 段数 + 1），App 层按 stage 分阶段渲染节点、连线与数据包流动画；Lesson 可选 `topology` 字段，替代插画位图路线 |
 | `Sources/App` 其余文件 | SwiftUI 导航、页面、原生题型和图示 |
-| `Resources/lessons.json` | 仅第一节示例课内容与来源，无归档课程和复习内容 |
+| `Resources/lessons.json` | 仅第一节短题、来源和旧草稿所需的兼容载荷，无其他归档课程或复习内容 |
 | `Package.swift` / `Tests` | 独立 Core 测试和 iOS 原生 UI 测试 |
 | `project.yml` / `.github/workflows/ios.yml` | XcodeGen、macOS 构建、测试、截图和 IPA 导出 |
 
@@ -27,13 +27,27 @@
 
 当前只提供「学习 / 我的」入口。复习系统已完整删除：无到期计算、间隔阶梯、短复习、证据状态或每日 +5 XP。完成记录包含首次 completedAt 与 lastMistakes；再次阅读不改写首次成果。
 
-当前 schemaVersion 2，沿用存储键 `wanggan.progress.v1`。所有整课草稿统一按 Lesson ID 存入 drafts，mainLessonID 记录未完成主线位置；不设独立复习会话或草稿类型。v1 转换与原始备份规则见下方。
+当前 schemaVersion 3，沿用存储键 `wanggan.progress.v1`。所有整课草稿统一按 Lesson ID 存入 drafts，mainLessonID 记录未完成主线位置；不设独立复习会话或草稿类型。v1 / v2 转换与原始备份规则见下方。
+
+## 连续短题与兼容（2026-10-08 已实现，验证见交接）
+
+`Sources/Core/PracticeLesson.swift` 定义稳定题目 ID、探索 / 掌握角色、choice / fillBlank / matching、原生连接图参数与短解释。`Lesson.practice` 可选，当前第一课使用；多选、连线与章节挑战未实现，挑战通过率 TBD。题数不冻结。
+
+Core 的 PracticeAttempt 管单选即时判定、填空选择 / 撤回 / 提交、每对匹配判定与整题三次错误预算。次数与正确配对是可恢复业务状态，临时端点选中、词移动和反馈动画在 SwiftUI，不能消耗次数或发奖。
+
+PracticeSession 保存内容 revision、待作答 ID 队列、当前尝试、完成 ID 和累计整题错误数。错误反馈期间保留原题，按继续才把普通掌握题放到队尾；探索题不累计。末尾单题的穿插假设见 COURSE_GUIDE，不增加奖励。历史错题复习未实现，不从累计错误数反推逐题历史或恢复旧调度。
+
+新开课走 PracticeLessonPlayer。没有 practice 且已有旧路径进度的草稿仍走 StepLessonPlayer；不把故事阶段强映射成新题、不静默重置旧草稿。旧 question / explanation / challenge 等字段仅供恢复路径使用；章节显示名为《你家的网络》，课程暂名「1-1」，Lesson ID 仍为 home-two-boxes。当前 practice revision 2 使用生活化短题；旧六题 revision 1 的队列不映射到新题。revision 或 ID 不兼容时保留草稿并明确告知，用户可点左上角退出并确认后开始新版，不自动重开。
+
+LessonSession.practice 为可缺省字段。存储升级 schema 3，防止旧 App 丢掉不认识的队列字段。v1 / v2 解码保留原记录；App 首次写回前保留原始 wanggan.progress.pre-v3，重复启动不覆盖；v1 的 pre-v2 备份保留。存储键仍为 wanggan.progress.v1，没有改 bundle identifier。
+
+结算先校验当前课程下的完成队列，再由 Core 按 stage complete 与队列完成门控，沿用首次 +30 XP 和会话幂等。同课再做新题不重新发奖，不改旧完成日期或其他草稿。UI 测试仍使用独立 suite；--legacy-lesson 仅与 --uitesting 同时出现时强制兼容路径，保留旧 UI 回归。
 
 ## 网络词典与文本匹配（后期计划，非现有 API）
 
 词典先以本地数据提供稳定词条 ID、名称、缩写 / 别名、简短释义与来源；Core 或独立纯函数按这些别名匹配文本，输出命中范围和词条 ID，原生界面负责波浪下划线、点词与释义小窗。匹配规则需处理大小写、词边界、重叠别名与标点，支持 IS-IS / ISIS 这类约定写法，避免简单子串替换造成误标。没有匹配项时保持普通文本。
 
-独立词典入口和课内释义共享数据，不为两个入口维护两份解释。查词仅影响展示，不推进 Step、解锁课程或发 XP；打开 / 关闭小窗不修改答案和草稿。若某题的释义提供了影响独立作答的帮助，应在后续证据设计中按帮助处理，不能默认为独立掌握；不以词典实现为由引入调度系统。词条与未来 API 形状仍是计划，不在本轮新增存储 schema、Web 消息或通用富文本框架。
+独立词典入口和课内释义共享数据，不为两个入口维护两份解释。词条可通过稳定 ID 关联类别、知识点和学习节点，关系独立于用户错题记录；不是掌握模型或复习调度。查词不推进 Step、解锁课程或发 XP，打开 / 关闭小窗不修改答案和草稿；直接给出答案后的完成不能作为本轮错题的独立正确作答。词条与未来 API 形状仍是计划，不在本轮新增存储 schema、Web 消息、关系数据库或通用富文本框架。
 
 ## 已确认架构边界
 
@@ -65,20 +79,20 @@ SwiftUI 持有界面状态并发送动作，Core 持有学习规则；Web 只负
 ```text
 Course: id, revision, title, chapters, progressionPolicy
 Chapter: id, title, orderedLessonIDs, prerequisiteChapterIDs
-Lesson: id, revision, objective, prerequisites, knowledgePointIDs, steps, sources
+Lesson: id, revision, title, objective, prerequisites, knowledgePointIDs, steps, sources
 Step: id, kind, typedPayload, completionRule
 KnowledgePoint: id, objective, prerequisiteIDs, misconceptionIDs
 ```
 
 这是模型职责草案，不是要求一次添加所有字段。KnowledgePoint 独立定义并由多课引用；稳定 ID 不使用显示名称或章节序号。内容版本、Lesson 修订、存储 schema 与 Web 协议版本各自解决不同兼容问题。
 
-Step 使用有类型的 payload，不把所有内容放入无约束字典。`conversation`、`question`、`diagram`、`text`、`matching`、`summary` 已在 Core 落地（`LessonPlan` / `LessonStep`），`Lesson.steps` 适配器把旧 Lesson 映射为等价步骤；当前示例课使用 step 路径。Sorting、PathChoice 等有真实课程需求后再增加。当前 IPv4 试点通过 `diagram` 步骤读取可选的 `IPv4VisualLesson` 参数，尚无通用 HTMLVisualization 类型。
+Step 使用有类型的 payload，不把所有内容放入无约束字典。`conversation`、`question`、`diagram`、`text`、`matching`、`summary` 已在 Core 落地（`LessonPlan` / `LessonStep`），适配器把旧 Lesson 映射为等价步骤；现用于旧草稿兼容。新开课按 PracticeQuestion 队列，不复制旧独立讲解结构。Sorting、PathChoice 等有需求后再增加；尚无通用 HTMLVisualization 类型。
 
-Challenge 是练习角色 / 组合，不必复制一套专用答案状态。会话最终按稳定 stepID 保存位置，而不是只依赖枚举序号；兼容适配器先把旧 Lesson 映射为等价步骤。不要为验证播放器而同时重写全部内容。
+课内迁移题不必复制一套判题能力；章节挑战另有通过 / 失败及跳章职责，不能与现有 `Lesson.challenge` 混同。会话最终按稳定 stepID 保存位置，而不是只依赖枚举序号；兼容适配器先把旧 Lesson 映射为等价步骤。不要为验证播放器而同时重写全部内容。
 
 ### 课程进度
 
-访问权、完成记录、推荐位置与掌握状态分别表达。第一阶段仍线性解锁，但规则位于 Core 策略而非 SwiftUI 数组索引。未来可配置章内线性、章间满足先修条件后半开放；暂不实现技能树。
+访问权、完成记录、推荐位置和章节挑战结果分别表达。当前线性解锁规则在 Core；未来保持固定主路径，已有基础通过同一章节挑战跳过整章，不根据作答生成新课程树或章间半开放路线。入口差异不形成两套课程。
 
 已完成课保持可回看。插入基础课可以改变推荐建议，不能撤销旧成果或使旧课重新锁定。各课普通草稿独立保存；再次阅读其他课程不改变未完成主线的推荐位置。
 
@@ -154,7 +168,7 @@ Challenge 可附加可选 `answerExplanation` 图解页，包含稳定页 ID、�
 
 `LessonSession.challengeExplanationID` 是可缺省的当前页标识；stage 仍为 challenge，转换器用稳定页 ID 恢复。旧已答草稿停留在原答题位置，旧 complete 直接映射新 summary，不重开课程、不重复奖励；未知 / 删除页 ID 回到已答题位置。存储键与 ledger 格式不变。主动退出仍丢弃当前草稿，后台中断保存该页。新增 Core 用例保护读完前不发奖、页恢复、旧 JSON、已完成记录与错误答案门控。
 
-### v1 → v2：移除旧系统
+### v1 → v2：移除旧系统（历史转换，当前统一写回 v3）
 
 `ProgressPersistence` 读取真实 v1 数据；忽略已删除的到期时间、间隔级别、短会话与作答证据字段，不加载旧系统类型。旧 draft、earlierDrafts 和 reviewDrafts 中的整课会话合并进统一 drafts，保留 UUID、作答、错误数、图示位置和答后页 ID。未完成旧主线映射 mainLessonID；旧已完成课的阅读草稿不作为主线位置。
 
@@ -162,19 +176,19 @@ XP、completedAt、lastMistakes、activityDays、settledSessions 保留；历史
 
 App 在首次转换前将原 v1 字节存入 `wanggan.progress.pre-v2`，仅首次写入，不用后续快照覆盖。转换后沿用原活动存储键写 v2；这是数据恢复副本，不参与运行规则。课程加载失败跳过归一化与保存。未知版本或损坏数据保留原始内容并禁止普通写入，只有用户明确重置才重新启用并清除备份。
 
-目录 revision 7 仅含 `home-two-boxes`。内容缺失不清除普通整课草稿和完成记录；推荐、解锁、显示完成数量只依据当前目录。历史 payload 类型和中性结构夹具服务必要的存档兼容，旧复习模型、调度和测试已删除。
+当前目录 revision 9 仅含 `home-two-boxes`。内容缺失不清除普通整课草稿和完成记录；推荐、解锁、显示完成数量只依据当前目录。历史 payload 类型和中性结构夹具服务必要的存档兼容，旧复习模型、调度和测试已删除。
 
 ## 渐进实施方法
 
 整体阶段由 PRODUCT 维护。工程上每次只迁一个可验证边界：先保护现有规则与存储，再包裹课程目录，然后适配一课为 Step，最后接入一个 Web 组件。其他课继续原路径，待等价行为通过再迁移。
 
-当前使用 StepLessonPlayer；stage↔step 适配器与旧 payload 类型服务历史存档兼容。旧课内容、专用教学页面与 UI 用例已移除。
+新开课使用 PracticeLessonPlayer，已有旧故事草稿继续使用 StepLessonPlayer；stage↔step 与旧 payload 服务历史兼容。其他已删除课程的专用页面与 UI 用例不恢复。
 
 不要把播放器、存储、课程内容和整个视觉系统放在一次重写里。兼容适配器有明确用途和移除条件；不是长期维护两套独立课程来源。课程拆分为多个文件与引入目录模型也不必发生在同一次变更。
 
 ## 测试策略与验证范围
 
-当前 Core 测试覆盖唯一示例课、移除内容后的数据保留，以及中性结构夹具上的门控、恢复、多课草稿与主线位置保护与奖励规则。原生 UI 用例仅保留第一课，可按 Pat 明确要求运行。
+当前 Core 覆盖短题角色、三次匹配、队列、旧格式恢复与奖励，并保留移除内容后的历史和中性夹具回归。原生 UI 有 PracticeUITests 五项短题用例和 LearningUITests 四项旧播放器兼容用例；实际结果见最新交接，不以用例存在宣称已通过。
 
 | 变更 | 必要检查 |
 | --- | --- |
@@ -183,14 +197,15 @@ App 在首次转换前将原 v1 字节存入 `wanggan.progress.pre-v2`，仅首�
 | Step / Core | 门控、重试、恢复、完成、多课草稿与主线位置保护，运行 `swift test` |
 | 奖励 / 统计 | 仅首次完成发奖、同日与跨日再读不发奖、重复结算、日期 / 时区边界 |
 | 迁移 | 真实旧格式、未知版本、损坏数据、课程重排、重复迁移、恢复失败保护 |
-| UI / 动效 / 主题 | 当前试学由 Pat 真机验收，附对应清单；仅 Pat 明确要求时跑原生 UI / 模拟器截图。大字号、VoiceOver、Reduce Motion 等未验收项如实记录 |
+| UI / 动效 / 主题 | 对应本地原生 UI 用例、必要截图与交互检查；教学节奏和真机效果需 Patrick 试学。大字号、VoiceOver、Reduce Motion 未验收项如实记录 |
+| 新题目角色 / 队列 / 章节挑战（实现时） | 探索错误不追踪；掌握错题队尾顺序、再次独立正确移出、恢复；固定阈值通过 / 失败与整章跳过、旧进度保护 |
 | Web | 组件参数和计算样例、直接通信、错误与恢复、生命周期；WKWebView 内集成验收 |
 | 打包 | 真机目标编译，确认课程、图标和 Web 文件实际随包存在，离线加载 |
 
 当前交付验收明确检查只有第一节示例课；未来获准新增课程时同步调整此验收边界，不把当前一课或 Draft 数量作为永久规则。未来缺失或循环先修引用应在内容校验中发现。
 
-当前 iOS 工作流仅通过 workflow_dispatch 手动触发，以节省 GitHub Actions 额度；日常提交先积累，在阶段性验收、较大版本交付或风险需要时运行完整构建、测试与 IPA 导出。采用 PR 协作后再评估是否增加轻量检查。Windows 上不能执行的 Swift / iOS 检查，应明确交由 macOS CI 或 Mac，报告未执行项，不能把静态检查称作模拟器或真机验证。文档变更不必为了形式重复完整 iOS 构建。
+Mac 日常开发用命令行完成 Core / Web、iOS build、Simulator / 原生 UI 与必要真机验证；操作入口和首次签名配置见 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)。文档变更通常不需完整 iOS 构建，本轮迁移审计按 Patrick 要求另做实际验证。
 
-2026-10-07 新增快速试学路径（Pat 已确认）：`ui_scope=package` 运行 Core / Web 测试、iPhone Release 编译、资源检查与未签名 IPA 上传，不启动模拟器、不运行原生 UI 或生成模拟器截图；包交付时附本次变更的真机试学清单并收集反馈。Pat 随后明确要求原生交互由本人验收：Agent 默认使用 package 交包，不主动运行原生 UI / 模拟器截图。`full` 保留完整 UI 与 IPA，原生自动化仅在 Pat 明确要求时使用；Core / Web 与真实 iPhone 编译检查继续执行。`quick` 是不出包的编译检查，`smoke` / 专项 scope 是不出包的对应 UI 检查。快速包的“构建成功”不等于 UI 已验收；每份交付按实际 commit 记录已执行 / 未执行项，不沿用旧提交的测试结果。
+GitHub Actions 保留为干净环境 CI：相关代码 / 构建文件的 PR 自动运行 Core / Web 和 Simulator 编译，不启动模拟器、不导出 IPA。手动 workflow_dispatch 保留 quick / package / smoke / home / full，完整回归与 artifact 服务阶段性交付。是否把 PR 检查配置成 GitHub required check 属于仓库设置，存在检查不等于已启用分支保护。
 
-故事课专项 `home` / `smoke` scope 运行第一课完成、回看恢复、大字号与主动退出四项用例，不导出 IPA；可在其他 smoke 流程已通过、仅修正本课 UI 断言时复核故事课，避免重复全部流程。运行范围必须随交付结果注明。
+`package` 运行 Core / Web、iPhone Release 编译、资源检查和未签名 IPA；`full` 加全部现有 UI；`quick` 只编译，`home` / `smoke` 运行第一课短题与旧播放器兼容 UI、不导出 IPA。快速包构建成功不等于交互或教学验收。每次按实际 commit 与范围报告，不沿用旧提交测试结果，不为每个小改动触发完整云端 IPA 流程。

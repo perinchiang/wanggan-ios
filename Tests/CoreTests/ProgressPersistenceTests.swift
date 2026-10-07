@@ -59,7 +59,7 @@ final class ProgressPersistenceTests: XCTestCase {
 
         var migrated = try JSONDecoder().decode(ProgressLedger.self, from: JSONSerialization.data(withJSONObject: old))
         migrated.normalizeDrafts(in: ["home-two-boxes"])
-        XCTAssertEqual(migrated.schemaVersion, 2)
+        XCTAssertEqual(migrated.schemaVersion, 3)
         XCTAssertEqual(migrated.totalXP, 35)
         XCTAssertEqual(migrated.lessons, ledger.lessons)
         XCTAssertEqual(migrated.activityDays, ledger.activityDays)

@@ -34,6 +34,16 @@ struct LessonSession: Codable, Equatable, Identifiable {
     var ipv4FoundationProgress: IPv4FoundationProgress?
     var ipv4IntroductionProgress: IPv4IntroductionProgress?
     var subnetMaskProgress: SubnetMaskProgress?
+    /// Additive draft field; absent in v1/v2 data. Legacy fields stay untouched.
+    var practice: PracticeSession?
+
+    var hasLegacyProgress: Bool {
+        stage != .question || selectedAnswer != nil || answerSubmitted ||
+            (questionSceneStep ?? 0) > 0 || (challengeSceneStep ?? 0) > 0 ||
+            explanationIndex != 0 || !matches.isEmpty || matchingSubmitted ||
+            matchingSolved || challengeAnswer != nil || challengeSubmitted ||
+            challengeSolved || mistakes > 0 || challengeExplanationID != nil
+    }
 
     init(lessonID: String, id: UUID = UUID()) {
         self.id = id
