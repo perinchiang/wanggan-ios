@@ -381,10 +381,17 @@ extension StepSession {
             result.questionSceneStep = answerSubmitted ? lesson.question.scene.count : stepIndex
         } else if stepIndex < plan.matchingIndex || (!lesson.usesMatching && stepIndex == plan.matchingIndex) {
             result.stage = .explanation
-            result.explanationIndex = min(stepIndex - plan.questionIndex - 2, lesson.explanation.count - 1)
             if lesson.ipv4Visual != nil, stepIndex == plan.questionIndex + 1 {
+                // The IPv4 visual practice step tracks its own position via
+                // ipv4VisualPhase/Finished, so keep the legacy index so existing
+                // drafts round-trip unchanged.
+                result.explanationIndex = 0
                 result.ipv4VisualPhase = ipv4VisualPhase ?? 0
                 result.ipv4VisualFinished = false
+            } else {
+                // -1 marks the initial diagram step, so resume does not confuse it
+                // with the first explanation paragraph.
+                result.explanationIndex = min(stepIndex - plan.questionIndex - 2, lesson.explanation.count - 1)
             }
         } else if stepIndex == plan.matchingIndex {
             result.stage = .matching
