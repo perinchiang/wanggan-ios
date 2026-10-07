@@ -29,9 +29,12 @@ Windows 无 Swift / Xcode 工具链；Core 与 iPhone 编译通过本候选 macO
 
 - 本地 4 项 Web 测试通过。
 - 首轮 CI 37608418147：86 Core 中 83 通过；中性测试夹具清理误改了 DNS 配对的 `name` 键对应值，导致三项目录校验失败。第一课与三项历史保留测试通过；已修复夹具映射。该轮未进入打包，无 IPA。
-- Core 新增内容移除后旧 v1 恢复、开始示例课与重复结算、旧复习证据保留三项回归；运行结果待本候选 package 检查。
-- 第一课 JSON 与 b4bad457 逐字段比较、内容目录和文档链接检查、`git diff --check` 在提交前执行。
+- 最终应用源码 `f56476a74ff0daf35bcf3bbf3cbde8be240ce8a7` 的 [package CI 37608652456](https://github.com/perinchiang/wanggan-ios/actions/runs/37608652456) 成功，耗时 1 分 48 秒：86 Core、4 Web、iPhone Release 编译及资源打包。包含三项删课后历史保留回归。原生 UI / 模拟器 / 截图均 skipped。
+- 下载 0.14.0 build 29 未签名 IPA，核对 Info.plist、bundle ID、图标与 Web 资源；包内 lessons.json 与 f56476a Git 对象字节一致，仅有 `home-two-boxes`，归档和短复习列表为空，未包含测试夹具。
+- 本地包位于本 worktree 的 `artifacts/WangGan-0.14.0-build29-f56476a/WangGan-unsigned.ipa`（777,992 字节）；SHA-256：`78486825be62654499feb06d66a5f2b56defd4791f75c032ed2fea1a1987d077`。
+- 第一课 JSON 与 b4bad457 逐字段一致；目录检查、文档本地链接、`git diff --check` 通过。主工作区仍为干净的 feature/doctor-script，未处理其脚本或 PR。
+- 最后的交付记录提交仅修改文档；IPA 与运行检查对应 f56476a，不为记录结果重复消耗构建额度。
 
 ## Next recommended task / 推荐下一步
 
-完成本候选 package 核验，交付 Pat 真机检查第一课；后续逐课重新设计，不恢复已删除教案。
+Pat 真机检查：路线只有第一课；讲解回看与中断恢复；主动退出重来；一体机换机与 FTTR 图解；完成后显示 1 / 1，重学不重复发首次奖励。旧安装更新时确认已有 XP 仍在。后续逐课重新设计，不恢复已删除教案。
