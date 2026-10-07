@@ -194,7 +194,12 @@ fi
 
 section 'Test tooling'
 if command -v node >/dev/null 2>&1; then
-  pass "Node: $(node --version 2>/dev/null)"
+  NODE_VER="$(node --version 2>/dev/null)"
+  if node --test --version >/dev/null 2>&1; then
+    pass "Node: ${NODE_VER:-unknown} (supports node --test)"
+  else
+    fail "Node: ${NODE_VER:-unknown} cannot run node --test" 'upgrade Node.js to 18.1+ or 16.17+ (e.g. brew install node); the Web tests need: node --test scripts/test_ipv4_visual.cjs'
+  fi
 else
   warn 'Node: not found' 'needed for the Web tests (node --test scripts/test_ipv4_visual.cjs), including the --full run and CI'
 fi
