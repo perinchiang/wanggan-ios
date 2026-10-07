@@ -27,8 +27,18 @@ struct RootView: View {
         .foregroundStyle(Theme.ink)
         .background(Theme.paper)
         .fullScreenCover(item: $activeLesson) { lesson in
-            StepLessonPlayer(lesson: lesson, initialSession: store.session(for: lesson), usesStaticPresentation: testsAccessibility) { next in
-                activeLesson = next
+            let session = store.session(for: lesson)
+            let legacyTest = ProcessInfo.processInfo.arguments.contains("--uitesting") &&
+                ProcessInfo.processInfo.arguments.contains("--legacy-lesson")
+            Group {
+                if let practice = lesson.practice, !legacyTest, session.practice != nil || !session.hasLegacyProgress {
+                    PracticeLessonPlayer(lesson: lesson, practice: practice, initialSession: session,
+                                         usesStaticPresentation: testsAccessibility)
+                } else {
+                    StepLessonPlayer(lesson: lesson, initialSession: session, usesStaticPresentation: testsAccessibility) { next in
+                        activeLesson = next
+                    }
+                }
             }
             .id(lesson.id)
             .environment(\.dynamicTypeSize, testsAccessibility ? .accessibility5 : dynamicTypeSize)
@@ -93,7 +103,7 @@ struct LearningRouteView: View {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(lesson.title).font(.headline).accessibilityIdentifier("recommended-lesson-title")
-                                Text(store.ledger.hasDraft(for: lesson.id) ? "上次学到的地方，还在这里" : store.ledger.lessons[lesson.id] != nil ? "这一课已完成，可以再看一次" : "约 3 分钟 · 4 段探索")
+                                Text(store.ledger.hasDraft(for: lesson.id) ? "上次学到的地方，还在这里" : store.ledger.lessons[lesson.id] != nil ? "这一课已完成，可以再看一次" : lesson.practice != nil ? "认一认，再试一试" : "约 3 分钟 · 4 段探索")
                                     .font(.caption).foregroundStyle(Theme.muted)
                             }
                             Spacer(minLength: 4)

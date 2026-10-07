@@ -6,7 +6,7 @@ struct LessonProgress: Codable, Equatable {
 }
 
 struct ProgressLedger: Codable, Equatable {
-    var schemaVersion = 2
+    var schemaVersion = 3
     var totalXP = 0
     var lessons: [String: LessonProgress] = [:]
     var activityDays: [Date] = []
@@ -81,7 +81,10 @@ struct ProgressLedger: Codable, Equatable {
     @discardableResult
     mutating func complete(_ session: LessonSession, now: Date = Date(), calendar: Calendar = .current) -> Int {
         let observed = session.observationCompleted == true && session.ipv4FoundationProgress?.finished == true
-        guard session.stage == .complete, observed || (session.challengeSolved && session.matchingSolved) else { return 0 }
+        let finished: Bool
+        if let practice = session.practice { finished = practice.isComplete && practice.attempt == PracticeAttempt() }
+        else { finished = observed || (session.challengeSolved && session.matchingSolved) }
+        guard session.stage == .complete, finished else { return 0 }
         discardDraft(session)
         if let reward = settledSessions[session.id] { return reward }
 

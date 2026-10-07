@@ -70,6 +70,8 @@ struct Lesson: Codable, Equatable, Identifiable {
     let matching: MatchingExercise
     let challenge: Question
     let sources: [String]
+    /// Short-question path. Old payloads remain for existing interrupted drafts.
+    var practice: PracticeLesson? = nil
 
     var usesMatching: Bool { matchingEnabled ?? true }
 }
@@ -123,6 +125,9 @@ struct LessonCatalog: Codable {
             throw ContentError.invalid("章节与归档列表没有恰好覆盖每一课")
         }
         for lesson in lessons {
+            if let practice = lesson.practice, !practice.isValid {
+                throw ContentError.invalid("\(lesson.id) 的短题内容不完整")
+            }
             if let topology = lesson.topology {
                 // The topology reveals one stage per explanation paragraph (stage 1
                 // anchors the diagram step), so stages must fit the text budget and

@@ -8,7 +8,7 @@ final class LearningUITests: XCTestCase {
         continueAfterFailure = false
         executionTimeAllowance = 300
         app = XCUIApplication()
-        app.launchArguments = ["--uitesting", "--reset-progress"]
+        app.launchArguments = ["--uitesting", "--reset-progress", "--legacy-lesson"]
     }
 
     private func tap(_ id: String) {
@@ -37,7 +37,7 @@ final class LearningUITests: XCTestCase {
     // Unexpected interruption restores drafts; explicit exit has separate tests below.
     private func relaunchKeepingProgress() {
         app.terminate()
-        app.launchArguments = ["--uitesting"]
+        app.launchArguments = ["--uitesting", "--legacy-lesson"]
         app.launch()
         XCTAssertTrue(app.buttons["start-lesson"].waitForExistence(timeout: 10))
     }
@@ -65,7 +65,7 @@ final class LearningUITests: XCTestCase {
         XCTAssertTrue(app.tabBars.buttons["学习"].exists)
         XCTAssertTrue(app.tabBars.buttons["我的"].exists)
         XCTAssertTrue(app.staticTexts["recommended-lesson-title"].waitForExistence(timeout: 10))
-        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "宽带师傅为什么装了两个路由器？")
+        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "1-1")
         tap("start-lesson")
         tap("primary-action")
         tap("primary-action")
@@ -132,12 +132,12 @@ final class LearningUITests: XCTestCase {
             tap("primary-action")
         }
         XCTAssertTrue(app.staticTexts["+30 XP"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.staticTexts["completion-lesson-title"].label, "宽带师傅为什么装了两个路由器？")
+        XCTAssertEqual(app.staticTexts["completion-lesson-title"].label, "1-1")
         XCTAssertFalse(app.staticTexts["光猫连接运营商的光纤网络，家用路由器通过光猫上网，并让手机、电脑通过 Wi-Fi 或网线接入家庭网络。有些设备集成了光猫和路由器的功能。"].exists)
         screenshot("H04-completion")
         tap("finish-session")
         XCTAssertEqual(app.staticTexts["xp-badge"].label, "30 经验值")
-        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "宽带师傅为什么装了两个路由器？")
+        XCTAssertEqual(app.staticTexts["recommended-lesson-title"].label, "1-1")
     }
 
     func testHomeTeachingBacktrackAndInterruptedResume() {

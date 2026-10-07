@@ -25,13 +25,13 @@ final class LearningTests: XCTestCase {
         calendar.date(from: DateComponents(year: 2026, month: 10, day: 4, hour: 12))!
     }
 
-    func testOnlyApprovedExampleIsShipped() throws {
+    func testOnlyFirstLessonIsShipped() throws {
         let catalog = try TestCatalog.shipped()
         try catalog.validate()
         XCTAssertEqual(catalog.orderedLessonIDs, ["home-two-boxes"])
         XCTAssertEqual(catalog.lessons.map(\.id), ["home-two-boxes"])
         XCTAssertTrue(catalog.archivedLessonIDs.isEmpty)
-        XCTAssertEqual(catalog.lessons.first?.title, "宽带师傅为什么装了两个路由器？")
+        XCTAssertEqual(catalog.lessons.first?.title, "1-1")
         XCTAssertTrue(ProgressLedger().isUnlocked("home-two-boxes", in: catalog.orderedLessonIDs))
     }
 

@@ -1,12 +1,12 @@
 {
   "course": {
     "id": "wanggan-network-intuition",
-    "revision": 7,
+    "revision": 9,
     "title": "网感",
     "chapters": [
       {
         "id": "home-network",
-        "title": "故事 · 家里的网络从哪里来",
+        "title": "你家的网络",
         "orderedLessonIDs": [
           "home-two-boxes"
         ]
@@ -17,10 +17,10 @@
   "lessons": [
     {
       "id": "home-two-boxes",
-      "title": "宽带师傅为什么装了两个路由器？",
-      "subtitle": "从家门口的一根光纤开始",
-      "takeaway": "光猫连接运营商的光纤网络，家用路由器通过光猫上网，并让手机、电脑通过 Wi-Fi 或网线接入家庭网络。有些设备集成了光猫和路由器的功能。",
-      "nextCuriosity": "手机要联系朋友的电脑时，靠什么找到对方？",
+      "title": "1-1",
+      "subtitle": "从手机连 Wi-Fi，到家里办宽带",
+      "takeaway": "家里的设备可以通过 Wi-Fi 或网线连接路由器；连上 Wi-Fi 不代表一定能上网。",
+      "nextCuriosity": "已经连上 Wi-Fi，却上不了网，还能检查什么？",
       "diagram": "home",
       "topology": {
         "accessibilitySummary": "示意图：一根光纤从门外进入光猫，光猫用网线连接家用路由器，手机通过 Wi-Fi、电脑通过网线连接路由器。",
@@ -385,9 +385,176 @@
         "https://carrier.huawei.com/en/products/fixed-network/sub-solution-access/fttr-to-home",
         "https://consumer.huawei.com/en/support/content/en-us15806327/",
         "https://e.huawei.com/marketingcloud/pep/asset/20000001/Material/0edddd77253d499986308fa6cde66e7f/M3T1A669N1231359291496624209/How%20to%20Configure%20Huawei%20FTTR%20-%20OptiXstar%20F50%20_Fiber%20Uplink_.pdf",
-        "https://e.huawei.com/cn/solutions/enterprise-optical-network/ftth/fttr-home"
+        "https://e.huawei.com/cn/solutions/enterprise-optical-network/ftth/fttr-home",
+        "https://www.cisco.com/site/us/en/learn/topics/small-business/wireless-network.html",
+        "https://support.apple.com/en-us/111786",
+        "https://www.ofcom.org.uk/phones-and-broadband/coverage-and-speeds/improving-your-wifi-experience"
       ],
-      "matchingEnabled": false
+      "matchingEnabled": false,
+      "practice": {
+        "revision": 2,
+        "questions": [
+          {
+            "id": "home-wireless-lan",
+            "role": "exploration",
+            "kind": "fillBlank",
+            "prompt": "在家里，手机不插网线，通常通过 ____ 连接家里的网络。",
+            "figures": [],
+            "options": [
+              {
+                "id": "wlan",
+                "text": "无线局域网",
+                "feedback": ""
+              },
+              {
+                "id": "wired-lan",
+                "text": "有线局域网",
+                "feedback": ""
+              }
+            ],
+            "correctID": "wlan",
+            "matching": null,
+            "explanation": "家里的无线局域网，通常用 Wi-Fi 来连接。"
+          },
+          {
+            "id": "home-wifi-name",
+            "role": "mastery",
+            "kind": "fillBlank",
+            "prompt": "我们平时说“连 ____”，通常就是连接这种无线网络。",
+            "figures": [],
+            "options": [
+              {
+                "id": "wifi",
+                "text": "Wi-Fi",
+                "feedback": ""
+              },
+              {
+                "id": "bluetooth",
+                "text": "蓝牙",
+                "feedback": ""
+              }
+            ],
+            "correctID": "wifi",
+            "matching": null,
+            "explanation": "选网络名称、输入密码连上的，一般就是 Wi-Fi。"
+          },
+          {
+            "id": "home-wired-connection",
+            "role": "exploration",
+            "kind": "fillBlank",
+            "prompt": "电脑插着网线连接家里的网络，这属于 ____ 连接。",
+            "figures": [],
+            "options": [
+              {
+                "id": "wireless",
+                "text": "无线",
+                "feedback": ""
+              },
+              {
+                "id": "wired",
+                "text": "有线",
+                "feedback": ""
+              }
+            ],
+            "correctID": "wired",
+            "matching": null,
+            "explanation": "用网线连接，就是有线连接。家里的网络可以同时有有线和无线连接。"
+          },
+          {
+            "id": "home-router",
+            "role": "exploration",
+            "kind": "fillBlank",
+            "prompt": "手机连 Wi-Fi，电脑插网线，它们通常都连接到 ____。",
+            "figures": [],
+            "options": [
+              {
+                "id": "router",
+                "text": "路由器",
+                "feedback": ""
+              },
+              {
+                "id": "ont",
+                "text": "光猫",
+                "feedback": ""
+              },
+              {
+                "id": "broadband",
+                "text": "宽带",
+                "feedback": ""
+              }
+            ],
+            "correctID": "router",
+            "matching": null,
+            "explanation": "家用路由器通常既能提供 Wi-Fi，也有网口供电脑用网线连接。"
+          },
+          {
+            "id": "home-fiber-ont",
+            "role": "exploration",
+            "kind": "fillBlank",
+            "prompt": "从门外接进来的光纤通常先接到 ____，再用网线连接路由器。",
+            "figures": [],
+            "options": [
+              {
+                "id": "computer",
+                "text": "电脑",
+                "feedback": ""
+              },
+              {
+                "id": "ont",
+                "text": "光猫",
+                "feedback": ""
+              }
+            ],
+            "correctID": "ont",
+            "matching": null,
+            "explanation": "光猫接入运营商的光纤，再用网线连接家用路由器。"
+          },
+          {
+            "id": "home-broadband-service",
+            "role": "exploration",
+            "kind": "fillBlank",
+            "prompt": "我们平时说“家里办了宽带”，主要是给家里开通 ____。",
+            "figures": [],
+            "options": [
+              {
+                "id": "service",
+                "text": "上网服务",
+                "feedback": ""
+              },
+              {
+                "id": "router",
+                "text": "一台路由器",
+                "feedback": ""
+              }
+            ],
+            "correctID": "service",
+            "matching": null,
+            "explanation": "宽带是上网服务；光猫和路由器是用来连接网络的设备。"
+          },
+          {
+            "id": "home-wifi-internet",
+            "role": "exploration",
+            "kind": "choice",
+            "prompt": "手机显示已经连上 Wi-Fi，就一定能打开互联网网页吗？",
+            "figures": [],
+            "options": [
+              {
+                "id": "yes",
+                "text": "一定能",
+                "feedback": ""
+              },
+              {
+                "id": "no",
+                "text": "不一定",
+                "feedback": ""
+              }
+            ],
+            "correctID": "no",
+            "matching": null,
+            "explanation": "宽带连接出问题时，手机可能仍连着家里的 Wi-Fi，却打不开互联网网页。"
+          }
+        ]
+      }
     }
   ]
 }

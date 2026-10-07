@@ -12,14 +12,14 @@ extension ProgressLedger {
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         let version = try values.decode(Int.self, forKey: .schemaVersion)
-        guard version == 1 || version == 2 else {
+        guard (1...3).contains(version) else {
             throw ContentError.invalid("未知进度版本")
         }
         totalXP = try values.decode(Int.self, forKey: .totalXP)
         lessons = try values.decode([String: LessonProgress].self, forKey: .lessons)
         activityDays = try values.decode([Date].self, forKey: .activityDays)
         settledSessions = try values.decode([UUID: Int].self, forKey: .settledSessions)
-        if version == 2 {
+        if version >= 2 {
             drafts = try values.decode([String: LessonSession].self, forKey: .drafts)
             mainLessonID = try values.decodeIfPresent(String.self, forKey: .mainLessonID)
         } else {
@@ -33,7 +33,8 @@ extension ProgressLedger {
                 drafts[id] = session
             }
         }
-        schemaVersion = 2
+        schemaVersion = 3
+        // v1/v2 become v3 without changing records; missing practice fields stay nil.
         // Deleted scheduling and short-session fields are deliberately ignored.
         // The App keeps the original v1 bytes before writing this current format.
     }
